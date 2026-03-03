@@ -4,30 +4,111 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SemLimites Prestadores</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonte Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: 'Inter', sans-serif; background: #f8fafc; }
-        #root { min-height: 100vh; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(to bottom, #f8fafc, #ffffff);
+            min-height: 100vh;
+        }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
     </style>
 </head>
 <body>
     <div id="root"></div>
     
+    <!-- React e ReactDOM -->
     <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
     
     <script>
-        // Seu componente App convertido para JavaScript puro
         const { useState, useEffect } = React;
 
+        // ========== DADOS MOCKADOS ==========
+        const CIDADES = ["Bauru", "Piratininga", "Agudos"];
+        const CATEGORIAS = [
+            "Eletricista", "Encanador", "Diarista", "Pedreiro", 
+            "Montador de Móveis", "Ar-condicionado", "Pintor"
+        ];
+
+        const PRESTADORES = [
+            {
+                id: "1",
+                nome: "João Souza",
+                categoria: "Eletricista",
+                cidade: "Bauru",
+                descricao: "Profissional com 12 anos de experiência em instalações elétricas residenciais e comerciais. Atendimento de emergência 24h.",
+                estrelas: 4.9,
+                avaliacoes: 328,
+                verificado: true,
+                destaque: true,
+                whatsapp: "5514999999999",
+                tags: ["Emergência 24h", "Residencial", "Comercial"],
+                tempo_resposta: "~15 minutos"
+            },
+            {
+                id: "2",
+                nome: "Paula Martins",
+                categoria: "Diarista",
+                cidade: "Bauru",
+                descricao: "Diarista organizada, detalhista e pontual. Limpeza pesada e manutenção semanal.",
+                estrelas: 4.8,
+                avaliacoes: 156,
+                verificado: true,
+                destaque: true,
+                whatsapp: "5514988888888",
+                tags: ["Limpeza pesada", "Organização", "Semanal"],
+                tempo_resposta: "~30 minutos"
+            },
+            {
+                id: "3",
+                nome: "Rafael Lima",
+                categoria: "Encanador",
+                cidade: "Agudos",
+                descricao: "Consertos, vazamentos e instalação. Especialista em caixas d'água e pressurização.",
+                estrelas: 4.7,
+                avaliacoes: 89,
+                verificado: true,
+                destaque: false,
+                whatsapp: "5514977777777",
+                tags: ["Vazamento", "Instalação", "Emergência"],
+                tempo_resposta: "~20 minutos"
+            },
+            {
+                id: "4",
+                nome: "Ana Beatriz",
+                categoria: "Pintor",
+                cidade: "Bauru",
+                descricao: "Pintura residencial e comercial. Especialista em texturas e acabamentos decorativos.",
+                estrelas: 4.9,
+                avaliacoes: 112,
+                verificado: false,
+                destaque: true,
+                whatsapp: "5514955555555",
+                tags: ["Pintura interna", "Textura", "Efeitos"],
+                tempo_resposta: "~25 minutos"
+            }
+        ];
+
         // ========== COMPONENTES ==========
+        
+        // Estrelas
         function Stars({ value, size = "md", showNumber = true }) {
             const full = Math.floor(value);
             const half = value - full >= 0.5;
             const total = 5;
             
-            const sizeClasses = { sm: "text-sm", md: "text-base", lg: "text-xl", xl: "text-2xl" };
+            const sizeClasses = {
+                sm: "text-sm", md: "text-base", lg: "text-xl", xl: "text-2xl"
+            };
 
             return React.createElement('div', { className: "flex items-center gap-1" },
                 React.createElement('div', { className: "flex" },
@@ -37,7 +118,7 @@
                         const isHalf = idx === full + 1 && half;
                         return React.createElement('span', {
                             key: idx,
-                            className: (filled || isHalf ? "bg-gradient-to-r from-amber-400 to-amber-500 bg-clip-text text-transparent" : "text-slate-200") + " " + (sizeClasses[size] || "")
+                            className: (filled || isHalf ? "text-amber-500" : "text-slate-300") + " " + (sizeClasses[size] || "")
                         }, "★");
                     })
                 ),
@@ -45,59 +126,144 @@
             );
         }
 
-        function App() {
-            const [prestadores, setPrestadores] = useState([]);
-            const [loading, setLoading] = useState(true);
+        // Badge
+        function Badge({ children, variant = "neutral" }) {
+            const variants = {
+                neutral: "bg-slate-100 text-slate-700",
+                verified: "bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 border border-emerald-200",
+                highlight: "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white"
+            };
+            return React.createElement('span', {
+                className: `inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${variants[variant] || variants.neutral}`
+            }, variant === "verified" ? "✓ " + children : children);
+        }
 
-            // Dados mockados para teste
-            const mockData = [
-                { id: 1, nome: "João Souza", categoria: "Eletricista", cidade: "Bauru", estrelas: 4.9, avaliacoes: 128, descricao: "Profissional com 12 anos de experiência", verificado: true },
-                { id: 2, nome: "Paula Martins", categoria: "Diarista", cidade: "Bauru", estrelas: 4.8, avaliacoes: 76, descricao: "Diarista organizada e pontual", verificado: true },
-                { id: 3, nome: "Rafael Lima", categoria: "Encanador", cidade: "Agudos", estrelas: 4.7, avaliacoes: 89, descricao: "Consertos e instalações", verificado: true }
+        // Avatar
+        function Avatar({ name }) {
+            const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+            const colors = [
+                "from-blue-500 to-indigo-600", "from-emerald-500 to-teal-600", 
+                "from-amber-500 to-orange-600", "from-rose-500 to-pink-600"
             ];
+            const colorIndex = name.length % colors.length;
+            return React.createElement('div', {
+                className: `w-10 h-10 rounded-2xl bg-gradient-to-br flex items-center justify-center font-semibold text-white shadow-md ${colors[colorIndex]}`
+            }, initials);
+        }
 
-            useEffect(() => {
-                setPrestadores(mockData);
-                setLoading(false);
-            }, []);
-
-            return React.createElement('div', { className: "min-h-screen bg-gradient-to-b from-slate-50 to-white" },
-                // Header
-                React.createElement('header', { className: "bg-white/90 backdrop-blur-lg border-b border-slate-200 sticky top-0 z-50" },
-                    React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-3 flex justify-between items-center" },
-                        React.createElement('div', { className: "flex items-center gap-3" },
-                            React.createElement('div', { className: "w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-700 text-white grid place-items-center font-bold" }, "SL"),
-                            React.createElement('h1', { className: "font-bold text-lg" }, "SemLimites")
-                        )
-                    )
-                ),
-                
-                // Main content
-                React.createElement('main', { className: "max-w-7xl mx-auto px-4 py-8" },
-                    React.createElement('h1', { className: "text-3xl font-bold text-center mb-8" }, "Encontre os melhores prestadores"),
-                    
-                    loading ? React.createElement('p', { className: "text-center" }, "Carregando...") :
-                    React.createElement('div', { className: "grid md:grid-cols-2 lg:grid-cols-3 gap-6" },
-                        prestadores.map(p => 
-                            React.createElement('div', { key: p.id, className: "bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg" },
-                                React.createElement('div', { className: "flex items-start gap-4" },
-                                    React.createElement('div', { className: "w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg" },
-                                        p.nome.split(' ').map(n => n[0]).join('').slice(0,2)
-                                    ),
-                                    React.createElement('div', { className: "flex-1" },
-                                        React.createElement('h3', { className: "font-bold text-lg" }, p.nome),
-                                        React.createElement('p', { className: "text-sm text-slate-500" }, `${p.categoria} • ${p.cidade}`),
-                                        React.createElement('div', { className: "mt-2" }, React.createElement(Stars, { value: p.estrelas })),
-                                        React.createElement('p', { className: "mt-2 text-sm text-slate-600" }, p.descricao)
-                                    )
-                                )
+        // Card de Prestador
+        function CardPrestador({ prestador }) {
+            const p = prestador;
+            
+            return React.createElement('div', { className: "bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg transition-all" },
+                React.createElement('div', { className: "flex items-start gap-4" },
+                    React.createElement(Avatar, { name: p.nome }),
+                    React.createElement('div', { className: "flex-1" },
+                        React.createElement('div', { className: "flex items-start justify-between" },
+                            React.createElement('div', null,
+                                React.createElement('div', { className: "flex items-center gap-2" },
+                                    React.createElement('h3', { className: "font-bold text-lg" }, p.nome),
+                                    p.verificado && React.createElement(Badge, { variant: "verified" }, "Verificado"),
+                                    p.destaque && React.createElement(Badge, { variant: "highlight" }, "Destaque")
+                                ),
+                                React.createElement('p', { className: "text-sm text-slate-500" }, `${p.categoria} • ${p.cidade}`)
                             )
+                        ),
+                        React.createElement('div', { className: "flex items-center justify-between mt-2" },
+                            React.createElement(Stars, { value: p.estrelas }),
+                            React.createElement('span', { className: "text-xs text-slate-500" }, `${p.avaliacoes} avaliações`)
+                        ),
+                        React.createElement('p', { className: "mt-3 text-sm text-slate-600 line-clamp-2" }, p.descricao),
+                        React.createElement('div', { className: "mt-3 flex flex-wrap gap-1" },
+                            p.tags.map(tag => 
+                                React.createElement('span', { key: tag, className: "px-2 py-0.5 rounded-lg bg-slate-100 text-slate-600 text-xs" }, tag)
+                            )
+                        ),
+                        React.createElement('div', { className: "mt-4 flex gap-2" },
+                            React.createElement('button', { className: "flex-1 px-3 py-2 rounded-xl border border-slate-200 text-sm font-medium" }, "Ver perfil"),
+                            p.whatsapp && React.createElement('a', {
+                                href: `https://wa.me/${p.whatsapp}`,
+                                target: "_blank",
+                                className: "flex-1 px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-white text-sm font-medium text-center"
+                            }, "WhatsApp")
                         )
                     )
                 )
             );
         }
 
+        // Tela de Busca
+        function Busca() {
+            const [cidade, setCidade] = useState("Bauru");
+            const [categoria, setCategoria] = useState("");
+            const [resultados, setResultados] = useState(PRESTADORES);
+
+            const filtrar = () => {
+                let lista = [...PRESTADORES];
+                if (cidade) lista = lista.filter(p => p.cidade === cidade);
+                if (categoria) lista = lista.filter(p => p.categoria === categoria);
+                setResultados(lista);
+            };
+
+            useEffect(filtrar, [cidade, categoria]);
+
+            return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8" },
+                // Header da busca
+                React.createElement('div', { className: "bg-white rounded-2xl border border-slate-200 p-6 mb-6" },
+                    React.createElement('h1', { className: "text-2xl font-bold text-slate-900 mb-4" }, "Encontre o profissional ideal"),
+                    React.createElement('div', { className: "grid md:grid-cols-3 gap-4" },
+                        React.createElement('select', {
+                            value: cidade,
+                            onChange: (e) => setCidade(e.target.value),
+                            className: "px-4 py-2 rounded-xl border border-slate-200"
+                        }, CIDADES.map(c => React.createElement('option', { key: c }, c))),
+                        
+                        React.createElement('select', {
+                            value: categoria,
+                            onChange: (e) => setCategoria(e.target.value),
+                            className: "px-4 py-2 rounded-xl border border-slate-200"
+                        }, [
+                            React.createElement('option', { key: '', value: "" }, "Todas categorias"),
+                            ...CATEGORIAS.map(c => React.createElement('option', { key: c }, c))
+                        ])
+                    )
+                ),
+
+                // Resultados
+                React.createElement('div', { className: "grid md:grid-cols-2 lg:grid-cols-3 gap-6" },
+                    resultados.map(p => React.createElement(CardPrestador, { key: p.id, prestador: p }))
+                )
+            );
+        }
+
+        // App Principal
+        function App() {
+            return React.createElement('div', { className: "min-h-screen bg-gradient-to-b from-slate-50 to-white" },
+                // Header
+                React.createElement('header', { className: "bg-white/90 backdrop-blur-lg border-b border-slate-200 sticky top-0 z-50" },
+                    React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-3 flex justify-between items-center" },
+                        React.createElement('div', { className: "flex items-center gap-3" },
+                            React.createElement('div', { className: "relative" },
+                                React.createElement('div', { className: "w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-700 text-white grid place-items-center font-bold text-lg" }, "SL"),
+                                React.createElement('div', { className: "absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white animate-pulse" })
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('span', { className: "font-bold text-lg text-slate-900" }, "SemLimites"),
+                                React.createElement('span', { className: "text-xs text-slate-500 block" }, "Prestadores • Bauru e região")
+                            )
+                        ),
+                        React.createElement('div', { className: "flex gap-2" },
+                            React.createElement('button', { className: "px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium" }, "Entrar"),
+                            React.createElement('button', { className: "px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 text-white text-sm font-medium" }, "Área do Prestador")
+                        )
+                    )
+                ),
+                
+                React.createElement(Busca, null)
+            );
+        }
+
+        // Renderizar
         ReactDOM.render(React.createElement(App), document.getElementById('root'));
     </script>
 </body>
