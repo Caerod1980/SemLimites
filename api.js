@@ -1,24 +1,25 @@
 // ============================================
-// CONFIGURAÇÃO DA API - SEMLIMITES
+// api.js - CONFIGURAÇÃO DA API SEMLIMITES
 // ============================================
 
-// 🔥 COLE SUA URL DO AZURE AQUI (já está configurada!)
+// 🔥 SUA URL DO AZURE (já configurada!)
 const AZURE_URL = 'https://semlimites-api-rodrigo-b5ckghhkbxdqd7a8.canadacentral-01.azurewebsites.net';
 
-// Determina a URL base da API baseado no ambiente
+// Determina a URL base da API
 const getApiUrl = () => {
   // Em produção (GitHub Pages), usa o backend no Azure
-  if (process.env.NODE_ENV === 'production') {
+  if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
     return `${AZURE_URL}/api`;
   }
   
-  // Em desenvolvimento, usa localhost
+  // Em desenvolvimento local, usa localhost
   return 'http://localhost:3001/api';
 };
 
 export const API_URL = getApiUrl();
 
 console.log('🌐 API configurada para:', API_URL);
+console.log('📡 Ambiente:', window.location.hostname);
 
 // ============================================
 // FUNÇÃO GENÉRICA PARA REQUISIÇÕES
@@ -65,7 +66,7 @@ export const prestadoresAPI = {
    * Buscar prestadores com filtros
    * @param {Object} filtros - cidade, categoria, q, ordenacao, apenasVerificados, page, limit
    */
-  buscar: (filtros = {}) => {
+  buscar: async (filtros = {}) => {
     // Remove filtros vazios
     const filtrosLimpos = Object.fromEntries(
       Object.entries(filtros).filter(([_, v]) => v !== '' && v !== undefined && v !== null)
@@ -87,10 +88,13 @@ export const prestadoresAPI = {
    * Verificar CNPJ na Receita Federal
    * @param {string} cnpj - CNPJ a ser verificado
    */
-  verificarCNPJ: (cnpj) => request('/prestadores/verificar-cnpj', {
-    method: 'POST',
-    body: JSON.stringify({ cnpj: cnpj.replace(/\D/g, '') })
-  }),
+  verificarCNPJ: (cnpj) => {
+    const cnpjLimpo = cnpj.replace(/\D/g, '');
+    return request('/prestadores/verificar-cnpj', {
+      method: 'POST',
+      body: JSON.stringify({ cnpj: cnpjLimpo })
+    });
+  },
 
   /**
    * Adicionar avaliação a um prestador
@@ -131,10 +135,26 @@ export const authAPI = {
 };
 
 // ============================================
+// FUNÇÃO DE TESTE RÁPIDO
+// ============================================
+
+export const testarConexao = async () => {
+  try {
+    const resultado = await fetch(`${AZURE_URL}/health`).then(r => r.json());
+    console.log('✅ Conexão com Azure OK:', resultado);
+    return true;
+  } catch (error) {
+    console.error('❌ Falha na conexão com Azure:', error);
+    return false;
+  }
+};
+
+// ============================================
 // EXPORTAÇÃO PADRÃO
 // ============================================
 
 export default {
   prestadores: prestadoresAPI,
-  auth: authAPI
+  auth: authAPI,
+  testarConexao
 };
