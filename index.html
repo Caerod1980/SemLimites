@@ -4,40 +4,101 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SemLimites Prestadores</title>
-    
-    <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Fonte Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(to bottom, #f8fafc, #ffffff);
-            min-height: 100vh;
-        }
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; }
         #root { min-height: 100vh; }
     </style>
 </head>
 <body>
     <div id="root"></div>
     
-    <!-- React e ReactDOM via CDN (para desenvolvimento rápido) -->
-    <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.development.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
     
-    <!-- Babel para transformar JSX -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Seus arquivos (na ordem correta) -->
-    <script type="text/babel" src="./api.js"></script>
-    <script type="text/babel" src="./App.jsx"></script>
-    
-    <script type="text/babel">
-        // Renderizar o app
-        ReactDOM.render(<App />, document.getElementById('root'));
+    <script>
+        // Seu componente App convertido para JavaScript puro
+        const { useState, useEffect } = React;
+
+        // ========== COMPONENTES ==========
+        function Stars({ value, size = "md", showNumber = true }) {
+            const full = Math.floor(value);
+            const half = value - full >= 0.5;
+            const total = 5;
+            
+            const sizeClasses = { sm: "text-sm", md: "text-base", lg: "text-xl", xl: "text-2xl" };
+
+            return React.createElement('div', { className: "flex items-center gap-1" },
+                React.createElement('div', { className: "flex" },
+                    Array.from({ length: total }).map((_, i) => {
+                        const idx = i + 1;
+                        const filled = idx <= full;
+                        const isHalf = idx === full + 1 && half;
+                        return React.createElement('span', {
+                            key: idx,
+                            className: (filled || isHalf ? "bg-gradient-to-r from-amber-400 to-amber-500 bg-clip-text text-transparent" : "text-slate-200") + " " + (sizeClasses[size] || "")
+                        }, "★");
+                    })
+                ),
+                showNumber && React.createElement('span', { className: "ml-1 text-sm font-semibold text-slate-700" }, value.toFixed(1))
+            );
+        }
+
+        function App() {
+            const [prestadores, setPrestadores] = useState([]);
+            const [loading, setLoading] = useState(true);
+
+            // Dados mockados para teste
+            const mockData = [
+                { id: 1, nome: "João Souza", categoria: "Eletricista", cidade: "Bauru", estrelas: 4.9, avaliacoes: 128, descricao: "Profissional com 12 anos de experiência", verificado: true },
+                { id: 2, nome: "Paula Martins", categoria: "Diarista", cidade: "Bauru", estrelas: 4.8, avaliacoes: 76, descricao: "Diarista organizada e pontual", verificado: true },
+                { id: 3, nome: "Rafael Lima", categoria: "Encanador", cidade: "Agudos", estrelas: 4.7, avaliacoes: 89, descricao: "Consertos e instalações", verificado: true }
+            ];
+
+            useEffect(() => {
+                setPrestadores(mockData);
+                setLoading(false);
+            }, []);
+
+            return React.createElement('div', { className: "min-h-screen bg-gradient-to-b from-slate-50 to-white" },
+                // Header
+                React.createElement('header', { className: "bg-white/90 backdrop-blur-lg border-b border-slate-200 sticky top-0 z-50" },
+                    React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-3 flex justify-between items-center" },
+                        React.createElement('div', { className: "flex items-center gap-3" },
+                            React.createElement('div', { className: "w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-700 text-white grid place-items-center font-bold" }, "SL"),
+                            React.createElement('h1', { className: "font-bold text-lg" }, "SemLimites")
+                        )
+                    )
+                ),
+                
+                // Main content
+                React.createElement('main', { className: "max-w-7xl mx-auto px-4 py-8" },
+                    React.createElement('h1', { className: "text-3xl font-bold text-center mb-8" }, "Encontre os melhores prestadores"),
+                    
+                    loading ? React.createElement('p', { className: "text-center" }, "Carregando...") :
+                    React.createElement('div', { className: "grid md:grid-cols-2 lg:grid-cols-3 gap-6" },
+                        prestadores.map(p => 
+                            React.createElement('div', { key: p.id, className: "bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg" },
+                                React.createElement('div', { className: "flex items-start gap-4" },
+                                    React.createElement('div', { className: "w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg" },
+                                        p.nome.split(' ').map(n => n[0]).join('').slice(0,2)
+                                    ),
+                                    React.createElement('div', { className: "flex-1" },
+                                        React.createElement('h3', { className: "font-bold text-lg" }, p.nome),
+                                        React.createElement('p', { className: "text-sm text-slate-500" }, `${p.categoria} • ${p.cidade}`),
+                                        React.createElement('div', { className: "mt-2" }, React.createElement(Stars, { value: p.estrelas })),
+                                        React.createElement('p', { className: "mt-2 text-sm text-slate-600" }, p.descricao)
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            );
+        }
+
+        ReactDOM.render(React.createElement(App), document.getElementById('root'));
     </script>
 </body>
 </html>
