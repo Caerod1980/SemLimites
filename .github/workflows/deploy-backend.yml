@@ -27,7 +27,7 @@ jobs:
       - name: Instalar dependências
         run: |
           cd backend
-          npm ci --production
+          npm install --production
 
       - name: Deploy para Azure
         uses: azure/webapps-deploy@v3
