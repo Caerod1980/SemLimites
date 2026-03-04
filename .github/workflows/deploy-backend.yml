@@ -9,7 +9,6 @@ on:
 
 env:
   AZURE_WEBAPP_NAME: semlimites-api-rodrigo
-  AZURE_WEBAPP_PACKAGE_PATH: './backend'
 
 jobs:
   build-and-deploy:
@@ -27,11 +26,11 @@ jobs:
       - name: Instalar dependências
         run: |
           cd backend
-          npm install --production
+          npm ci --production
 
       - name: Deploy para Azure
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+          package: './backend'  # ← Mudei aqui
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
