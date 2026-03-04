@@ -379,6 +379,11 @@ export default function App() {
     setModo('dashboard');
   };
 
+  const handleLogout = () => {
+    setUsuario(null);
+    setModo('busca');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       {/* Header */}
@@ -429,12 +434,14 @@ export default function App() {
 
       {/* Conteúdo Principal */}
       {modo === 'busca' && <Busca />}
+      
       {modo === 'cadastro' && (
         <CadastroPrestador 
           onCadastroSucesso={() => setModo('busca')}
           onVoltar={() => setModo('busca')}
         />
       )}
+      
       {modo === 'login' && (
         <Login
           tipo="cliente"
@@ -442,13 +449,11 @@ export default function App() {
           onVoltar={() => setModo('busca')}
         />
       )}
+      
       {modo === 'dashboard' && usuario && (
         <DashboardPrestador
           usuario={usuario}
-          onSair={() => {
-            setUsuario(null);
-            setModo('busca');
-          }}
+          onSair={handleLogout}
         />
       )}
     </div>
