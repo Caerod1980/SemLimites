@@ -26,11 +26,11 @@ jobs:
       - name: Instalar dependências
         run: |
           cd backend
-          npm ci --production
+          npm install --production  # ← Mudei de npm ci para npm install
 
       - name: Deploy para Azure
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          package: './backend'  # ← Mudei aqui
+          package: './backend'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
