@@ -19,6 +19,15 @@ jobs:
       - name: Checkout do código
         uses: actions/checkout@v4
 
+      - name: 🔍 Verificar segredo
+        run: |
+          if [ -n "${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}" ]; then
+            echo "✅ Segredo encontrado! Tamanho: $(echo '${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}' | wc -c) caracteres"
+          else
+            echo "❌ ERRO: Segredo AZUREAPPSERVICE_PUBLISHPROFILE NÃO configurado!"
+            exit 1
+          fi
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
