@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { prestadoresAPI, testarConexao } from "./api.js";
 import CadastroPrestador from "./CadastroPrestador";
+import Login from "./Login";
+import DashboardPrestador from "./DashboardPrestador";
 
 // ========== UTILITÁRIOS ==========
 function cls(...a) {
@@ -237,10 +239,7 @@ function CardPrestador({ prestador }) {
           )}
           
           <div className="mt-4 flex gap-2">
-            <button 
-              className="flex-1 px-3 py-2 rounded-xl border border-slate-200 hover:border-indigo-200 hover:bg-indigo-50 text-center text-sm font-medium text-slate-700"
-              onClick={() => alert('Perfil em desenvolvimento')}
-            >
+            <button className="flex-1 px-3 py-2 rounded-xl border border-slate-200 hover:border-indigo-200 hover:bg-indigo-50 text-center text-sm font-medium text-slate-700">
               Ver perfil
             </button>
             {p.whatsapp && (
@@ -368,11 +367,17 @@ function Busca() {
 // ========== COMPONENTE PRINCIPAL ==========
 export default function App() {
   const [conectado, setConectado] = useState(false);
-  const [modo, setModo] = useState('busca'); // 'busca' ou 'cadastro'
+  const [modo, setModo] = useState('busca'); // 'busca', 'cadastro', 'login', 'dashboard'
+  const [usuario, setUsuario] = useState(null);
 
   useEffect(() => {
     testarConexao().then(setConectado);
   }, []);
+
+  const handleLoginSuccess = (userData) => {
+    setUsuario(userData);
+    setModo('dashboard');
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
@@ -395,26 +400,55 @@ export default function App() {
           </div>
           
           <div className="flex gap-3">
-            <button className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition">
-              Entrar
-            </button>
-            <button
-              onClick={() => setModo(modo === 'busca' ? 'cadastro' : 'busca')}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:from-emerald-700 hover:to-emerald-800 transition shadow-sm"
-            >
-              {modo === 'busca' ? '📋 Sou Prestador' : '🔍 Ver Busca'}
-            </button>
+            {!usuario ? (
+              <>
+                <button
+                  onClick={() => setModo('login')}
+                  className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition"
+                >
+                  Entrar
+                </button>
+                <button
+                  onClick={() => setModo(modo === 'busca' ? 'cadastro' : 'busca')}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:from-emerald-700 hover:to-emerald-800 transition shadow-sm"
+                >
+                  {modo === 'busca' ? '📋 Sou Prestador' : '🔍 Ver Busca'}
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setModo('dashboard')}
+                className="px-4 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition"
+              >
+                Dashboard
+              </button>
+            )}
           </div>
         </div>
       </header>
 
       {/* Conteúdo Principal */}
-      {modo === 'busca' ? (
-        <Busca />
-      ) : (
+      {modo === 'busca' && <Busca />}
+      {modo === 'cadastro' && (
         <CadastroPrestador 
           onCadastroSucesso={() => setModo('busca')}
           onVoltar={() => setModo('busca')}
+        />
+      )}
+      {modo === 'login' && (
+        <Login
+          tipo="cliente"
+          onLoginSuccess={handleLoginSuccess}
+          onVoltar={() => setModo('busca')}
+        />
+      )}
+      {modo === 'dashboard' && usuario && (
+        <DashboardPrestador
+          usuario={usuario}
+          onSair={() => {
+            setUsuario(null);
+            setModo('busca');
+          }}
         />
       )}
     </div>
