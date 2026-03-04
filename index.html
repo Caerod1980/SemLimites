@@ -44,139 +44,29 @@
         const PRESTADORES = [
             {
                 id: "1",
-                slug: "joao-souza-eletricista",
                 nome: "João Souza",
-                foto: "JS",
                 categoria: "Eletricista",
                 cidade: "Bauru",
-                regioes: ["Centro", "Jardim Europa", "Vila Universitária"],
-                descricao: "Profissional com 12 anos de experiência em instalações elétricas residenciais e comerciais. Atendimento de emergência 24h.",
-                sobre: "Comecei como auxiliar aos 18 anos e hoje tenho minha própria empresa. Acredito que serviço bem feito é a base de tudo.",
+                descricao: "Profissional com 12 anos de experiência em instalações elétricas. Atendimento de emergência 24h.",
                 estrelas: 4.9,
                 avaliacoes: 328,
                 verificado: true,
                 destaque: true,
                 whatsapp: "5514999999999",
-                telefone: "(14) 99999-9999",
-                email: "joao.eletricista@email.com",
-                tags: ["Emergência 24h", "Residencial", "Comercial", "Industrial", "Projetos"],
-                disponibilidade: "Segunda a Sábado • 8h às 20h",
-                tempo_resposta: "~15 minutos",
-                tempo_mercado: "12 anos",
-                servicos_realizados: 1247,
-                clientes_fieis: 89,
-                garantia: "3 meses",
-                reviews: [
-                    { id: 1, nome: "Mariana Costa", estrelas: 5, data: "15/03/2024", servico: "Instalação elétrica completa", texto: "João é simplesmente fantástico. Profissionalismo, pontualidade e acabamento impecável.", gostaram: 24 },
-                    { id: 2, nome: "Carlos Oliveira", estrelas: 5, data: "02/03/2024", servico: "Reparo emergencial", texto: "Em 30 minutos estava aqui, resolveu rápido e ainda deu dicas.", gostaram: 18 }
-                ],
-                portfolio: [
-                    "Instalação completa - Residência 450m² (2024)",
-                    "Projeto elétrico - Comercial Centro (2023)",
-                    "Manutenção industrial - Pequena fábrica (2023)"
-                ],
-                certificacoes: ["NR-10", "CREA Ativo", "Projetos Elétricos - SENAI"]
+                tags: ["Emergência 24h", "Residencial", "Comercial"]
             },
             {
                 id: "2",
-                slug: "paula-martins-diarista",
                 nome: "Paula Martins",
-                foto: "PM",
                 categoria: "Diarista",
                 cidade: "Bauru",
-                regioes: ["Centro", "Vila Falcão", "Jardim América"],
                 descricao: "Diarista organizada, detalhista e pontual. Limpeza pesada e manutenção semanal.",
-                sobre: "Trabalho com limpeza há 8 anos. Minha especialidade é organização e otimização de espaços.",
                 estrelas: 4.8,
                 avaliacoes: 156,
                 verificado: true,
                 destaque: true,
                 whatsapp: "5514988888888",
-                telefone: "(14) 98888-8888",
-                email: "paula.diarista@email.com",
-                tags: ["Limpeza pesada", "Organização", "Semanal", "Quinzenal", "Passar roupa"],
-                disponibilidade: "Segunda a Sexta • 8h às 17h",
-                tempo_resposta: "~30 minutos",
-                tempo_mercado: "8 anos",
-                servicos_realizados: 856,
-                clientes_fieis: 94,
-                garantia: "Retorno em 24h",
-                reviews: [
-                    { id: 1, nome: "Renato Mendes", estrelas: 5, data: "10/03/2024", servico: "Limpeza pesada", texto: "Casa ficou impecável. Excelente profissional!", gostaram: 15 }
-                ],
-                portfolio: [
-                    "Limpeza pós-obra - Apartamento 120m² (2024)",
-                    "Organização de guarda-roupas - Residência (2023)"
-                ],
-                certificacoes: ["Curso de Limpeza Profissional", "Técnicas de Organização"]
-            },
-            {
-                id: "3",
-                slug: "rafael-lima-encanador",
-                nome: "Rafael Lima",
-                foto: "RL",
-                categoria: "Encanador",
-                cidade: "Agudos",
-                regioes: ["Centro", "Jardim América", "Vila São João"],
-                descricao: "Consertos, vazamentos e instalação. Especialista em caixas d'água e pressurização.",
-                sobre: "Mais de 15 anos resolvendo problemas hidráulicos. Do simples ao complexo, sempre com garantia.",
-                estrelas: 4.7,
-                avaliacoes: 89,
-                verificado: true,
-                destaque: false,
-                whatsapp: "5514977777777",
-                telefone: "(14) 97777-7777",
-                email: "rafael.encanador@email.com",
-                tags: ["Vazamento", "Instalação", "Caixa d'água", "Pressurização", "Emergência"],
-                disponibilidade: "Segunda a Sábado • 7h às 19h",
-                tempo_resposta: "~20 minutos",
-                tempo_mercado: "15 anos",
-                servicos_realizados: 2345,
-                clientes_fieis: 76,
-                garantia: "6 meses",
-                reviews: [
-                    { id: 1, nome: "Juliana Costa", estrelas: 5, data: "05/03/2024", servico: "Conserto de vazamento", texto: "Resolveu rapidinho e ainda deu dicas pra evitar novos problemas.", gostaram: 12 }
-                ],
-                portfolio: [
-                    "Instalação hidráulica completa - Residência (2024)",
-                    "Troca de caixa d'água - Condomínio (2023)",
-                    "Sistema de pressurização - Comércio (2023)"
-                ],
-                certificacoes: ["Técnico em Hidráulica", "NR-35 (Trabalho em Altura)"]
-            },
-            {
-                id: "4",
-                slug: "ana-beatriz-pintora",
-                nome: "Ana Beatriz",
-                foto: "AB",
-                categoria: "Pintor",
-                cidade: "Bauru",
-                regioes: ["Jardim Europa", "Centro", "Vila Universitária"],
-                descricao: "Pintura residencial e comercial. Especialista em texturas e acabamentos decorativos.",
-                sobre: "Artesã e pintora, transformo ambientes com cores e texturas.",
-                estrelas: 4.9,
-                avaliacoes: 112,
-                verificado: false,
-                destaque: true,
-                whatsapp: "5514955555555",
-                telefone: "(14) 95555-5555",
-                email: "ana.pintora@email.com",
-                tags: ["Pintura interna", "Pintura externa", "Textura", "Efeitos decorativos"],
-                disponibilidade: "Segunda a Sexta • 8h às 18h",
-                tempo_resposta: "~25 minutos",
-                tempo_mercado: "7 anos",
-                servicos_realizados: 543,
-                clientes_fieis: 95,
-                garantia: "2 anos",
-                reviews: [
-                    { id: 1, nome: "Patrícia Oliveira", estrelas: 5, data: "12/03/2024", servico: "Pintura de apartamento", texto: "Ficou lindo! Profissional talentosa e dedicada.", gostaram: 21 }
-                ],
-                portfolio: [
-                    "Pintura decorativa - Sala comercial (2024)",
-                    "Textura e efeitos - Residência (2023)",
-                    "Pintura externa - Sobrado (2023)"
-                ],
-                certificacoes: ["Design de Interiores", "Técnicas de Pintura Decorativa"]
+                tags: ["Limpeza pesada", "Organização", "Semanal"]
             }
         ];
 
@@ -185,9 +75,8 @@
             return a.filter(Boolean).join(" ");
         }
 
-        // ========== COMPONENTES ==========
+        // ========== COMPONENTES DE UI ==========
         
-        // Estrelas
         function Stars({ value, size = "md", showNumber = true }) {
             const full = Math.floor(value);
             const half = value - full >= 0.5;
@@ -213,19 +102,13 @@
             );
         }
 
-        // Badge
         function Badge({ children, variant = "neutral", size = "sm" }) {
             const variants = {
                 neutral: "bg-slate-100 text-slate-700 border-slate-200",
-                success: "bg-emerald-50 text-emerald-700 border-emerald-200",
-                warning: "bg-amber-50 text-amber-700 border-amber-200",
-                info: "bg-sky-50 text-sky-700 border-sky-200",
-                premium: "bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 border-indigo-200",
                 verified: "bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 border-emerald-200",
-                expertise: "bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 border-amber-200",
                 highlight: "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white border-indigo-600"
             };
-
+            
             const sizeClasses = {
                 sm: "px-2 py-0.5 text-xs",
                 md: "px-2.5 py-1 text-sm",
@@ -233,17 +116,11 @@
             };
 
             return React.createElement('span', {
-                className: `inline-flex items-center rounded-full border font-medium ${variants[variant] || variants.neutral} ${sizeClasses[size] || sizeClasses.sm}`
-            }, 
-                variant === "verified" && React.createElement('svg', { className: "w-3 h-3 mr-1", fill: "currentColor", viewBox: "0 0 20 20" },
-                    React.createElement('path', { fillRule: "evenodd", d: "M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z", clipRule: "evenodd" })
-                ),
-                children
-            );
+                className: `inline-flex items-center rounded-full border font-medium ${variants[variant]} ${sizeClasses[size]}`
+            }, children);
         }
 
-        // Avatar
-        function Avatar({ name, size = "md", className = "" }) {
+        function Avatar({ name, size = "md" }) {
             const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
             
             const sizeClasses = {
@@ -253,267 +130,183 @@
 
             const colors = [
                 "from-blue-500 to-indigo-600", "from-emerald-500 to-teal-600",
-                "from-amber-500 to-orange-600", "from-rose-500 to-pink-600",
-                "from-purple-500 to-violet-600"
+                "from-amber-500 to-orange-600", "from-rose-500 to-pink-600"
             ];
             
-            const colorIndex = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+            const colorIndex = name.length % colors.length;
             
             return React.createElement('div', {
-                className: `rounded-2xl bg-gradient-to-br flex items-center justify-center font-semibold text-white shadow-md ${colors[colorIndex]} ${sizeClasses[size] || sizeClasses.md} ${className || ''}`
+                className: `rounded-2xl bg-gradient-to-br flex items-center justify-center font-semibold text-white shadow-md ${colors[colorIndex]} ${sizeClasses[size]}`
             }, initials);
         }
 
-        // Estatística
-        function Estatistica({ icon, label, value, subtitle }) {
-            return React.createElement('div', { className: "bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200 p-4" },
-                React.createElement('div', { className: "flex items-center gap-2 text-indigo-600 mb-2" },
-                    icon,
-                    React.createElement('span', { className: "text-xs font-medium text-slate-500 uppercase tracking-wider" }, label)
-                ),
-                React.createElement('div', { className: "text-2xl font-bold text-slate-900" }, value),
-                subtitle && React.createElement('div', { className: "text-xs text-slate-500 mt-1" }, subtitle)
-            );
-        }
+        // ========== TELA DE LOGIN ==========
+        function Login({ onLoginSuccess, onVoltar }) {
+            const [email, setEmail] = useState('');
+            const [etapa, setEtapa] = useState('form');
+            const [loading, setLoading] = useState(false);
+            const [erro, setErro] = useState('');
 
-        // Card de Prestador (para listagem)
-        function CardPrestador({ prestador, onVerPerfil }) {
-            const p = prestador;
-            
-            return React.createElement('div', { className: "bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg transition-all" },
-                React.createElement('div', { className: "flex items-start gap-4" },
-                    React.createElement(Avatar, { name: p.nome, size: "lg" }),
-                    React.createElement('div', { className: "flex-1" },
-                        React.createElement('div', { className: "flex items-start justify-between" },
-                            React.createElement('div', null,
-                                React.createElement('div', { className: "flex items-center gap-2 flex-wrap" },
-                                    React.createElement('h3', { className: "font-bold text-lg text-slate-900" }, p.nome),
-                                    p.verificado && React.createElement(Badge, { variant: "verified", size: "sm" }, "Verificado"),
-                                    p.destaque && React.createElement(Badge, { variant: "highlight", size: "sm" }, "Destaque")
-                                ),
-                                React.createElement('p', { className: "text-sm text-slate-500 mt-0.5" }, `${p.categoria} • ${p.cidade}`)
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                setLoading(true);
+                
+                // Simular login
+                setTimeout(() => {
+                    setEtapa('enviado');
+                    setLoading(false);
+                }, 1000);
+            };
+
+            if (etapa === 'enviado') {
+                return React.createElement('div', { className: "max-w-md mx-auto px-4 py-12" },
+                    React.createElement('div', { className: "bg-white rounded-3xl border border-slate-200 p-8 shadow-sm text-center" },
+                        React.createElement('div', { className: "w-16 h-16 rounded-2xl bg-emerald-100 flex items-center justify-center mx-auto mb-4" },
+                            React.createElement('svg', { className: "w-8 h-8 text-emerald-600", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M5 13l4 4L19 7" })
                             )
                         ),
-                        React.createElement('div', { className: "flex items-center justify-between mt-2" },
-                            React.createElement(Stars, { value: p.estrelas, size: "sm" }),
-                            React.createElement('span', { className: "text-xs text-slate-500" }, `${p.avaliacoes} avaliações`)
+                        React.createElement('h2', { className: "text-xl font-semibold text-slate-900 mb-2" }, "Link enviado!"),
+                        React.createElement('p', { className: "text-slate-600 mb-6" }, `Enviamos um link para ${email}`),
+                        React.createElement('button', {
+                            onClick: () => setEtapa('form'),
+                            className: "text-indigo-600 hover:text-indigo-800 text-sm"
+                        }, "Usar outro e-mail")
+                    )
+                );
+            }
+
+            return React.createElement('div', { className: "max-w-md mx-auto px-4 py-12" },
+                React.createElement('div', { className: "bg-white rounded-3xl border border-slate-200 p-8 shadow-sm" },
+                    React.createElement('div', { className: "flex items-center justify-between mb-6" },
+                        React.createElement('h1', { className: "text-2xl font-bold text-slate-900" }, "Entrar"),
+                        React.createElement('button', { onClick: onVoltar, className: "text-sm text-slate-500 hover:text-indigo-600" }, "← Voltar")
+                    ),
+                    
+                    erro && React.createElement('div', { className: "mb-4 p-3 rounded-lg bg-red-50 border border-red-200" },
+                        React.createElement('p', { className: "text-sm text-red-600" }, erro)
+                    ),
+                    
+                    React.createElement('form', { onSubmit: handleSubmit, className: "space-y-4" },
+                        React.createElement('div', null,
+                            React.createElement('label', { className: "block text-sm font-medium text-slate-700 mb-1" }, "E-mail"),
+                            React.createElement('input', {
+                                type: "email",
+                                value: email,
+                                onChange: (e) => setEmail(e.target.value),
+                                placeholder: "seu@email.com",
+                                required: true,
+                                className: "w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-200"
+                            })
                         ),
-                        React.createElement('p', { className: "mt-3 text-sm text-slate-600 line-clamp-2" }, p.descricao),
-                        React.createElement('div', { className: "mt-3 flex flex-wrap gap-1" },
-                            p.tags.slice(0, 3).map(tag => 
-                                React.createElement('span', { key: tag, className: "px-2 py-0.5 rounded-lg bg-slate-100 text-slate-600 text-xs" }, tag)
-                            )
-                        ),
-                        React.createElement('div', { className: "mt-4 flex gap-2" },
-                            React.createElement('button', {
-                                onClick: () => onVerPerfil(p),
-                                className: "flex-1 px-3 py-2 rounded-xl border border-slate-200 hover:border-indigo-200 hover:bg-indigo-50 text-center text-sm font-medium text-slate-700 hover:text-indigo-700 transition-all"
-                            }, "Ver perfil"),
-                            p.whatsapp && React.createElement('a', {
-                                href: `https://wa.me/${p.whatsapp}`,
-                                target: "_blank",
-                                className: "flex-1 px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-white text-center text-sm font-medium"
-                            }, "WhatsApp")
-                        )
+                        React.createElement('button', {
+                            type: "submit",
+                            disabled: loading,
+                            className: "w-full px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold hover:from-indigo-700 hover:to-indigo-800 disabled:opacity-50"
+                        }, loading ? 'Enviando...' : 'Enviar link de acesso')
                     )
                 )
             );
         }
 
-        // ========== TELA DE PERFIL DO PRESTADOR ==========
-        function TelaPerfil({ prestador, onVoltar }) {
-            const p = prestador;
-            const [activeTab, setActiveTab] = useState("avaliacoes");
-            const [showContact, setShowContact] = useState(false);
+        // ========== TELA DE CADASTRO ==========
+        function CadastroPrestador({ onCadastroSucesso, onVoltar }) {
+            const [formData, setFormData] = useState({
+                nome: '', email: '', cnpj: '', categoria: '', cidade: 'Bauru',
+                whatsapp: '', descricao: '', tags: ''
+            });
 
-            return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8" },
-                // Breadcrumb
-                React.createElement('div', { className: "flex items-center gap-2 text-sm text-slate-500 mb-6" },
-                    React.createElement('button', { onClick: onVoltar, className: "hover:text-indigo-600" }, "← Voltar"),
-                    React.createElement('span', null, "›"),
-                    React.createElement('span', { className: "hover:text-indigo-600 cursor-pointer" }, p.cidade),
-                    React.createElement('span', null, "›"),
-                    React.createElement('span', { className: "hover:text-indigo-600 cursor-pointer" }, p.categoria),
-                    React.createElement('span', null, "›"),
-                    React.createElement('span', { className: "text-slate-900 font-medium" }, p.nome)
-                ),
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                alert('Cadastro realizado com sucesso! (modo demonstração)');
+                onCadastroSucesso();
+            };
 
-                React.createElement('div', { className: "grid lg:grid-cols-3 gap-8" },
-                    // Coluna principal
-                    React.createElement('div', { className: "lg:col-span-2 space-y-6" },
-                        // Card principal
-                        React.createElement('div', { className: "bg-white rounded-3xl border border-slate-200 p-8 shadow-sm" },
-                            React.createElement('div', { className: "flex flex-col sm:flex-row gap-6" },
-                                React.createElement(Avatar, { name: p.nome, size: "xxl", className: "shadow-lg" }),
-                                React.createElement('div', { className: "flex-1" },
-                                    React.createElement('div', { className: "flex flex-wrap items-start justify-between gap-4" },
-                                        React.createElement('div', null,
-                                            React.createElement('div', { className: "flex items-center gap-2 mb-2" },
-                                                React.createElement('h1', { className: "text-3xl font-bold text-slate-900" }, p.nome),
-                                                p.verificado && React.createElement(Badge, { variant: "verified", size: "md" }, "Verificado")
-                                            ),
-                                            React.createElement('div', { className: "flex items-center gap-2 text-slate-600 mb-2" },
-                                                React.createElement('svg', { className: "w-4 h-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                                    React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" })
-                                                ),
-                                                React.createElement('span', null, `${p.categoria} • ${p.cidade}`)
-                                            ),
-                                            React.createElement('div', { className: "flex items-center gap-2 text-sm text-slate-600 mb-3" },
-                                                React.createElement('svg', { className: "w-4 h-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                                    React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" }),
-                                                    React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M15 11a3 3 0 11-6 0 3 3 0 016 0z" })
-                                                ),
-                                                React.createElement('span', null, `Atende: ${p.regioes.join(" • ")}`)
-                                            )
-                                        ),
-                                        React.createElement('div', { className: "text-right" },
-                                            React.createElement(Stars, { value: p.estrelas, size: "lg" }),
-                                            React.createElement('div', { className: "text-sm text-slate-500 mt-1" }, `${p.avaliacoes} avaliações`)
-                                        )
-                                    ),
-                                    React.createElement('p', { className: "text-lg text-slate-700 mt-4 leading-relaxed" }, p.descricao),
-                                    React.createElement('div', { className: "flex flex-wrap gap-2 mt-4" },
-                                        p.tags.map(tag => React.createElement(Badge, { key: tag, variant: "expertise", size: "sm" }, tag))
-                                    )
-                                )
-                            )
-                        ),
-
-                        // Estatísticas
-                        React.createElement('div', { className: "grid grid-cols-2 md:grid-cols-4 gap-4" },
-                            React.createElement(Estatistica, {
-                                icon: React.createElement('svg', { className: "w-4 h-4", fill: "currentColor", viewBox: "0 0 20 20" },
-                                    React.createElement('path', { d: "M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" })
-                                ),
-                                label: "Resposta", value: p.tempo_resposta
-                            }),
-                            React.createElement(Estatistica, {
-                                icon: React.createElement('svg', { className: "w-4 h-4", fill: "currentColor", viewBox: "0 0 20 20" },
-                                    React.createElement('path', { d: "M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" })
-                                ),
-                                label: "Experiência", value: p.tempo_mercado
-                            }),
-                            React.createElement(Estatistica, {
-                                icon: React.createElement('svg', { className: "w-4 h-4", fill: "currentColor", viewBox: "0 0 20 20" },
-                                    React.createElement('path', { d: "M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" })
-                                ),
-                                label: "Fiéis", value: `${p.clientes_fieis}%`, subtitle: "retornaram"
-                            }),
-                            React.createElement(Estatistica, {
-                                icon: React.createElement('svg', { className: "w-4 h-4", fill: "currentColor", viewBox: "0 0 20 20" },
-                                    React.createElement('path', { d: "M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" }),
-                                    React.createElement('path', { fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.392c-.66-.108-1.252-.315-1.676-.662a1 1 0 10-1.248 1.562c.757.605 1.798.943 2.924 1.08V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662c.722-.481 1.324-1.256 1.324-2.246 0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 8.908V7.516c.66.108 1.252.315 1.676.662a1 1 0 001.248-1.562c-.757-.605-1.798-.943-2.924-1.08V5z", clipRule: "evenodd" })
-                                ),
-                                label: "Garantia", value: p.garantia
-                            })
-                        ),
-
-                        // Sobre
-                        React.createElement('div', { className: "bg-white rounded-3xl border border-slate-200 p-8 shadow-sm" },
-                            React.createElement('h2', { className: "text-xl font-bold text-slate-900 mb-4" }, `Sobre ${p.nome}`),
-                            React.createElement('p', { className: "text-slate-700 leading-relaxed" }, p.sobre),
-                            React.createElement('div', { className: "mt-6 grid md:grid-cols-2 gap-6" },
-                                React.createElement('div', null,
-                                    React.createElement('h3', { className: "font-semibold text-slate-900 mb-2" }, "Portfólio"),
-                                    React.createElement('ul', { className: "space-y-2" },
-                                        p.portfolio.map((item, i) => 
-                                            React.createElement('li', { key: i, className: "text-sm text-slate-600 flex items-center gap-2" },
-                                                React.createElement('span', { className: "w-1 h-1 bg-indigo-400 rounded-full" }),
-                                                item
-                                            )
-                                        )
-                                    )
-                                ),
-                                React.createElement('div', null,
-                                    React.createElement('h3', { className: "font-semibold text-slate-900 mb-2" }, "Certificações"),
-                                    React.createElement('ul', { className: "space-y-2" },
-                                        p.certificacoes.map((cert, i) => 
-                                            React.createElement('li', { key: i, className: "text-sm text-slate-600 flex items-center gap-2" },
-                                                React.createElement('span', { className: "w-1 h-1 bg-emerald-400 rounded-full" }),
-                                                cert
-                                            )
-                                        )
-                                    )
-                                )
-                            )
-                        ),
-
-                        // Avaliações
-                        React.createElement('div', { className: "bg-white rounded-3xl border border-slate-200 p-8 shadow-sm" },
-                            React.createElement('div', { className: "flex items-center justify-between mb-6" },
-                                React.createElement('h2', { className: "text-xl font-bold text-slate-900" }, "Avaliações"),
-                                React.createElement(Badge, { variant: "warning", size: "sm" }, "Confirmadas pós-serviço")
-                            ),
-                            React.createElement('div', { className: "space-y-6" },
-                                p.reviews.map(review => 
-                                    React.createElement('div', { key: review.id, className: "border-b border-slate-200 last:border-0 pb-6 last:pb-0" },
-                                        React.createElement('div', { className: "flex gap-3" },
-                                            React.createElement(Avatar, { name: review.nome, size: "sm" }),
-                                            React.createElement('div', { className: "flex-1" },
-                                                React.createElement('div', { className: "flex items-center justify-between mb-1" },
-                                                    React.createElement('div', null,
-                                                        React.createElement('span', { className: "font-semibold text-slate-900" }, review.nome),
-                                                        React.createElement('span', { className: "text-xs text-slate-400 ml-2" }, review.data)
-                                                    ),
-                                                    React.createElement(Stars, { value: review.estrelas, size: "sm", showNumber: false })
-                                                ),
-                                                React.createElement(Badge, { variant: "info", size: "sm", className: "mb-2" }, review.servico),
-                                                React.createElement('p', { className: "text-sm text-slate-700 leading-relaxed" }, review.texto)
-                                            )
-                                        )
-                                    )
-                                )
-                            )
-                        )
+            return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-8" },
+                React.createElement('div', { className: "bg-white rounded-3xl border border-slate-200 p-8 shadow-sm" },
+                    React.createElement('div', { className: "flex items-center justify-between mb-6" },
+                        React.createElement('h1', { className: "text-3xl font-bold text-slate-900" }, "Cadastro de Prestador"),
+                        React.createElement('button', { onClick: onVoltar, className: "text-sm text-slate-500 hover:text-indigo-600" }, "← Voltar")
                     ),
-
-                    // Sidebar - Contato
-                    React.createElement('div', { className: "lg:col-span-1" },
-                        React.createElement('div', { className: "bg-white rounded-3xl border border-slate-200 p-6 shadow-sm sticky top-24" },
-                            React.createElement('h2', { className: "text-lg font-bold text-slate-900 mb-4 flex items-center gap-2" },
-                                React.createElement('svg', { className: "w-5 h-5 text-indigo-600", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                    React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" })
-                                ),
-                                "Contato direto"
+                    
+                    React.createElement('form', { onSubmit: handleSubmit, className: "space-y-4" },
+                        React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
+                            React.createElement('div', null,
+                                React.createElement('label', { className: "block text-sm font-medium text-slate-700 mb-1" }, "Nome *"),
+                                React.createElement('input', {
+                                    type: "text",
+                                    required: true,
+                                    className: "w-full px-4 py-2 rounded-xl border border-slate-200",
+                                    onChange: (e) => setFormData({...formData, nome: e.target.value})
+                                })
                             ),
-                            React.createElement('div', { className: "space-y-4" },
-                                React.createElement('div', { className: "flex items-center gap-2 text-sm p-3 rounded-xl bg-emerald-50 border border-emerald-200" },
-                                    React.createElement('div', { className: "w-2 h-2 bg-emerald-500 rounded-full animate-pulse" }),
-                                    React.createElement('span', { className: "font-medium text-emerald-700" }, "Disponível agora"),
-                                    React.createElement('span', { className: "text-emerald-600" }, `• ${p.tempo_resposta}`)
-                                ),
-                                React.createElement('div', { className: "p-4 rounded-xl bg-indigo-50 border border-indigo-100" },
-                                    React.createElement('div', { className: "text-sm text-indigo-700 mb-2" }, "Horário de atendimento"),
-                                    React.createElement('div', { className: "font-medium text-indigo-900" }, p.disponibilidade)
-                                ),
-                                !showContact ?
-                                    React.createElement('button', {
-                                        onClick: () => setShowContact(true),
-                                        className: "w-full px-4 py-4 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 text-white hover:from-indigo-700 hover:to-indigo-800 font-semibold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                                    },
-                                        React.createElement('svg', { className: "w-5 h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                            React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z" })
-                                        ),
-                                        "Ver contato do profissional"
-                                    ) :
-                                    React.createElement('div', { className: "space-y-3 animate-fadeIn" },
-                                        React.createElement('div', { className: "p-4 rounded-xl bg-white border border-slate-200" },
-                                            React.createElement('div', { className: "text-xs text-slate-500 mb-1" }, "WhatsApp"),
-                                            React.createElement('div', { className: "font-medium text-slate-900" }, p.telefone)
-                                        ),
-                                        React.createElement('a', {
-                                            href: `https://wa.me/${p.whatsapp}?text=${encodeURIComponent(`Olá ${p.nome}, vi seu perfil no SemLimites e gostaria de contratar seu serviço.`)}`,
-                                            target: "_blank",
-                                            className: "w-full px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:from-emerald-700 hover:to-emerald-800 font-medium shadow-sm hover:shadow transition-all flex items-center justify-center gap-2"
-                                        },
-                                            React.createElement('svg', { className: "w-5 h-5", fill: "currentColor", viewBox: "0 0 24 24" },
-                                                React.createElement('path', { d: "M12.011 2.001C6.5 2 2 6.484 2 11.998c0 2.125.66 4.176 1.9 5.928L2.2 21.6l4.113-1.69c1.698.973 3.678 1.507 5.698 1.507 5.512 0 10.012-4.484 10.012-10.001 0-5.513-4.5-10-10.012-10zM12 19.86c-1.766 0-3.49-.5-4.975-1.438l-.357-.212-2.76 1.132 1.123-2.664-.225-.375A8.837 8.837 0 013.12 12c0-4.88 3.98-8.86 8.88-8.86s8.88 3.98 8.88 8.86-3.98 8.86-8.88 8.86z" }),
-                                                React.createElement('path', { d: "M18.5 13.7c-.3-.15-1.77-.87-2.04-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.27-.47-2.42-1.5-.9-.8-1.5-1.78-1.67-2.08-.17-.3-.02-.46.13-.6.14-.14.3-.35.45-.53.15-.18.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.6-.92-2.2-.24-.6-.48-.5-.67-.5h-.57c-.2 0-.52.07-.8.37-.28.3-1.06 1.03-1.06 2.52 0 1.48 1.08 2.92 1.23 3.12.15.2 2.12 3.24 5.14 4.54.72.3 1.28.48 1.72.62.72.22 1.38.2 1.9.12.58-.1 1.78-.73 2.03-1.44.25-.7.25-1.3.18-1.42-.07-.12-.25-.2-.55-.33z" })
-                                            ),
-                                            "Abrir WhatsApp"
-                                        )
-                                    )
+                            React.createElement('div', null,
+                                React.createElement('label', { className: "block text-sm font-medium text-slate-700 mb-1" }, "E-mail *"),
+                                React.createElement('input', {
+                                    type: "email",
+                                    required: true,
+                                    className: "w-full px-4 py-2 rounded-xl border border-slate-200"
+                                })
                             )
+                        ),
+                        
+                        React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
+                            React.createElement('div', null,
+                                React.createElement('label', { className: "block text-sm font-medium text-slate-700 mb-1" }, "CNPJ"),
+                                React.createElement('input', {
+                                    type: "text",
+                                    className: "w-full px-4 py-2 rounded-xl border border-slate-200",
+                                    placeholder: "00.000.000/0001-00"
+                                })
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('label', { className: "block text-sm font-medium text-slate-700 mb-1" }, "Categoria *"),
+                                React.createElement('select', { required: true, className: "w-full px-4 py-2 rounded-xl border border-slate-200" },
+                                    React.createElement('option', { value: "" }, "Selecione"),
+                                    CATEGORIAS.map(c => React.createElement('option', { key: c }, c))
+                                )
+                            )
+                        ),
+                        
+                        React.createElement('button', {
+                            type: "submit",
+                            className: "w-full px-6 py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-indigo-800"
+                        }, "Cadastrar")
+                    )
+                )
+            );
+        }
+
+        // ========== DASHBOARD ==========
+        function DashboardPrestador({ usuario, onSair }) {
+            return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8" },
+                React.createElement('div', { className: "flex justify-between items-center mb-8" },
+                    React.createElement('h1', { className: "text-3xl font-bold text-slate-900" }, "Dashboard"),
+                    React.createElement('button', {
+                        onClick: onSair,
+                        className: "px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50"
+                    }, "Sair")
+                ),
+                React.createElement('p', { className: "text-slate-600" }, "Bem-vindo ao seu painel de controle!")
+            );
+        }
+
+        // ========== CARD DE PRESTADOR ==========
+        function CardPrestador({ prestador }) {
+            const p = prestador;
+            
+            return React.createElement('div', { className: "bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg" },
+                React.createElement('div', { className: "flex items-start gap-4" },
+                    React.createElement(Avatar, { name: p.nome, size: "lg" }),
+                    React.createElement('div', { className: "flex-1" },
+                        React.createElement('div', { className: "flex items-center gap-2" },
+                            React.createElement('h3', { className: "font-bold text-lg" }, p.nome),
+                            p.verificado && React.createElement(Badge, { variant: "verified" }, "Verificado")
+                        ),
+                        React.createElement('p', { className: "text-sm text-slate-500" }, `${p.categoria} • ${p.cidade}`),
+                        React.createElement('div', { className: "flex items-center gap-2 mt-2" },
+                            React.createElement(Stars, { value: p.estrelas }),
+                            React.createElement('span', { className: "text-xs text-slate-500" }, `(${p.avaliacoes})`)
                         )
                     )
                 )
@@ -521,7 +314,7 @@
         }
 
         // ========== TELA DE BUSCA ==========
-        function TelaBusca({ onVerPerfil }) {
+        function TelaBusca() {
             const [cidade, setCidade] = useState("Bauru");
             const [categoria, setCategoria] = useState("");
             const [buscaTexto, setBuscaTexto] = useState("");
@@ -531,12 +324,10 @@
                 let lista = [...PRESTADORES];
                 if (cidade) lista = lista.filter(p => p.cidade === cidade);
                 if (categoria) lista = lista.filter(p => p.categoria === categoria);
-                if (buscaTexto.trim()) {
-                    const termo = buscaTexto.toLowerCase();
+                if (buscaTexto) {
                     lista = lista.filter(p => 
-                        p.nome.toLowerCase().includes(termo) ||
-                        p.descricao.toLowerCase().includes(termo) ||
-                        p.tags.some(tag => tag.toLowerCase().includes(termo))
+                        p.nome.toLowerCase().includes(buscaTexto.toLowerCase()) ||
+                        p.descricao.toLowerCase().includes(buscaTexto.toLowerCase())
                     );
                 }
                 setResultados(lista);
@@ -545,9 +336,8 @@
             useEffect(filtrar, [cidade, categoria, buscaTexto]);
 
             return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8" },
-                // Header da busca
                 React.createElement('div', { className: "bg-white rounded-2xl border border-slate-200 p-6 mb-6" },
-                    React.createElement('h1', { className: "text-2xl font-bold text-slate-900 mb-4" }, "Encontre o profissional ideal"),
+                    React.createElement('h1', { className: "text-2xl font-bold text-slate-900 mb-4" }, "Encontre profissionais"),
                     React.createElement('div', { className: "grid md:grid-cols-4 gap-4" },
                         React.createElement('select', {
                             value: cidade,
@@ -560,7 +350,7 @@
                             onChange: (e) => setCategoria(e.target.value),
                             className: "px-4 py-2 rounded-xl border border-slate-200"
                         }, [
-                            React.createElement('option', { key: '', value: "" }, "Todas categorias"),
+                            React.createElement('option', { key: '', value: "" }, "Todas"),
                             ...CATEGORIAS.map(c => React.createElement('option', { key: c }, c))
                         ]),
                         
@@ -573,60 +363,58 @@
                         })
                     )
                 ),
-
-                // Resultados
+                
                 React.createElement('div', { className: "grid md:grid-cols-2 lg:grid-cols-3 gap-6" },
-                    resultados.map(p => React.createElement(CardPrestador, { 
-                        key: p.id, 
-                        prestador: p, 
-                        onVerPerfil: onVerPerfil 
-                    }))
+                    resultados.map(p => React.createElement(CardPrestador, { key: p.id, prestador: p }))
                 )
             );
         }
 
         // ========== APP PRINCIPAL ==========
         function App() {
-            const [telaAtual, setTelaAtual] = useState("busca");
-            const [prestadorSelecionado, setPrestadorSelecionado] = useState(null);
-
-            const verPerfil = (prestador) => {
-                setPrestadorSelecionado(prestador);
-                setTelaAtual("perfil");
-            };
-
-            const voltarParaBusca = () => {
-                setTelaAtual("busca");
-            };
+            const [modo, setModo] = useState('busca'); // 'busca', 'login', 'cadastro', 'dashboard'
+            const [usuario, setUsuario] = useState(null);
 
             return React.createElement('div', { className: "min-h-screen bg-gradient-to-b from-slate-50 to-white" },
-                // Header
                 React.createElement('header', { className: "bg-white/90 backdrop-blur-lg border-b border-slate-200 sticky top-0 z-50" },
                     React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-3 flex justify-between items-center" },
                         React.createElement('div', {
-                            onClick: voltarParaBusca,
+                            onClick: () => setModo('busca'),
                             className: "flex items-center gap-3 cursor-pointer"
                         },
-                            React.createElement('div', { className: "relative" },
-                                React.createElement('div', { className: "w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-700 text-white grid place-items-center font-bold text-lg" }, "SL"),
-                                React.createElement('div', { className: "absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white animate-pulse" })
-                            ),
-                            React.createElement('div', null,
-                                React.createElement('span', { className: "font-bold text-lg text-slate-900" }, "SemLimites"),
-                                React.createElement('span', { className: "text-xs text-slate-500 block" }, "Prestadores • Bauru e região")
-                            )
+                            React.createElement('div', { className: "w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-700 text-white grid place-items-center font-bold" }, "SL"),
+                            React.createElement('h1', { className: "font-bold text-lg" }, "SemLimites")
                         ),
-                        React.createElement('div', { className: "flex gap-2" },
-                            React.createElement('button', { className: "px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium" }, "Entrar"),
-                            React.createElement('button', { className: "px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 text-white text-sm font-medium" }, "Área do Prestador")
+                        
+                        React.createElement('div', { className: "flex gap-3" },
+                            React.createElement('button', {
+                                onClick: () => setModo('login'),
+                                className: "px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50"
+                            }, "Entrar"),
+                            React.createElement('button', {
+                                onClick: () => setModo(modo === 'busca' ? 'cadastro' : 'busca'),
+                                className: "px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:from-emerald-700 hover:to-emerald-800"
+                            }, modo === 'busca' ? 'Sou Prestador' : 'Ver Busca')
                         )
                     )
                 ),
                 
-                // Conteúdo dinâmico
-                telaAtual === "busca" 
-                    ? React.createElement(TelaBusca, { onVerPerfil: verPerfil })
-                    : React.createElement(TelaPerfil, { prestador: prestadorSelecionado, onVoltar: voltarParaBusca })
+                modo === 'busca' && React.createElement(TelaBusca),
+                modo === 'login' && React.createElement(Login, {
+                    onLoginSuccess: () => setModo('dashboard'),
+                    onVoltar: () => setModo('busca')
+                }),
+                modo === 'cadastro' && React.createElement(CadastroPrestador, {
+                    onCadastroSucesso: () => setModo('busca'),
+                    onVoltar: () => setModo('busca')
+                }),
+                modo === 'dashboard' && React.createElement(DashboardPrestador, {
+                    usuario: usuario,
+                    onSair: () => {
+                        setUsuario(null);
+                        setModo('busca');
+                    }
+                })
             );
         }
 
