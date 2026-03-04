@@ -303,4 +303,120 @@ function Busca() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Cabeçalho */}
-      <div className="bg-white rounded-2xl border border
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
+        <h1 className="text-2xl font-bold text-slate-900 mb-4">
+          Encontre o profissional ideal
+        </h1>
+        
+        <div className="grid md:grid-cols-4 gap-4">
+          <select
+            value={cidade}
+            onChange={(e) => setCidade(e.target.value)}
+            className="px-4 py-2 rounded-xl border border-slate-200"
+          >
+            {CIDADES.map(c => <option key={c}>{c}</option>)}
+          </select>
+          
+          <select
+            value={categoria}
+            onChange={(e) => setCategoria(e.target.value)}
+            className="px-4 py-2 rounded-xl border border-slate-200"
+          >
+            <option value="">Todas categorias</option>
+            {CATEGORIAS.map(c => <option key={c}>{c}</option>)}
+          </select>
+          
+          <input
+            type="text"
+            value={buscaTexto}
+            onChange={(e) => setBuscaTexto(e.target.value)}
+            placeholder="Buscar..."
+            className="px-4 py-2 rounded-xl border border-slate-200 col-span-2"
+          />
+        </div>
+        
+        <button
+          onClick={buscar}
+          className="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700"
+        >
+          Buscar
+        </button>
+      </div>
+
+      {/* Resultados */}
+      {loading && <div className="text-center py-8">Carregando...</div>}
+      
+      {erro && <div className="text-red-600 text-center py-8">{erro}</div>}
+      
+      {!loading && !erro && (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {resultados.map(p => (
+            <CardPrestador key={p._id} prestador={p} />
+          ))}
+        </div>
+      )}
+      
+      {!loading && !erro && resultados.length === 0 && (
+        <div className="text-center py-12 text-slate-500">
+          Nenhum prestador encontrado. Seja o primeiro a se cadastrar!
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ========== COMPONENTE PRINCIPAL ==========
+export default function App() {
+  const [conectado, setConectado] = useState(false);
+  const [modo, setModo] = useState('busca'); // 'busca' ou 'cadastro'
+
+  useEffect(() => {
+    testarConexao().then(setConectado);
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      {/* Header */}
+      <header className="bg-white/90 backdrop-blur-lg border-b border-slate-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+          <div 
+            className="flex items-center gap-3 cursor-pointer"
+            onClick={() => setModo('busca')}
+          >
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-700 text-white grid place-items-center font-bold">
+              SL
+            </div>
+            <div>
+              <h1 className="font-bold text-lg">SemLimites</h1>
+              <p className="text-xs text-slate-500">
+                {conectado ? '✅ Online' : '🔄 Conectando...'}
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex gap-3">
+            <button className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition">
+              Entrar
+            </button>
+            <button
+              onClick={() => setModo(modo === 'busca' ? 'cadastro' : 'busca')}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:from-emerald-700 hover:to-emerald-800 transition shadow-sm"
+            >
+              {modo === 'busca' ? '📋 Sou Prestador' : '🔍 Ver Busca'}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Conteúdo Principal */}
+      {modo === 'busca' ? (
+        <Busca />
+      ) : (
+        <CadastroPrestador 
+          onCadastroSucesso={() => setModo('busca')}
+          onVoltar={() => setModo('busca')}
+        />
+      )}
+    </div>
+  );
+}
