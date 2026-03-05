@@ -149,7 +149,7 @@
                     
                     prestador.whatsapp && React.createElement('div', { className: "mt-6 pt-6 border-t" },
                         React.createElement('a', {
-                            href: `https://wa.me/${prestador.whatsapp}`,
+                            href: `https://wa.me/${prestador.whatsapp}?text=${encodeURIComponent('Olá! Encontrei você no Sem Limites Prestadores e gostaria de solicitar um orçamento.')}`,
                             target: "_blank",
                             className: "inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700"
                         },
@@ -163,7 +163,7 @@
             );
         }
 
-        // ========== CARD DE PRESTADOR ==========
+        // ========== CARD DE PRESTADOR COM WHATSAPP CORRIGIDO ==========
         function CardPrestador({ prestador, onVerPerfil }) {
             const p = prestador;
             
@@ -198,7 +198,7 @@
                             }, "Ver perfil"),
                             
                             p.whatsapp && React.createElement('a', {
-                                href: `https://wa.me/${p.whatsapp}`,
+                                href: `https://wa.me/${p.whatsapp}?text=${encodeURIComponent('Olá! Encontrei você no Sem Limites Prestadores e gostaria de solicitar um orçamento.')}`,
                                 target: "_blank",
                                 className: "flex-1 px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-white text-center text-sm font-medium"
                             }, "WhatsApp")
