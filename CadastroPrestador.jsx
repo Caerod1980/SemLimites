@@ -71,6 +71,13 @@ function CadastroPrestador({ onCadastroSucesso, onVoltar }) {
       if (resultado.valido) {
         setVerificacaoCNPJ(resultado);
         setEtapa('verificado');
+        // Preenche automaticamente com dados da Receita
+        setFormData(prev => ({
+          ...prev,
+          nome: resultado.empresa.nomeFantasia || prev.nome,
+          email: prev.email || '',
+          telefone: resultado.empresa.telefone || prev.telefone
+        }));
       } else {
         setErro(resultado.motivo || 'CNPJ não encontrado na Receita Federal');
         setEtapa('form');
@@ -105,20 +112,10 @@ function CadastroPrestador({ onCadastroSucesso, onVoltar }) {
         dataVerificacaoCNPJ: verificacaoCNPJ?.valido ? new Date() : null
       };
 
-      const resposta = await fetch(`${prestadoresAPI.API_URL}/prestadores`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dadosEnvio)
-      });
-
-      const data = await resposta.json();
-
-      if (!resposta.ok) {
-        throw new Error(data.error || 'Erro ao cadastrar');
-      }
-
+      const resultado = await prestadoresAPI.criar(dadosEnvio);
+      
       alert('✅ Prestador cadastrado com sucesso!');
-      if (onCadastroSucesso) onCadastroSucesso(data.prestador);
+      if (onCadastroSucesso) onCadastroSucesso(resultado.prestador);
       
     } catch (error) {
       setErro(error.message);
