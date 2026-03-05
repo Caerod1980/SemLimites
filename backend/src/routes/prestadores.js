@@ -19,14 +19,24 @@ router.get('/busca', async (req, res) => {
 
     let query = {};
 
+    // Filtros básicos
     if (cidade) query.cidade = cidade;
     if (categoria) query.categoria = categoria;
     if (apenasVerificados === 'true') query.verificado = true;
 
-    if (q) {
-      query.$text = { $search: q };
+    // ========== BUSCA POR TEXTO (SEM ÍNDICE) ==========
+    if (q && q.trim() !== '') {
+      const termoBusca = q.trim();
+      // Usando regex para busca case-insensitive em múltiplos campos
+      query.$or = [
+        { nome: { $regex: termoBusca, $options: 'i' } },
+        { descricao: { $regex: termoBusca, $options: 'i' } },
+        { categoria: { $regex: termoBusca, $options: 'i' } },
+        { tags: { $in: [new RegExp(termoBusca, 'i')] } }
+      ];
     }
 
+    // Configurar ordenação
     let sort = {};
     switch(ordenacao) {
       case 'reputacao':
@@ -41,14 +51,25 @@ router.get('/busca', async (req, res) => {
       case 'nome':
         sort = { nome: 1 };
         break;
+      default:
+        sort = { estrelas: -1, avaliacoes: -1 };
     }
 
+    // Executar a consulta com paginação
     const prestadores = await Prestador.find(query)
       .sort(sort)
       .limit(parseInt(limit))
       .skip((parseInt(page) - 1) * parseInt(limit));
 
     const total = await Prestador.countDocuments(query);
+
+    // Log para debug (opcional - remover em produção)
+    console.log(`🔍 Busca realizada:`, {
+      query,
+      total,
+      page: parseInt(page),
+      limit: parseInt(limit)
+    });
 
     res.json({
       prestadores,
@@ -58,6 +79,7 @@ router.get('/busca', async (req, res) => {
     });
 
   } catch (error) {
+    console.error('❌ Erro na busca:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -73,6 +95,7 @@ router.get('/:slug', async (req, res) => {
 
     res.json(prestador);
   } catch (error) {
+    console.error('❌ Erro ao buscar prestador por slug:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -116,6 +139,8 @@ router.post('/', async (req, res) => {
     const prestador = new Prestador(dadosPrestador);
     await prestador.save();
     
+    console.log(`✅ Novo prestador cadastrado: ${prestador.nome} (${prestador._id})`);
+    
     res.status(201).json({
       message: '✅ Prestador cadastrado com sucesso!',
       prestador: {
@@ -129,7 +154,7 @@ router.post('/', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Erro no cadastro:', error);
+    console.error('❌ Erro no cadastro:', error);
     res.status(400).json({ error: error.message });
   }
 });
@@ -170,6 +195,7 @@ router.post('/verificar-cnpj', async (req, res) => {
     }
 
   } catch (error) {
+    console.error('❌ Erro na verificação de CNPJ:', error);
     res.status(500).json({ error: error.message });
   }
 });
