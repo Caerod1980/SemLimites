@@ -75,7 +75,6 @@ function CadastroPrestador({ onCadastroSucesso, onVoltar }) {
         setFormData(prev => ({
           ...prev,
           nome: resultado.empresa.nomeFantasia || prev.nome,
-          email: prev.email || '',
           telefone: resultado.empresa.telefone || prev.telefone
         }));
       } else {
@@ -112,12 +111,17 @@ function CadastroPrestador({ onCadastroSucesso, onVoltar }) {
         dataVerificacaoCNPJ: verificacaoCNPJ?.valido ? new Date() : null
       };
 
+      console.log('📤 Enviando dados:', dadosEnvio);
+      
       const resultado = await prestadoresAPI.criar(dadosEnvio);
       
+      console.log('✅ Resposta:', resultado);
       alert('✅ Prestador cadastrado com sucesso!');
+      
       if (onCadastroSucesso) onCadastroSucesso(resultado.prestador);
       
     } catch (error) {
+      console.error('❌ Erro:', error);
       setErro(error.message);
     } finally {
       setLoading(false);
