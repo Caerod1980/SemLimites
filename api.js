@@ -32,6 +32,12 @@ async function request(endpoint, options = {}) {
     'Content-Type': 'application/json',
   };
 
+  // Adicionar token de autenticação se existir
+  const token = localStorage.getItem('token');
+  if (token) {
+    defaultHeaders['Authorization'] = `Bearer ${token}`;
+  }
+
   const config = {
     ...options,
     headers: {
@@ -110,11 +116,34 @@ export const prestadoresAPI = {
    * Buscar avaliações de um prestador
    * @param {string} id - ID do prestador
    */
-  getAvaliacoes: (id) => request(`/prestadores/${id}/avaliacoes`)
+  getAvaliacoes: (id) => request(`/prestadores/${id}/avaliacoes`),
+
+  /**
+   * Criar novo prestador (cadastro)
+   * @param {Object} dados - Dados do prestador
+   */
+  criar: (dados) => request('/prestadores', {
+    method: 'POST',
+    body: JSON.stringify(dados)
+  }),
+
+  /**
+   * Buscar perfil do prestador logado
+   */
+  getPerfil: () => request('/prestadores/perfil'),
+
+  /**
+   * Atualizar perfil do prestador
+   * @param {Object} dados - Dados atualizados
+   */
+  atualizarPerfil: (dados) => request('/prestadores/perfil', {
+    method: 'PUT',
+    body: JSON.stringify(dados)
+  })
 };
 
 // ============================================
-// API DE AUTENTICAÇÃO
+// API DE AUTENTICAÇÃO - CORRIGIDA!
 // ============================================
 
 export const authAPI = {
@@ -122,16 +151,39 @@ export const authAPI = {
    * Solicitar link mágico de login
    * @param {string} email - E-mail do usuário
    */
-  login: (email) => request('/auth/cliente/login', {
+  login: (email) => request('/auth/login', {  // ← CORRIGIDO: removido /cliente
     method: 'POST',
     body: JSON.stringify({ email })
   }),
 
   /**
-   * Verificar token de login
+   * Verificar token de login (link clicado)
    * @param {string} token - Token recebido por e-mail
    */
-  verificarToken: (token) => request(`/auth/verificar/${token}`)
+  verificarToken: (token) => request(`/auth/verify/${token}`),  // ← CORRIGIDO: verify em vez de verificar
+
+  /**
+   * Logout do usuário
+   */
+  logout: () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  },
+
+  /**
+   * Verificar se usuário está autenticado
+   */
+  isAuthenticated: () => {
+    return !!localStorage.getItem('token');
+  },
+
+  /**
+   * Buscar dados do usuário atual
+   */
+  getCurrentUser: () => {
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
+  }
 };
 
 // ============================================
