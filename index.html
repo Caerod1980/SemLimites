@@ -511,7 +511,7 @@ function CadastroPrestador({ onCadastroSucesso, onVoltar }) {
         }
     };
 
-   const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setErro('');
@@ -530,27 +530,7 @@ function CadastroPrestador({ onCadastroSucesso, onVoltar }) {
     }
 
     try {
-        console.log('📤 Enviando dados:', formData);
-
-        // 1. Criar usuário
-        const registerResponse = await fetch(`${API_URL}/auth/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                email: formData.email,
-                senha: formData.senha,
-                tipo: 'prestador',
-                nome: formData.nome,
-                telefone: formData.whatsapp
-            })
-        });
-
-        const registerData = await registerResponse.json();
-        console.log('📥 Resposta register:', registerData);
-
-        if (!registerResponse.ok) {
-            throw new Error(registerData.error || 'Erro no registro');
-        }
+        console.log('📤 Passo 1: Criando prestador...');
 
         // GERAR SLUG a partir do nome
         const slug = formData.nome
@@ -564,15 +544,15 @@ function CadastroPrestador({ onCadastroSucesso, onVoltar }) {
         const descricao = formData.descricao || 
             `Profissional de ${formData.categoria} em ${formData.cidade}. Entre em contato para orçamentos.`;
 
-        // 2. Criar prestador
-        const dadosEnvio = {
+        // 1. Primeiro criar o PRESTADOR
+        const dadosPrestador = {
             nome: formData.nome,
-            slug: slug,  // ← ADICIONADO!
+            slug: slug,
             email: formData.email,
             cnpj: formData.cnpj.replace(/\D/g, ''),
             categoria: formData.categoria,
             cidade: formData.cidade,
-            descricao: descricao,  // ← GARANTIDO!
+            descricao: descricao,
             whatsapp: formData.whatsapp.replace(/\D/g, ''),
             telefone: formData.telefone.replace(/\D/g, ''),
             tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
@@ -581,12 +561,12 @@ function CadastroPrestador({ onCadastroSucesso, onVoltar }) {
             dataVerificacaoCNPJ: verificacaoCNPJ?.valido ? new Date() : null
         };
 
-        console.log('📤 Criando prestador:', dadosEnvio);
+        console.log('📤 Enviando prestador:', dadosPrestador);
 
         const prestadorResponse = await fetch(`${API_URL}/prestadores`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dadosEnvio)
+            body: JSON.stringify(dadosPrestador)
         });
 
         const prestadorData = await prestadorResponse.json();
@@ -594,6 +574,27 @@ function CadastroPrestador({ onCadastroSucesso, onVoltar }) {
 
         if (!prestadorResponse.ok) {
             throw new Error(prestadorData.error || 'Erro ao cadastrar prestador');
+        }
+
+        // 2. Depois criar o USUÁRIO com o prestadorId
+        console.log('📤 Passo 2: Criando usuário...');
+        
+        const registerResponse = await fetch(`${API_URL}/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: formData.email,
+                senha: formData.senha,
+                tipo: 'prestador',
+                prestadorId: prestadorData.prestador.id  // ← IMPORTANTE!
+            })
+        });
+
+        const registerData = await registerResponse.json();
+        console.log('📥 Resposta register:', registerData);
+
+        if (!registerResponse.ok) {
+            throw new Error(registerData.error || 'Erro no registro');
         }
 
         alert('✅ Prestador cadastrado com sucesso! Agora você pode fazer login.');
@@ -1253,6 +1254,7 @@ function App() {
     </script>
 </body>
 </html>
+
 
 
 
