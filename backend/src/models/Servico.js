@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import crypto from 'crypto';
 
 /**
  * Modelo de Serviço realizado
@@ -158,7 +159,6 @@ servicoSchema.pre('save', function(next) {
  * @returns {string} Token gerado
  */
 servicoSchema.methods.gerarTokenAvaliacao = function() {
-  const crypto = await import('crypto');
   const token = crypto.randomBytes(16).toString('hex');
   
   this.avaliacaoToken = token;
@@ -201,12 +201,18 @@ servicoSchema.methods.registrarAvaliacao = async function(estrelas, comentario, 
   
   // Atualizar estatísticas do prestador
   const Prestador = mongoose.model('Prestador');
-  await Prestador.findByIdAndUpdate(this.prestadorId, {
-    $inc: { 
-      avaliacoes: 1,
-      somaEstrelas: estrelas
-    }
-  });
+  const prestador = await Prestador.findById(this.prestadorId);
+  
+  if (prestador) {
+    // Calcular nova média de estrelas
+    const novaSomaEstrelas = (prestador.estrelas * prestador.avaliacoes) + estrelas;
+    const novasAvaliacoes = prestador.avaliacoes + 1;
+    
+    prestador.estrelas = novaSomaEstrelas / novasAvaliacoes;
+    prestador.avaliacoes = novasAvaliacoes;
+    
+    await prestador.save();
+  }
   
   await this.save();
 };
