@@ -6,6 +6,7 @@ import prestadoresRoutes from './routes/prestadores.js';
 import authRoutes from './routes/auth.js';
 import { PRESTADORES_MOCK } from './data/mockData.js';
 import Prestador from './models/Prestador.js';
+import servicosRoutes from './routes/servicos.js';
 
 dotenv.config();
 
@@ -32,6 +33,7 @@ app.use(express.json());
 // Rotas
 app.use('/api/prestadores', prestadoresRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/servicos', servicosRoutes);
 
 // Rota raiz - útil para teste
 app.get('/', (req, res) => {
