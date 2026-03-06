@@ -9,26 +9,34 @@ const router = express.Router();
 // ========== REGISTRO ==========
 router.post('/register', async (req, res) => {
   try {
-    // Agora recebemos TODOS os dados do prestador
+    // Log para debug (opcional)
+    console.log('📥 Dados recebidos no registro:', req.body);
+    
+    // Extrair TODOS os dados enviados pelo frontend
     const { 
       email, 
       senha, 
       tipo, 
-      nome,          // ← Nome do prestador
-      slug,          // ← NOVO: slug gerado
-      cnpj,          // ← NOVO
-      categoria,     // ← NOVO
-      cidade,        // ← NOVO
-      descricao,     // ← NOVO
-      whatsapp,      // ← NOVO
-      telefone,      // ← NOVO
-      tags,          // ← NOVO
+      nome,
+      slug,
+      cnpj,
+      categoria,
+      cidade,
+      descricao,
+      whatsapp,
+      telefone,
+      tags,
       verificado,
       dadosCNPJ,
       dataVerificacaoCNPJ
     } = req.body;
     
-    // Verificar se já existe
+    // Validações básicas
+    if (!email || !senha || !tipo) {
+      return res.status(400).json({ error: 'E-mail, senha e tipo são obrigatórios' });
+    }
+
+    // Verificar se já existe usuário com este e-mail
     const existe = await User.findOne({ email });
     if (existe) {
       return res.status(400).json({ error: 'E-mail já cadastrado' });
@@ -41,22 +49,32 @@ router.post('/register', async (req, res) => {
     
     // Se for prestador, criar o registro com TODOS os dados
     if (tipo === 'prestador') {
+      // Validar campos obrigatórios do prestador
+      if (!nome || !categoria || !cidade) {
+        return res.status(400).json({ 
+          error: 'Nome, categoria e cidade são obrigatórios para prestador' 
+        });
+      }
+
+      // Criar o prestador com todos os campos
       const prestador = await Prestador.create({
         nome,
-        slug,              // ← Usando o slug gerado no frontend
+        slug: slug || nome.toLowerCase().replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9-]/g, ''),
         email,
-        cnpj,
+        cnpj: cnpj || null,
         categoria,
         cidade,
-        descricao,
-        whatsapp,
-        telefone,
+        descricao: descricao || `Profissional de ${categoria} em ${cidade}`,
+        whatsapp: whatsapp || null,
+        telefone: telefone || null,
         tags: tags || [],
         verificado: verificado || false,
         dadosCNPJ: dadosCNPJ || null,
         dataVerificacaoCNPJ: dataVerificacaoCNPJ || null
       });
+      
       prestadorId = prestador._id;
+      console.log('✅ Prestador criado:', prestadorId);
     }
 
     // Criar usuário
@@ -67,6 +85,8 @@ router.post('/register', async (req, res) => {
       prestadorId
     });
 
+    console.log('✅ Usuário criado:', user._id);
+
     res.status(201).json({
       message: 'Usuário criado com sucesso',
       user: { 
@@ -74,18 +94,31 @@ router.post('/register', async (req, res) => {
         email: user.email, 
         tipo: user.tipo 
       },
-      prestadorId // Opcional: retornar o ID do prestador criado
+      prestadorId
     });
 
   } catch (error) {
     console.error('❌ Erro detalhado no registro:', error);
+    
+    // Tratamento específico para erros de validação do Mongoose
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ 
+        error: 'Erro de validação', 
+        details: messages 
+      });
+    }
+    
     res.status(500).json({ error: error.message });
   }
 });
+
 // ========== LOGIN COM SENHA ==========
 router.post('/login', async (req, res) => {
   try {
     const { email, senha, tipo } = req.body;
+    
+    console.log('🔐 Tentativa de login:', { email, tipo });
     
     if (!email || !senha || !tipo) {
       return res.status(400).json({ error: 'E-mail, senha e tipo são obrigatórios' });
@@ -95,12 +128,14 @@ router.post('/login', async (req, res) => {
     const user = await User.findOne({ email, tipo });
     
     if (!user) {
+      console.log('❌ Usuário não encontrado:', email);
       return res.status(401).json({ error: 'Usuário não encontrado' });
     }
 
     // Verificar senha
     const senhaValida = await bcrypt.compare(senha, user.senha);
     if (!senhaValida) {
+      console.log('❌ Senha incorreta para:', email);
       return res.status(401).json({ error: 'Senha incorreta' });
     }
 
@@ -119,6 +154,7 @@ router.post('/login', async (req, res) => {
     let prestadorData = null;
     if (user.tipo === 'prestador' && user.prestadorId) {
       prestadorData = await Prestador.findById(user.prestadorId);
+      console.log('📋 Dados do prestador carregados:', prestadorData?._id);
     }
 
     res.json({
@@ -133,8 +169,8 @@ router.post('/login', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro no login:', error);
-    res.status(500).json({ error: 'Erro interno' });
+    console.error('❌ Erro no login:', error);
+    res.status(500).json({ error: 'Erro interno no servidor' });
   }
 });
 
@@ -167,6 +203,7 @@ router.get('/me', async (req, res) => {
     });
 
   } catch (error) {
+    console.error('❌ Erro ao validar token:', error);
     res.status(401).json({ error: 'Token inválido' });
   }
 });
