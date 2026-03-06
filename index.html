@@ -804,7 +804,7 @@ function CardPrestador({ prestador, onVerPerfil }) {
     );
 }
 
-// ========== TELA DE PERFIL COMPLETA (COM LOGS EXTRAS) ==========
+// ========== TELA DE PERFIL COMPLETA (USANDO SLUG) ==========
 function TelaPerfil({ prestador, onVoltar }) {
     const [loading, setLoading] = useState(false);
     const [dadosCompletos, setDadosCompletos] = useState(null);
@@ -812,13 +812,11 @@ function TelaPerfil({ prestador, onVoltar }) {
 
     console.log('📋 TelaPerfil RENDERIZADA!');
     console.log('📋 prestador recebido:', prestador);
+    console.log('📋 prestador.slug:', prestador?.slug);
     console.log('📋 prestador._id:', prestador?._id);
 
     useEffect(() => {
-        console.log('📋 useEffect do TelaPerfil executado');
-        console.log('📋 prestador no useEffect:', prestador);
-        
-        if (prestador && prestador._id) {
+        if (prestador && (prestador.slug || prestador._id)) {
             carregarDadosCompletos();
         } else {
             console.error('❌ Prestador inválido:', prestador);
@@ -830,9 +828,11 @@ function TelaPerfil({ prestador, onVoltar }) {
         setLoading(true);
         setErro('');
         try {
-            console.log('🔍 Buscando prestador por ID:', prestador._id);
+            // Tenta primeiro com slug, depois com ID
+            const identifier = prestador.slug || prestador._id;
+            console.log('🔍 Buscando prestador por:', identifier);
             
-            const response = await fetch(`${API_URL}/prestadores/${prestador._id}`);
+            const response = await fetch(`${API_URL}/prestadores/${identifier}`);
             const data = await response.json();
             
             console.log('✅ Resposta da API:', data);
@@ -840,7 +840,16 @@ function TelaPerfil({ prestador, onVoltar }) {
             if (response.ok) {
                 setDadosCompletos(data);
             } else {
-                setErro(data.error || 'Erro ao carregar perfil');
+                // Se falhar, tenta buscar pela rota de busca com filtro
+                console.log('⚠️ Falha na busca direta, tentando busca por ID...');
+                const buscaResponse = await fetch(`${API_URL}/prestadores/busca?q=${prestador._id}`);
+                const buscaData = await buscaResponse.json();
+                
+                if (buscaResponse.ok && buscaData.prestadores?.length > 0) {
+                    setDadosCompletos(buscaData.prestadores[0]);
+                } else {
+                    setErro(data.error || 'Erro ao carregar perfil');
+                }
             }
         } catch (error) {
             console.error('❌ Erro ao carregar perfil:', error);
@@ -1085,6 +1094,7 @@ function App() {
     </script>
 </body>
 </html>
+
 
 
 
