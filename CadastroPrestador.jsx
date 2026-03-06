@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { prestadoresAPI } from './api';
+import { authAPI, prestadoresAPI } from './api';
 
 function CadastroPrestador({ onCadastroSucesso, onVoltar }) {
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
+    senha: '',           // NOVO CAMPO
+    confirmarSenha: '',   // NOVO CAMPO
     cnpj: '',
     categoria: '',
     cidade: 'Bauru',
@@ -91,7 +93,32 @@ function CadastroPrestador({ onCadastroSucesso, onVoltar }) {
     setLoading(true);
     setErro('');
 
+    // Validar senhas
+    if (formData.senha.length < 6) {
+      setErro('A senha deve ter pelo menos 6 caracteres');
+      setLoading(false);
+      return;
+    }
+
+    if (formData.senha !== formData.confirmarSenha) {
+      setErro('As senhas não coincidem');
+      setLoading(false);
+      return;
+    }
+
     try {
+      // 1. Primeiro criar o usuário (auth/register)
+      const registro = await authAPI.register(
+        formData.email,
+        formData.senha,
+        'prestador',
+        formData.nome,
+        formData.whatsapp
+      );
+      
+      console.log('✅ Usuário criado:', registro);
+
+      // 2. Depois criar o prestador (prestadoresAPI.criar)
       const dadosEnvio = {
         nome: formData.nome,
         email: formData.email,
@@ -107,12 +134,10 @@ function CadastroPrestador({ onCadastroSucesso, onVoltar }) {
         dataVerificacaoCNPJ: verificacaoCNPJ?.valido ? new Date() : null
       };
 
-      console.log('📤 Enviando dados:', dadosEnvio);
-      
       const resultado = await prestadoresAPI.criar(dadosEnvio);
       
-      console.log('✅ Resposta:', resultado);
-      alert('✅ Prestador cadastrado com sucesso!');
+      console.log('✅ Prestador criado:', resultado);
+      alert('✅ Prestador cadastrado com sucesso! Agora você pode fazer login.');
       
       if (onCadastroSucesso) onCadastroSucesso(resultado.prestador);
       
@@ -184,6 +209,41 @@ function CadastroPrestador({ onCadastroSucesso, onVoltar }) {
                   required
                   className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-200"
                   placeholder="contato@empresa.com"
+                />
+              </div>
+            </div>
+
+            {/* NOVOS CAMPOS DE SENHA */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Senha *
+                </label>
+                <input
+                  type="password"
+                  name="senha"
+                  value={formData.senha}
+                  onChange={handleChange}
+                  required
+                  minLength={6}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-200"
+                  placeholder="Mínimo 6 caracteres"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Confirmar Senha *
+                </label>
+                <input
+                  type="password"
+                  name="confirmarSenha"
+                  value={formData.confirmarSenha}
+                  onChange={handleChange}
+                  required
+                  minLength={6}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-200"
+                  placeholder="Digite a senha novamente"
                 />
               </div>
             </div>
@@ -341,7 +401,7 @@ function CadastroPrestador({ onCadastroSucesso, onVoltar }) {
 
           <button
             type="submit"
-            disabled={loading || !formData.nome || !formData.email || !formData.cnpj || !formData.categoria}
+            disabled={loading || !formData.nome || !formData.email || !formData.senha || !formData.cnpj || !formData.categoria}
             className="w-full px-6 py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-indigo-800 disabled:opacity-50 transition-all text-lg"
           >
             {loading ? 'Cadastrando...' : '✅ Cadastrar Prestador'}
