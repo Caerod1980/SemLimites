@@ -9,7 +9,24 @@ const router = express.Router();
 // ========== REGISTRO ==========
 router.post('/register', async (req, res) => {
   try {
-    const { email, senha, tipo, nome, telefone } = req.body;
+    // Agora recebemos TODOS os dados do prestador
+    const { 
+      email, 
+      senha, 
+      tipo, 
+      nome,          // ← Nome do prestador
+      slug,          // ← NOVO: slug gerado
+      cnpj,          // ← NOVO
+      categoria,     // ← NOVO
+      cidade,        // ← NOVO
+      descricao,     // ← NOVO
+      whatsapp,      // ← NOVO
+      telefone,      // ← NOVO
+      tags,          // ← NOVO
+      verificado,
+      dadosCNPJ,
+      dataVerificacaoCNPJ
+    } = req.body;
     
     // Verificar se já existe
     const existe = await User.findOne({ email });
@@ -22,14 +39,22 @@ router.post('/register', async (req, res) => {
 
     let prestadorId = null;
     
-    // Se for prestador, criar primeiro o registro no Prestador
+    // Se for prestador, criar o registro com TODOS os dados
     if (tipo === 'prestador') {
       const prestador = await Prestador.create({
         nome,
+        slug,              // ← Usando o slug gerado no frontend
         email,
+        cnpj,
+        categoria,
+        cidade,
+        descricao,
+        whatsapp,
         telefone,
-        cidade: 'Bauru',
-        categoria: 'Não definida'
+        tags: tags || [],
+        verificado: verificado || false,
+        dadosCNPJ: dadosCNPJ || null,
+        dataVerificacaoCNPJ: dataVerificacaoCNPJ || null
       });
       prestadorId = prestador._id;
     }
@@ -48,15 +73,15 @@ router.post('/register', async (req, res) => {
         id: user._id, 
         email: user.email, 
         tipo: user.tipo 
-      }
+      },
+      prestadorId // Opcional: retornar o ID do prestador criado
     });
 
   } catch (error) {
-    console.error('Erro no registro:', error);
+    console.error('❌ Erro detalhado no registro:', error);
     res.status(500).json({ error: error.message });
   }
 });
-
 // ========== LOGIN COM SENHA ==========
 router.post('/login', async (req, res) => {
   try {
