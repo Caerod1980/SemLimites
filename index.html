@@ -428,202 +428,335 @@
             );
         }
 
-        // ========== TELA DE CADASTRO ==========
-        function CadastroPrestador({ onCadastroSucesso, onVoltar }) {
-            const [formData, setFormData] = React.useState({
-                nome: '', email: '', cnpj: '', categoria: '', cidade: 'Bauru',
-                whatsapp: '', telefone: '', descricao: '', tags: ''
+     // ========== TELA DE CADASTRO (COM SENHA) ==========
+function CadastroPrestador({ onCadastroSucesso, onVoltar }) {
+    const [formData, setFormData] = React.useState({
+        nome: '', 
+        email: '', 
+        senha: '',
+        confirmarSenha: '',
+        cnpj: '', 
+        categoria: '', 
+        cidade: 'Bauru',
+        whatsapp: '', 
+        telefone: '', 
+        descricao: '', 
+        tags: ''
+    });
+    const [etapa, setEtapa] = React.useState('form');
+    const [verificacaoCNPJ, setVerificacaoCNPJ] = React.useState(null);
+    const [loading, setLoading] = React.useState(false);
+    const [erro, setErro] = React.useState('');
+
+    const formatarCNPJ = (valor) => {
+        const numeros = valor.replace(/\D/g, '');
+        return numeros.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
+    };
+
+    const formatarTelefone = (valor) => {
+        const numeros = valor.replace(/\D/g, '');
+        if (numeros.length <= 10) {
+            return numeros.replace(/^(\d{2})(\d{4})(\d{4})$/, "($1) $2-$3");
+        }
+        return numeros.replace(/^(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3");
+    };
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        if (name === 'cnpj') {
+            setFormData({ ...formData, cnpj: formatarCNPJ(value) });
+        } else if (name === 'whatsapp' || name === 'telefone') {
+            setFormData({ ...formData, [name]: formatarTelefone(value) });
+        } else {
+            setFormData({ ...formData, [name]: value });
+        }
+    };
+
+    const handleVerificarCNPJ = async () => {
+        const cnpjLimpo = formData.cnpj.replace(/\D/g, '');
+        
+        if (!formData.cnpj || cnpjLimpo.length !== 14) {
+            setErro('CNPJ inválido. Digite um CNPJ com 14 dígitos.');
+            return;
+        }
+
+        setLoading(true);
+        setErro('');
+        setEtapa('verificando');
+
+        try {
+            const resultado = await fetch(`${API_URL}/prestadores/verificar-cnpj`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cnpj: formData.cnpj })
+            }).then(r => r.json());
+            
+            if (resultado.valido) {
+                setVerificacaoCNPJ(resultado);
+                setEtapa('verificado');
+                setFormData(prev => ({
+                    ...prev,
+                    nome: resultado.empresa.nomeFantasia || prev.nome,
+                    telefone: resultado.empresa.telefone || prev.telefone
+                }));
+            } else {
+                setErro(resultado.motivo || 'CNPJ não encontrado na Receita Federal');
+                setEtapa('form');
+            }
+        } catch (error) {
+            setErro(error.message || 'Erro ao verificar CNPJ');
+            setEtapa('form');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setErro('');
+
+        // Validar senhas
+        if (formData.senha.length < 6) {
+            setErro('A senha deve ter pelo menos 6 caracteres');
+            setLoading(false);
+            return;
+        }
+
+        if (formData.senha !== formData.confirmarSenha) {
+            setErro('As senhas não coincidem');
+            setLoading(false);
+            return;
+        }
+
+        try {
+            // 1. Criar usuário
+            const registro = await fetch(`${API_URL}/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: formData.email,
+                    senha: formData.senha,
+                    tipo: 'prestador',
+                    nome: formData.nome,
+                    telefone: formData.whatsapp
+                })
+            }).then(r => r.json());
+
+            if (registro.error) throw new Error(registro.error);
+
+            // 2. Criar prestador
+            const dadosEnvio = {
+                nome: formData.nome,
+                email: formData.email,
+                cnpj: formData.cnpj.replace(/\D/g, ''),
+                categoria: formData.categoria,
+                cidade: formData.cidade,
+                whatsapp: formData.whatsapp.replace(/\D/g, ''),
+                telefone: formData.telefone.replace(/\D/g, ''),
+                descricao: formData.descricao,
+                tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
+                verificado: verificacaoCNPJ?.valido || false,
+                dadosCNPJ: verificacaoCNPJ?.empresa || null,
+                dataVerificacaoCNPJ: verificacaoCNPJ?.valido ? new Date() : null
+            };
+
+            const response = await fetch(`${API_URL}/prestadores`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dadosEnvio)
             });
-            const [loading, setLoading] = React.useState(false);
-            const [erro, setErro] = React.useState('');
 
-            const formatarCNPJ = (valor) => {
-                const numeros = valor.replace(/\D/g, '');
-                return numeros.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
-            };
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Erro ao cadastrar');
 
-            const formatarTelefone = (valor) => {
-                const numeros = valor.replace(/\D/g, '');
-                if (numeros.length <= 10) {
-                    return numeros.replace(/^(\d{2})(\d{4})(\d{4})$/, "($1) $2-$3");
-                }
-                return numeros.replace(/^(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3");
-            };
+            alert('✅ Prestador cadastrado com sucesso! Agora você pode fazer login.');
+            onCadastroSucesso();
 
-            const handleChange = (e) => {
-                const { name, value } = e.target;
-                if (name === 'cnpj') {
-                    setFormData({ ...formData, cnpj: formatarCNPJ(value) });
-                } else if (name === 'whatsapp' || name === 'telefone') {
-                    setFormData({ ...formData, [name]: formatarTelefone(value) });
-                } else {
-                    setFormData({ ...formData, [name]: value });
-                }
-            };
+        } catch (error) {
+            console.error('❌ Erro:', error);
+            setErro(error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                setLoading(true);
-                setErro('');
+    return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-8" },
+        React.createElement('div', { className: "bg-white rounded-3xl border border-slate-200 p-8 shadow-sm" },
+            React.createElement('div', { className: "flex items-center justify-between mb-6" },
+                React.createElement('h1', { className: "text-3xl font-bold" }, "Cadastro de Prestador"),
+                React.createElement('button', { onClick: onVoltar, className: "text-sm text-slate-500 hover:text-indigo-600" }, "← Voltar")
+            ),
 
-                try {
-                    const dadosEnvio = {
-                        nome: formData.nome,
-                        email: formData.email,
-                        cnpj: formData.cnpj.replace(/\D/g, ''),
-                        categoria: formData.categoria,
-                        cidade: formData.cidade,
-                        whatsapp: formData.whatsapp.replace(/\D/g, ''),
-                        telefone: formData.telefone.replace(/\D/g, ''),
-                        descricao: formData.descricao,
-                        tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
-                        verificado: false
-                    };
+            erro && React.createElement('div', { className: "mb-4 p-3 rounded-lg bg-red-50 border border-red-200" },
+                React.createElement('p', { className: "text-sm text-red-600" }, erro)
+            ),
 
-                    const response = await fetch(`${API_URL}/prestadores`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(dadosEnvio)
-                    });
-
-                    const data = await response.json();
-
-                    if (!response.ok) throw new Error(data.error || 'Erro ao cadastrar');
-
-                    alert('✅ Prestador cadastrado com sucesso!');
-                    onCadastroSucesso();
-                } catch (error) {
-                    setErro(error.message);
-                } finally {
-                    setLoading(false);
-                }
-            };
-
-            return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-8" },
-                React.createElement('div', { className: "bg-white rounded-3xl border border-slate-200 p-8 shadow-sm" },
-                    React.createElement('div', { className: "flex items-center justify-between mb-6" },
-                        React.createElement('h1', { className: "text-3xl font-bold" }, "Cadastro de Prestador"),
-                        React.createElement('button', { onClick: onVoltar, className: "text-sm text-slate-500 hover:text-indigo-600" }, "← Voltar")
+            React.createElement('form', { onSubmit: handleSubmit, className: "space-y-4" },
+                // Dados da Empresa
+                React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Nome *"),
+                        React.createElement('input', {
+                            type: "text",
+                            name: "nome",
+                            value: formData.nome,
+                            onChange: handleChange,
+                            required: true,
+                            className: "w-full px-4 py-2 rounded-xl border border-slate-200"
+                        })
                     ),
-                    
-                    erro && React.createElement('div', { className: "mb-4 p-3 rounded-lg bg-red-50 border border-red-200" },
-                        React.createElement('p', { className: "text-sm text-red-600" }, erro)
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-sm font-medium mb-1" }, "E-mail *"),
+                        React.createElement('input', {
+                            type: "email",
+                            name: "email",
+                            value: formData.email,
+                            onChange: handleChange,
+                            required: true,
+                            className: "w-full px-4 py-2 rounded-xl border border-slate-200"
+                        })
+                    )
+                ),
+
+                // Campos de senha
+                React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Senha *"),
+                        React.createElement('input', {
+                            type: "password",
+                            name: "senha",
+                            value: formData.senha,
+                            onChange: handleChange,
+                            required: true,
+                            minLength: 6,
+                            className: "w-full px-4 py-2 rounded-xl border border-slate-200"
+                        })
                     ),
-                    
-                    React.createElement('form', { onSubmit: handleSubmit, className: "space-y-4" },
-                        React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Nome *"),
-                                React.createElement('input', {
-                                    type: "text",
-                                    name: "nome",
-                                    value: formData.nome,
-                                    onChange: handleChange,
-                                    required: true,
-                                    className: "w-full px-4 py-2 rounded-xl border border-slate-200"
-                                })
-                            ),
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-sm font-medium mb-1" }, "E-mail *"),
-                                React.createElement('input', {
-                                    type: "email",
-                                    name: "email",
-                                    value: formData.email,
-                                    onChange: handleChange,
-                                    required: true,
-                                    className: "w-full px-4 py-2 rounded-xl border border-slate-200"
-                                })
-                            )
-                        ),
-                        
-                        React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-sm font-medium mb-1" }, "CNPJ *"),
-                                React.createElement('input', {
-                                    type: "text",
-                                    name: "cnpj",
-                                    value: formData.cnpj,
-                                    onChange: handleChange,
-                                    maxLength: "18",
-                                    required: true,
-                                    className: "w-full px-4 py-2 rounded-xl border border-slate-200",
-                                    placeholder: "00.000.000/0001-00"
-                                })
-                            ),
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Categoria *"),
-                                React.createElement('select', {
-                                    name: "categoria",
-                                    value: formData.categoria,
-                                    onChange: handleChange,
-                                    required: true,
-                                    className: "w-full px-4 py-2 rounded-xl border border-slate-200"
-                                },
-                                    React.createElement('option', { value: "" }, "Selecione"),
-                                    CATEGORIAS.map(c => React.createElement('option', { key: c, value: c }, c))
-                                )
-                            )
-                        ),
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Confirmar Senha *"),
+                        React.createElement('input', {
+                            type: "password",
+                            name: "confirmarSenha",
+                            value: formData.confirmarSenha,
+                            onChange: handleChange,
+                            required: true,
+                            minLength: 6,
+                            className: "w-full px-4 py-2 rounded-xl border border-slate-200"
+                        })
+                    )
+                ),
 
-                        React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-sm font-medium mb-1" }, "WhatsApp *"),
-                                React.createElement('input', {
-                                    type: "text",
-                                    name: "whatsapp",
-                                    value: formData.whatsapp,
-                                    onChange: handleChange,
-                                    required: true,
-                                    className: "w-full px-4 py-2 rounded-xl border border-slate-200",
-                                    placeholder: "(14) 99999-9999"
-                                })
-                            ),
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Telefone"),
-                                React.createElement('input', {
-                                    type: "text",
-                                    name: "telefone",
-                                    value: formData.telefone,
-                                    onChange: handleChange,
-                                    className: "w-full px-4 py-2 rounded-xl border border-slate-200",
-                                    placeholder: "(14) 3232-1234"
-                                })
-                            )
-                        ),
-
-                        React.createElement('div', null,
-                            React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Descrição *"),
-                            React.createElement('textarea', {
-                                name: "descricao",
-                                value: formData.descricao,
-                                onChange: handleChange,
-                                required: true,
-                                rows: 4,
-                                className: "w-full px-4 py-2 rounded-xl border border-slate-200"
-                            })
-                        ),
-
-                        React.createElement('div', null,
-                            React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Tags"),
+                // CNPJ e Categoria
+                React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-sm font-medium mb-1" }, "CNPJ *"),
+                        React.createElement('div', { className: "flex gap-2" },
                             React.createElement('input', {
                                 type: "text",
-                                name: "tags",
-                                value: formData.tags,
+                                name: "cnpj",
+                                value: formData.cnpj,
                                 onChange: handleChange,
-                                className: "w-full px-4 py-2 rounded-xl border border-slate-200",
-                                placeholder: "Emergência, Residencial, Comercial"
-                            })
-                        ),
-
-                        React.createElement('button', {
-                            type: "submit",
-                            disabled: loading,
-                            className: "w-full px-6 py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-xl disabled:opacity-50"
-                        }, loading ? 'Cadastrando...' : '✅ Cadastrar Prestador')
+                                maxLength: "18",
+                                required: true,
+                                className: "flex-1 px-4 py-2 rounded-xl border border-slate-200",
+                                placeholder: "00.000.000/0001-00"
+                            }),
+                            etapa !== 'verificado' && React.createElement('button', {
+                                type: "button",
+                                onClick: handleVerificarCNPJ,
+                                disabled: loading || formData.cnpj.replace(/\D/g, '').length !== 14,
+                                className: "px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm disabled:opacity-50"
+                            }, loading ? '...' : 'Verificar')
+                        )
+                    ),
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Categoria *"),
+                        React.createElement('select', {
+                            name: "categoria",
+                            value: formData.categoria,
+                            onChange: handleChange,
+                            required: true,
+                            className: "w-full px-4 py-2 rounded-xl border border-slate-200"
+                        },
+                            React.createElement('option', { value: "" }, "Selecione"),
+                            CATEGORIAS.map(c => React.createElement('option', { key: c, value: c }, c))
+                        )
                     )
-                )
-            );
-        }
+                ),
+
+                // Resultado da verificação de CNPJ
+                etapa === 'verificando' && React.createElement('div', { className: "p-3 rounded-lg bg-blue-50 border border-blue-200" },
+                    React.createElement('p', { className: "text-sm text-blue-700" }, "🔍 Verificando CNPJ...")
+                ),
+
+                verificacaoCNPJ?.valido && React.createElement('div', { className: "p-3 rounded-lg bg-emerald-50 border border-emerald-200" },
+                    React.createElement('p', { className: "text-sm text-emerald-700" }, "✓ CNPJ Válido")
+                ),
+
+                // WhatsApp e Telefone
+                React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-sm font-medium mb-1" }, "WhatsApp *"),
+                        React.createElement('input', {
+                            type: "text",
+                            name: "whatsapp",
+                            value: formData.whatsapp,
+                            onChange: handleChange,
+                            required: true,
+                            className: "w-full px-4 py-2 rounded-xl border border-slate-200",
+                            placeholder: "(14) 99999-9999"
+                        })
+                    ),
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Telefone"),
+                        React.createElement('input', {
+                            type: "text",
+                            name: "telefone",
+                            value: formData.telefone,
+                            onChange: handleChange,
+                            className: "w-full px-4 py-2 rounded-xl border border-slate-200",
+                            placeholder: "(14) 3232-1234"
+                        })
+                    )
+                ),
+
+                // Descrição
+                React.createElement('div', null,
+                    React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Descrição *"),
+                    React.createElement('textarea', {
+                        name: "descricao",
+                        value: formData.descricao,
+                        onChange: handleChange,
+                        required: true,
+                        rows: 4,
+                        className: "w-full px-4 py-2 rounded-xl border border-slate-200"
+                    })
+                ),
+
+                // Tags
+                React.createElement('div', null,
+                    React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Tags"),
+                    React.createElement('input', {
+                        type: "text",
+                        name: "tags",
+                        value: formData.tags,
+                        onChange: handleChange,
+                        className: "w-full px-4 py-2 rounded-xl border border-slate-200",
+                        placeholder: "Emergência, Residencial, Comercial"
+                    })
+                ),
+
+                // Botão de envio
+                React.createElement('button', {
+                    type: "submit",
+                    disabled: loading,
+                    className: "w-full px-6 py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-xl disabled:opacity-50"
+                }, loading ? 'Cadastrando...' : '✅ Cadastrar Prestador')
+            )
+        )
+    );
+} 
 
         // ========== DASHBOARD DO PRESTADOR (SIMPLIFICADO) ==========
         function DashboardPrestador({ usuario, onSair }) {
@@ -1094,6 +1227,7 @@ function App() {
     </script>
 </body>
 </html>
+
 
 
 
