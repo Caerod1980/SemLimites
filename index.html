@@ -955,24 +955,28 @@ function TelaPerfil({ prestador, onVoltar }) {
     );
 }
 
-        // ========== FUNÇÃO DE NAVEGAÇÃO ==========
-        function navigate(path) {
-            const fullPath = `${BASE_PATH}${path}`;
-            window.history.pushState({}, '', fullPath);
-            
-            // Atualizar o estado do App
-            if (path.startsWith('/avaliar/')) {
-                window.appSetModo('avaliar');
-            } else if (path === '/login') {
-                window.appSetModo('login');
-            } else if (path === '/cadastro') {
-                window.appSetModo('cadastro');
-            } else if (path === '/dashboard') {
-                window.appSetModo('dashboard');
-            } else {
-                window.appSetModo('busca');
-            }
-        }
+    // ========== FUNÇÃO DE NAVEGAÇÃO CORRIGIDA ==========
+function navigate(path) {
+    const fullPath = `${BASE_PATH}${path}`;
+    window.history.pushState({}, '', fullPath);
+    
+    console.log('🧭 Navegando para:', path);
+    
+    // Atualizar o estado do App
+    if (path.startsWith('/avaliar/')) {
+        window.appSetModo('avaliar');
+    } else if (path === '/login') {
+        window.appSetModo('login');
+    } else if (path === '/cadastro') {
+        window.appSetModo('cadastro');
+    } else if (path === '/dashboard') {
+        window.appSetModo('dashboard');
+    } else if (path === '/perfil') {
+        window.appSetModo('perfil');
+    } else {
+        window.appSetModo('busca');
+    }
+}
 
       // ========== APP PRINCIPAL ==========
 function App() {
@@ -1076,5 +1080,6 @@ function App() {
     </script>
 </body>
 </html>
+
 
 
