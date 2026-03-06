@@ -804,13 +804,20 @@ function CardPrestador({ prestador, onVerPerfil }) {
     );
 }
 
-// ========== TELA DE PERFIL COMPLETA (CORRIGIDA) ==========
+// ========== TELA DE PERFIL COMPLETA (COM LOGS EXTRAS) ==========
 function TelaPerfil({ prestador, onVoltar }) {
     const [loading, setLoading] = useState(false);
     const [dadosCompletos, setDadosCompletos] = useState(null);
     const [erro, setErro] = useState('');
 
+    console.log('📋 TelaPerfil RENDERIZADA!');
+    console.log('📋 prestador recebido:', prestador);
+    console.log('📋 prestador._id:', prestador?._id);
+
     useEffect(() => {
+        console.log('📋 useEffect do TelaPerfil executado');
+        console.log('📋 prestador no useEffect:', prestador);
+        
         if (prestador && prestador._id) {
             carregarDadosCompletos();
         } else {
@@ -825,7 +832,6 @@ function TelaPerfil({ prestador, onVoltar }) {
         try {
             console.log('🔍 Buscando prestador por ID:', prestador._id);
             
-            // Usar o ID diretamente, já que a API aceita /prestadores/:id
             const response = await fetch(`${API_URL}/prestadores/${prestador._id}`);
             const data = await response.json();
             
@@ -954,7 +960,6 @@ function TelaPerfil({ prestador, onVoltar }) {
         )
     );
 }
-
     // ========== FUNÇÃO DE NAVEGAÇÃO CORRIGIDA ==========
 function navigate(path) {
     const fullPath = `${BASE_PATH}${path}`;
@@ -1080,6 +1085,7 @@ function App() {
     </script>
 </body>
 </html>
+
 
 
 
