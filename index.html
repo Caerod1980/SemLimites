@@ -757,37 +757,52 @@
             );
         }
 
-        // ========== CARD DE PRESTADOR COMPLETO ==========
-        function CardPrestador({ prestador, onVerPerfil }) {
-            const p = prestador;
-            
-            return React.createElement('div', { 
-                className: "bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg transition-all hover:border-indigo-200" 
-            },
-                React.createElement('div', { className: "flex items-start gap-4" },
-                    React.createElement(Avatar, { name: p.nome, size: "lg" }),
-                    React.createElement('div', { className: "flex-1" },
-                        React.createElement('h3', { className: "font-bold text-lg text-slate-900" }, p.nome),
-                        React.createElement('p', { className: "text-sm text-slate-500 mt-1" }, 
-                            `${p.categoria} • ${p.cidade}`
-                        ),
-                        React.createElement('div', { className: "flex items-center gap-2 mt-2" },
-                            React.createElement(Stars, { value: p.estrelas || 0 }),
-                            React.createElement('span', { className: "text-xs text-slate-500" }, 
-                                `(${p.avaliacoes || 0} avaliações)`
-                            )
-                        ),
-                        React.createElement('p', { className: "mt-3 text-sm text-slate-600 line-clamp-2" }, 
-                            p.descricao
-                        ),
-                        React.createElement('button', {
-                            onClick: () => onVerPerfil(p),
-                            className: "mt-4 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 text-sm font-medium"
-                        }, "Ver perfil")
-                    )
-                )
-            );
+    // ========== CARD DE PRESTADOR COMPLETO COM LOGS ==========
+function CardPrestador({ prestador, onVerPerfil }) {
+    const p = prestador;
+    
+    console.log('🎴 CardPrestador renderizado para:', p?.nome);
+    console.log('🎴 onVerPerfil existe?', !!onVerPerfil);
+    
+    const handleClick = () => {
+        console.log('👆 Botão VER PERFIL clicado para:', p?.nome);
+        console.log('👆 ID do prestador:', p?._id);
+        console.log('👆 Chamando onVerPerfil...');
+        
+        if (onVerPerfil) {
+            onVerPerfil(p);
+        } else {
+            console.error('❌ onVerPerfil é undefined!');
         }
+    };
+
+    return React.createElement('div', { 
+        className: "bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg transition-all hover:border-indigo-200" 
+    },
+        React.createElement('div', { className: "flex items-start gap-4" },
+            React.createElement(Avatar, { name: p.nome, size: "lg" }),
+            React.createElement('div', { className: "flex-1" },
+                React.createElement('h3', { className: "font-bold text-lg text-slate-900" }, p.nome),
+                React.createElement('p', { className: "text-sm text-slate-500 mt-1" }, 
+                    `${p.categoria} • ${p.cidade}`
+                ),
+                React.createElement('div', { className: "flex items-center gap-2 mt-2" },
+                    React.createElement(Stars, { value: p.estrelas || 0 }),
+                    React.createElement('span', { className: "text-xs text-slate-500" }, 
+                        `(${p.avaliacoes || 0} avaliações)`
+                    )
+                ),
+                React.createElement('p', { className: "mt-3 text-sm text-slate-600 line-clamp-2" }, 
+                    p.descricao
+                ),
+                React.createElement('button', {
+                    onClick: handleClick,
+                    className: "mt-4 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 text-sm font-medium"
+                }, "Ver perfil")
+            )
+        )
+    );
+}
 
 // ========== TELA DE PERFIL COMPLETA (CORRIGIDA) ==========
 function TelaPerfil({ prestador, onVoltar }) {
@@ -959,96 +974,107 @@ function TelaPerfil({ prestador, onVoltar }) {
             }
         }
 
-        // ========== APP PRINCIPAL ==========
-        function App() {
-            const [modo, setModo] = useState('busca');
-            const [usuario, setUsuario] = useState(null);
-            const [prestadorSelecionado, setPrestadorSelecionado] = useState(null);
+      // ========== APP PRINCIPAL ==========
+function App() {
+    const [modo, setModo] = useState('busca');
+    const [usuario, setUsuario] = useState(null);
+    const [prestadorSelecionado, setPrestadorSelecionado] = useState(null);
 
-            // Expor setModo para a função navigate
-            window.appSetModo = setModo;
+    // Expor setModo para a função navigate
+    window.appSetModo = setModo;
 
-            useEffect(() => {
-                const path = window.location.pathname.replace(BASE_PATH, '') || '/';
-                
-                if (path.startsWith('/avaliar/')) {
-                    setModo('avaliar');
-                } else if (path === '/login') {
-                    setModo('login');
-                } else if (path === '/cadastro') {
-                    setModo('cadastro');
-                } else if (path === '/dashboard') {
-                    setModo('dashboard');
-                } else {
-                    setModo('busca');
-                }
-                
-                const token = localStorage.getItem('token');
-                if (token) {
-                    fetch(`${API_URL}/auth/me`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (!data.error) setUsuario(data);
-                    })
-                    .catch(console.error);
-                }
-            }, []);
+    useEffect(() => {
+        const path = window.location.pathname.replace(BASE_PATH, '') || '/';
+        
+        if (path.startsWith('/avaliar/')) {
+            setModo('avaliar');
+        } else if (path === '/login') {
+            setModo('login');
+        } else if (path === '/cadastro') {
+            setModo('cadastro');
+        } else if (path === '/dashboard') {
+            setModo('dashboard');
+        } else {
+            setModo('busca');
+        }
+        
+        const token = localStorage.getItem('token');
+        if (token) {
+            fetch(`${API_URL}/auth/me`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.error) setUsuario(data);
+            })
+            .catch(console.error);
+        }
+    }, []);
 
-            const voltarParaBusca = () => {
-                navigate('/');
-            };
+    const voltarParaBusca = () => {
+        navigate('/');
+    };
 
-            return React.createElement('div', { className: "min-h-screen bg-gradient-to-b from-slate-50 to-white" },
-                modo !== 'avaliar' && React.createElement('header', { className: "bg-white/90 backdrop-blur-lg border-b border-slate-200 sticky top-0 z-50" },
-                    React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-3 flex justify-between items-center" },
-                        React.createElement('div', {
-                            onClick: voltarParaBusca,
-                            className: "flex items-center gap-3 cursor-pointer"
-                        },
-                            React.createElement('div', { className: "w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-700 text-white grid place-items-center font-bold" }, "SL"),
-                            React.createElement('h1', { className: "font-bold text-lg" }, "SemLimites")
-                        ),
-                        
-                        React.createElement('div', { className: "flex gap-3" },
-                            !usuario ? (
-                                React.createElement('button', {
-                                    onClick: () => navigate('/login'),
-                                    className: "px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50"
-                                }, "Entrar")
-                            ) : (
-                                React.createElement('button', {
-                                    onClick: () => navigate('/dashboard'),
-                                    className: "px-4 py-2 rounded-xl bg-indigo-600 text-white"
-                                }, "Dashboard")
-                            ),
-                            React.createElement('button', {
-                                onClick: () => navigate(modo === 'busca' ? '/cadastro' : '/'),
-                                className: "px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-white"
-                            }, modo === 'busca' ? 'Sou Prestador' : 'Ver Busca')
-                        )
-                    )
+    return React.createElement('div', { className: "min-h-screen bg-gradient-to-b from-slate-50 to-white" },
+        modo !== 'avaliar' && React.createElement('header', { className: "bg-white/90 backdrop-blur-lg border-b border-slate-200 sticky top-0 z-50" },
+            React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-3 flex justify-between items-center" },
+                React.createElement('div', {
+                    onClick: voltarParaBusca,
+                    className: "flex items-center gap-3 cursor-pointer"
+                },
+                    React.createElement('div', { className: "w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-700 text-white grid place-items-center font-bold" }, "SL"),
+                    React.createElement('h1', { className: "font-bold text-lg" }, "SemLimites")
                 ),
                 
-                modo === 'busca' && React.createElement(TelaBusca, { onVerPerfil: (p) => { setPrestadorSelecionado(p); navigate('/perfil'); } }),
-                modo === 'perfil' && React.createElement(TelaPerfil, { prestador: prestadorSelecionado, onVoltar: voltarParaBusca }),
-                modo === 'login' && React.createElement(Login, { onLoginSuccess: () => navigate('/dashboard'), onVoltar: voltarParaBusca }),
-                modo === 'cadastro' && React.createElement(CadastroPrestador, { onCadastroSucesso: () => navigate('/'), onVoltar: voltarParaBusca }),
-                modo === 'dashboard' && React.createElement(DashboardPrestador, { 
-                    usuario: usuario, 
-                    onSair: () => { 
-                        localStorage.removeItem('token'); 
-                        setUsuario(null); 
-                        navigate('/'); 
-                    } 
-                }),
-                modo === 'avaliar' && React.createElement(AvaliarServico)
-            );
-        }
+                React.createElement('div', { className: "flex gap-3" },
+                    !usuario ? (
+                        React.createElement('button', {
+                            onClick: () => navigate('/login'),
+                            className: "px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50"
+                        }, "Entrar")
+                    ) : (
+                        React.createElement('button', {
+                            onClick: () => navigate('/dashboard'),
+                            className: "px-4 py-2 rounded-xl bg-indigo-600 text-white"
+                        }, "Dashboard")
+                    ),
+                    React.createElement('button', {
+                        onClick: () => navigate(modo === 'busca' ? '/cadastro' : '/'),
+                        className: "px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-white"
+                    }, modo === 'busca' ? 'Sou Prestador' : 'Ver Busca')
+                )
+            )
+        ),
+        
+        modo === 'busca' && React.createElement(TelaBusca, { 
+            onVerPerfil: (prestadorSelecionado) => { 
+                console.log('👤 App recebeu prestador:', prestadorSelecionado?.nome);
+                console.log('👤 ID:', prestadorSelecionado?._id);
+                console.log('👤 Chamando navigate para /perfil');
+                
+                setPrestadorSelecionado(prestadorSelecionado); 
+                navigate('/perfil'); 
+            } 
+        }),
+        
+        modo === 'perfil' && React.createElement(TelaPerfil, { prestador: prestadorSelecionado, onVoltar: voltarParaBusca }),
+        modo === 'login' && React.createElement(Login, { onLoginSuccess: () => navigate('/dashboard'), onVoltar: voltarParaBusca }),
+        modo === 'cadastro' && React.createElement(CadastroPrestador, { onCadastroSucesso: () => navigate('/'), onVoltar: voltarParaBusca }),
+        modo === 'dashboard' && React.createElement(DashboardPrestador, { 
+            usuario: usuario, 
+            onSair: () => { 
+                localStorage.removeItem('token'); 
+                setUsuario(null); 
+                navigate('/'); 
+            } 
+        }),
+        modo === 'avaliar' && React.createElement(AvaliarServico)
+    );
+}
 
         ReactDOM.render(React.createElement(App), document.getElementById('root'));
     </script>
 </body>
 </html>
+
 
