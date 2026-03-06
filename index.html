@@ -282,11 +282,12 @@
             );
         }
 
-        // ========== TELA DE LOGIN (link mágico - temporário) ==========
+        // ========== TELA DE LOGIN COM SENHA ==========
         function Login({ onLoginSuccess, onVoltar }) {
             const [email, setEmail] = useState('');
+            const [senha, setSenha] = useState('');
             const [tipo, setTipo] = useState('cliente');
-            const [etapa, setEtapa] = useState('form');
+            const [modo, setModo] = useState('login'); // 'login' ou 'registro'
             const [loading, setLoading] = useState(false);
             const [erro, setErro] = useState('');
 
@@ -296,19 +297,45 @@
                 setErro('');
 
                 try {
-                    const response = await fetch(`${API_URL}/auth/login`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email, tipo })
-                    });
+                    let response;
+                    
+                    if (modo === 'login') {
+                        response = await fetch(`${API_URL}/auth/login`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email, senha, tipo })
+                        });
+                    } else {
+                        // Registro
+                        response = await fetch(`${API_URL}/auth/register`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                email, 
+                                senha, 
+                                tipo,
+                                nome: email.split('@')[0] // nome temporário
+                            })
+                        });
+                    }
 
                     const data = await response.json();
 
                     if (!response.ok) {
-                        throw new Error(data.error || 'Erro no login');
+                        throw new Error(data.error || 'Erro na operação');
                     }
 
-                    setEtapa('enviado');
+                    if (modo === 'login') {
+                        // Salvar token e usuário
+                        localStorage.setItem('token', data.token);
+                        localStorage.setItem('user', JSON.stringify(data.user));
+                        onLoginSuccess(data.user);
+                    } else {
+                        // Registro bem-sucedido, mudar para login
+                        alert('Cadastro realizado! Faça login.');
+                        setModo('login');
+                    }
+
                 } catch (error) {
                     setErro(error.message);
                 } finally {
@@ -316,38 +343,26 @@
                 }
             };
 
-            if (etapa === 'enviado') {
-                return React.createElement('div', { className: "max-w-md mx-auto px-4 py-12" },
-                    React.createElement('div', { className: "bg-white rounded-3xl border border-slate-200 p-8 shadow-sm text-center" },
-                        React.createElement('div', { className: "w-16 h-16 rounded-2xl bg-emerald-100 flex items-center justify-center mx-auto mb-4" },
-                            React.createElement('svg', { className: "w-8 h-8 text-emerald-600", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M5 13l4 4L19 7" })
-                            )
-                        ),
-                        React.createElement('h2', { className: "text-xl font-semibold mb-2" }, "Link enviado!"),
-                        React.createElement('p', { className: "text-slate-600 mb-6" }, `Enviamos um link para ${email}`),
-                        React.createElement('button', {
-                            onClick: () => setEtapa('form'),
-                            className: "text-indigo-600 hover:text-indigo-800 text-sm"
-                        }, "Usar outro e-mail")
-                    )
-                );
-            }
-
             return React.createElement('div', { className: "max-w-md mx-auto px-4 py-12" },
                 React.createElement('div', { className: "bg-white rounded-3xl border border-slate-200 p-8 shadow-sm" },
                     React.createElement('div', { className: "flex items-center justify-between mb-6" },
-                        React.createElement('h1', { className: "text-2xl font-bold" }, "Entrar"),
-                        React.createElement('button', { onClick: onVoltar, className: "text-sm text-slate-500 hover:text-indigo-600" }, "← Voltar")
+                        React.createElement('h1', { className: "text-2xl font-bold" }, 
+                            modo === 'login' ? 'Entrar' : 'Criar conta'
+                        ),
+                        React.createElement('button', { 
+                            onClick: onVoltar, 
+                            className: "text-sm text-slate-500 hover:text-indigo-600" 
+                        }, "← Voltar")
                     ),
-                    
+
                     erro && React.createElement('div', { className: "mb-4 p-3 rounded-lg bg-red-50 border border-red-200" },
                         React.createElement('p', { className: "text-sm text-red-600" }, erro)
                     ),
-                    
+
                     React.createElement('form', { onSubmit: handleSubmit, className: "space-y-4" },
+                        // Tipo de usuário
                         React.createElement('div', null,
-                            React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Tipo de acesso"),
+                            React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Tipo de conta"),
                             React.createElement('div', { className: "flex gap-4" },
                                 ['cliente', 'prestador'].map(t => 
                                     React.createElement('label', { key: t, className: "flex items-center gap-2" },
@@ -358,29 +373,56 @@
                                             onChange: (e) => setTipo(e.target.value),
                                             className: "w-4 h-4 text-indigo-600"
                                         }),
-                                        React.createElement('span', { className: "text-sm" }, t === 'cliente' ? 'Cliente' : 'Prestador')
+                                        React.createElement('span', { className: "text-sm" }, 
+                                            t === 'cliente' ? 'Cliente' : 'Prestador'
+                                        )
                                     )
                                 )
                             )
                         ),
 
+                        // E-mail
                         React.createElement('div', null,
                             React.createElement('label', { className: "block text-sm font-medium mb-1" }, "E-mail"),
                             React.createElement('input', {
                                 type: "email",
                                 value: email,
                                 onChange: (e) => setEmail(e.target.value),
-                                placeholder: "seu@email.com",
-                                required: true,
-                                className: "w-full px-4 py-3 rounded-xl border border-slate-200"
+                                className: "w-full px-4 py-3 rounded-xl border border-slate-200",
+                                required: true
                             })
                         ),
 
+                        // Senha
+                        React.createElement('div', null,
+                            React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Senha"),
+                            React.createElement('input', {
+                                type: "password",
+                                value: senha,
+                                onChange: (e) => setSenha(e.target.value),
+                                className: "w-full px-4 py-3 rounded-xl border border-slate-200",
+                                required: true,
+                                minLength: 6
+                            })
+                        ),
+
+                        // Botão principal
                         React.createElement('button', {
                             type: "submit",
                             disabled: loading,
                             className: "w-full px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold disabled:opacity-50"
-                        }, loading ? 'Enviando...' : 'Enviar link de acesso')
+                        }, loading ? 'Processando...' : (modo === 'login' ? 'Entrar' : 'Cadastrar')),
+
+                        // Link para alternar entre login/registro
+                        React.createElement('div', { className: "text-center mt-4" },
+                            React.createElement('button', {
+                                type: "button",
+                                onClick: () => setModo(modo === 'login' ? 'registro' : 'login'),
+                                className: "text-sm text-indigo-600 hover:text-indigo-800"
+                            }, modo === 'login' 
+                                ? 'Não tem conta? Cadastre-se' 
+                                : 'Já tem conta? Faça login')
+                        )
                     )
                 )
             );
@@ -747,14 +789,124 @@
             );
         }
 
-        // ========== TELA DE PERFIL ==========
+        // ========== TELA DE PERFIL COMPLETA ==========
         function TelaPerfil({ prestador, onVoltar }) {
-            return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-8" },
+            const [loading, setLoading] = useState(false);
+            const [dadosCompletos, setDadosCompletos] = useState(null);
+
+            useEffect(() => {
+                if (prestador && prestador._id) {
+                    carregarDadosCompletos();
+                }
+            }, [prestador]);
+
+            const carregarDadosCompletos = async () => {
+                setLoading(true);
+                try {
+                    // Buscar dados completos do prestador pelo ID ou slug
+                    const response = await fetch(`${API_URL}/prestadores/${prestador.slug || prestador._id}`);
+                    const data = await response.json();
+                    if (response.ok) {
+                        setDadosCompletos(data);
+                    }
+                } catch (error) {
+                    console.error('Erro ao carregar perfil:', error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const p = dadosCompletos || prestador;
+            if (!p) return null;
+
+            return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8" },
+                // Botão voltar
                 React.createElement('button', {
                     onClick: onVoltar,
-                    className: "mb-6 text-indigo-600"
-                }, "← Voltar"),
-                React.createElement('h1', { className: "text-3xl font-bold mb-4" }, prestador.nome)
+                    className: "mb-6 text-indigo-600 hover:text-indigo-800 flex items-center gap-2"
+                },
+                    React.createElement('svg', { className: "w-5 h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M10 19l-7-7m0 0l7-7m-7 7h18" })
+                    ),
+                    "Voltar para busca"
+                ),
+
+                loading && React.createElement('div', { className: "text-center py-8" },
+                    React.createElement('div', { className: "w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" }),
+                    React.createElement('p', null, "Carregando perfil...")
+                ),
+
+                !loading && React.createElement('div', { className: "bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm" },
+                    // Cabeçalho do perfil
+                    React.createElement('div', { className: "bg-gradient-to-r from-indigo-600 to-indigo-700 p-8 text-white" },
+                        React.createElement('div', { className: "flex items-center gap-6" },
+                            React.createElement(Avatar, { name: p.nome, size: "xxl" }),
+                            React.createElement('div', null,
+                                React.createElement('h1', { className: "text-3xl font-bold mb-2" }, p.nome),
+                                React.createElement('p', { className: "text-indigo-100" }, 
+                                    `${p.categoria} • ${p.cidade}`
+                                ),
+                                React.createElement('div', { className: "flex items-center gap-2 mt-3" },
+                                    React.createElement(Stars, { value: p.estrelas || 0, size: "lg" }),
+                                    React.createElement('span', { className: "text-sm text-indigo-200" }, 
+                                        `(${p.avaliacoes || 0} avaliações)`
+                                    )
+                                )
+                            )
+                        )
+                    ),
+
+                    // Informações do perfil
+                    React.createElement('div', { className: "p-8 space-y-6" },
+                        // Sobre
+                        p.descricao && React.createElement('div', null,
+                            React.createElement('h2', { className: "text-xl font-semibold mb-3" }, "Sobre"),
+                            React.createElement('p', { className: "text-slate-600 leading-relaxed" }, p.descricao)
+                        ),
+
+                        // Especialidades
+                        p.tags && p.tags.length > 0 && React.createElement('div', null,
+                            React.createElement('h2', { className: "text-xl font-semibold mb-3" }, "Especialidades"),
+                            React.createElement('div', { className: "flex flex-wrap gap-2" },
+                                p.tags.map(tag => 
+                                    React.createElement('span', { 
+                                        key: tag, 
+                                        className: "px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium" 
+                                    }, tag)
+                                )
+                            )
+                        ),
+
+                        // Contato
+                        React.createElement('div', { className: "bg-slate-50 rounded-2xl p-6" },
+                            React.createElement('h2', { className: "text-xl font-semibold mb-4" }, "Contato"),
+                            React.createElement('div', { className: "space-y-3" },
+                                p.whatsapp && React.createElement('div', { className: "flex items-center gap-3" },
+                                    React.createElement('svg', { className: "w-5 h-5 text-emerald-600", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" })
+                                    ),
+                                    React.createElement('a', {
+                                        href: `https://wa.me/${p.whatsapp}?text=${encodeURIComponent('Olá! Vi seu perfil no SemLimites e gostaria de solicitar um orçamento.')}`,
+                                        target: "_blank",
+                                        className: "text-emerald-700 hover:text-emerald-900"
+                                    }, p.whatsapp)
+                                ),
+                                p.telefone && React.createElement('div', { className: "flex items-center gap-3" },
+                                    React.createElement('svg', { className: "w-5 h-5 text-slate-500", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" })
+                                    ),
+                                    React.createElement('span', { className: "text-slate-700" }, p.telefone)
+                                ),
+                                p.email && React.createElement('div', { className: "flex items-center gap-3" },
+                                    React.createElement('svg', { className: "w-5 h-5 text-slate-500", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" })
+                                    ),
+                                    React.createElement('span', { className: "text-slate-700" }, p.email)
+                                )
+                            )
+                        )
+                    )
+                )
             );
         }
 
