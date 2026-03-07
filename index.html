@@ -322,19 +322,17 @@
                                 disabled: enviando || estrelas === 0,
                                 className: "w-full px-6 py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition flex items-center justify-center gap-2"
                             }, 
-                                enviando ? (
+                                enviando ? 
                                     React.createElement(React.Fragment, null,
                                         React.createElement('div', { className: "w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" }),
                                         "Enviando avaliação..."
-                                    )
-                                ) : (
+                                    ) : 
                                     React.createElement(React.Fragment, null,
                                         React.createElement('svg', { className: "w-5 h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
                                             React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M5 13l4 4L19 7" })
                                         ),
                                         "Enviar avaliação"
                                     )
-                                )
                             )
                         )
                     )
@@ -347,7 +345,7 @@
             const [email, setEmail] = useState('');
             const [senha, setSenha] = useState('');
             const [tipo, setTipo] = useState('cliente');
-            const [modo, setModo] = useState('login'); // 'login' ou 'registro'
+            const [modo, setModo] = useState('login');
             const [loading, setLoading] = useState(false);
             const [erro, setErro] = useState('');
 
@@ -366,7 +364,6 @@
                             body: JSON.stringify({ email, senha, tipo })
                         });
                     } else {
-                        // Registro
                         response = await fetch(`${API_URL}/auth/register`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -374,7 +371,7 @@
                                 email, 
                                 senha, 
                                 tipo,
-                                nome: email.split('@')[0] // nome temporário
+                                nome: email.split('@')[0]
                             })
                         });
                     }
@@ -386,12 +383,10 @@
                     }
 
                     if (modo === 'login') {
-                        // Salvar token e usuário
                         localStorage.setItem('token', data.token);
                         localStorage.setItem('user', JSON.stringify(data.user));
                         onLoginSuccess(data.user);
                     } else {
-                        // Registro bem-sucedido, mudar para login
                         alert('Cadastro realizado! Faça login.');
                         setModo('login');
                     }
@@ -420,7 +415,6 @@
                     ),
 
                     React.createElement('form', { onSubmit: handleSubmit, className: "space-y-4" },
-                        // Tipo de usuário
                         React.createElement('div', null,
                             React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Tipo de conta"),
                             React.createElement('div', { className: "flex gap-4" },
@@ -441,7 +435,6 @@
                             )
                         ),
 
-                        // E-mail
                         React.createElement('div', null,
                             React.createElement('label', { className: "block text-sm font-medium mb-1" }, "E-mail"),
                             React.createElement('input', {
@@ -453,7 +446,6 @@
                             })
                         ),
 
-                        // Senha
                         React.createElement('div', null,
                             React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Senha"),
                             React.createElement('input', {
@@ -466,14 +458,12 @@
                             })
                         ),
 
-                        // Botão principal
                         React.createElement('button', {
                             type: "submit",
                             disabled: loading,
                             className: "w-full px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold disabled:opacity-50"
                         }, loading ? 'Processando...' : (modo === 'login' ? 'Entrar' : 'Cadastrar')),
 
-                        // Link para alternar entre login/registro
                         React.createElement('div', { className: "text-center mt-4" },
                             React.createElement('button', {
                                 type: "button",
@@ -488,9 +478,9 @@
             );
         }
 
-        // ========== TELA DE CADASTRO (COM SENHA) ==========
+        // ========== TELA DE CADASTRO ==========
         function CadastroPrestador({ onCadastroSucesso, onVoltar }) {
-            const [formData, setFormData] = React.useState({
+            const [formData, setFormData] = useState({
                 nome: '', 
                 email: '', 
                 senha: '',
@@ -503,10 +493,10 @@
                 descricao: '', 
                 tags: ''
             });
-            const [etapa, setEtapa] = React.useState('form');
-            const [verificacaoCNPJ, setVerificacaoCNPJ] = React.useState(null);
-            const [loading, setLoading] = React.useState(false);
-            const [erro, setErro] = React.useState('');
+            const [etapa, setEtapa] = useState('form');
+            const [verificacaoCNPJ, setVerificacaoCNPJ] = useState(null);
+            const [loading, setLoading] = useState(false);
+            const [erro, setErro] = useState('');
 
             const formatarCNPJ = (valor) => {
                 const numeros = valor.replace(/\D/g, '');
@@ -576,7 +566,6 @@
                 setLoading(true);
                 setErro('');
 
-                // Validar senhas
                 if (formData.senha.length < 6) {
                     setErro('A senha deve ter pelo menos 6 caracteres');
                     setLoading(false);
@@ -592,7 +581,6 @@
                 try {
                     console.log('📤 Enviando dados completos para registro...');
 
-                    // GERAR SLUG
                     const slug = formData.nome
                         .toLowerCase()
                         .normalize('NFD')
@@ -600,21 +588,16 @@
                         .replace(/[^a-z0-9]+/g, '-')
                         .replace(/^-|-$/g, '');
 
-                    // GARANTIR DESCRIÇÃO
                     const descricao = formData.descricao || 
                         `Profissional de ${formData.categoria} em ${formData.cidade}. Entre em contato para orçamentos.`;
 
-                    // Chamar UMA ÚNICA VEZ o endpoint de registro
                     const registerResponse = await fetch(`${API_URL}/auth/register`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            // Dados do usuário
                             email: formData.email,
                             senha: formData.senha,
                             tipo: 'prestador',
-                            
-                            // Dados do prestador (TODOS!)
                             nome: formData.nome,
                             slug: slug,
                             cnpj: formData.cnpj.replace(/\D/g, ''),
@@ -660,7 +643,6 @@
                     ),
 
                     React.createElement('form', { onSubmit: handleSubmit, className: "space-y-4" },
-                        // Dados da Empresa
                         React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
                             React.createElement('div', null,
                                 React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Nome *"),
@@ -686,7 +668,6 @@
                             )
                         ),
 
-                        // Campos de senha
                         React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
                             React.createElement('div', null,
                                 React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Senha *"),
@@ -714,7 +695,6 @@
                             )
                         ),
 
-                        // CNPJ e Categoria
                         React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
                             React.createElement('div', null,
                                 React.createElement('label', { className: "block text-sm font-medium mb-1" }, "CNPJ *"),
@@ -752,7 +732,6 @@
                             )
                         ),
 
-                        // Resultado da verificação de CNPJ
                         etapa === 'verificando' && React.createElement('div', { className: "p-3 rounded-lg bg-blue-50 border border-blue-200" },
                             React.createElement('p', { className: "text-sm text-blue-700" }, "🔍 Verificando CNPJ...")
                         ),
@@ -761,7 +740,6 @@
                             React.createElement('p', { className: "text-sm text-emerald-700" }, "✓ CNPJ Válido")
                         ),
 
-                        // WhatsApp e Telefone
                         React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
                             React.createElement('div', null,
                                 React.createElement('label', { className: "block text-sm font-medium mb-1" }, "WhatsApp *"),
@@ -788,7 +766,6 @@
                             )
                         ),
 
-                        // Descrição
                         React.createElement('div', null,
                             React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Descrição *"),
                             React.createElement('textarea', {
@@ -801,7 +778,6 @@
                             })
                         ),
 
-                        // Tags
                         React.createElement('div', null,
                             React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Tags"),
                             React.createElement('input', {
@@ -814,7 +790,6 @@
                             })
                         ),
 
-                        // Botão de envio
                         React.createElement('button', {
                             type: "submit",
                             disabled: loading,
@@ -825,7 +800,7 @@
             );
         } 
 
-        // ========== DASHBOARD DO PRESTADOR (SIMPLIFICADO) ==========
+        // ========== DASHBOARD DO PRESTADOR ==========
         function DashboardPrestador({ usuario, onSair }) {
             return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8" },
                 React.createElement('div', { className: "bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-3xl p-8 text-white mb-8" },
@@ -841,7 +816,7 @@
             );
         }
 
-        // ========== TELA DE BUSCA COMPLETA (COM TODOS OS FILTROS) ==========
+        // ========== TELA DE BUSCA ==========
         function TelaBusca({ onVerPerfil }) {
             const [cidade, setCidade] = useState("Bauru");
             const [categoria, setCategoria] = useState("");
@@ -881,7 +856,6 @@
                 }
             };
 
-            // Buscar quando os filtros mudarem
             useEffect(() => {
                 const timer = setTimeout(() => {
                     buscar();
@@ -890,14 +864,12 @@
             }, [cidade, categoria, buscaTexto]);
 
             return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8" },
-                // Filtros
                 React.createElement('div', { className: "bg-white rounded-2xl border border-slate-200 p-6 mb-6" },
                     React.createElement('h1', { className: "text-2xl font-bold text-slate-900 mb-4" }, 
                         "Encontre profissionais"
                     ),
                     
                     React.createElement('div', { className: "grid md:grid-cols-4 gap-4" },
-                        // Cidade
                         React.createElement('select', {
                             value: cidade,
                             onChange: (e) => setCidade(e.target.value),
@@ -906,7 +878,6 @@
                             React.createElement('option', { key: c, value: c }, c)
                         )),
                         
-                        // Categoria
                         React.createElement('select', {
                             value: categoria,
                             onChange: (e) => setCategoria(e.target.value),
@@ -918,7 +889,6 @@
                             )
                         ]),
                         
-                        // Busca por texto
                         React.createElement('input', {
                             type: "text",
                             value: buscaTexto,
@@ -929,7 +899,6 @@
                     )
                 ),
 
-                // Loading
                 loading && React.createElement('div', { className: "text-center py-8" },
                     React.createElement('div', { 
                         className: "w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" 
@@ -937,10 +906,8 @@
                     React.createElement('p', { className: "text-slate-600" }, "Buscando prestadores...")
                 ),
 
-                // Erro
                 erro && React.createElement('div', { className: "text-red-600 text-center py-8" }, erro),
 
-                // Resultados
                 !loading && !erro && React.createElement('div', { className: "grid md:grid-cols-2 lg:grid-cols-3 gap-6" },
                     resultados.length === 0 
                         ? React.createElement('div', { className: "col-span-full text-center py-12 text-slate-500" },
@@ -957,22 +924,13 @@
             );
         }
 
-        // ========== CARD DE PRESTADOR COMPLETO COM LOGS ==========
+        // ========== CARD DE PRESTADOR ==========
         function CardPrestador({ prestador, onVerPerfil }) {
             const p = prestador;
             
-            console.log('🎴 CardPrestador renderizado para:', p?.nome);
-            console.log('🎴 onVerPerfil existe?', !!onVerPerfil);
-            
             const handleClick = () => {
-                console.log('👆 Botão VER PERFIL clicado para:', p?.nome);
-                console.log('👆 ID do prestador:', p?._id);
-                console.log('👆 Chamando onVerPerfil...');
-                
                 if (onVerPerfil) {
                     onVerPerfil(p);
-                } else {
-                    console.error('❌ onVerPerfil é undefined!');
                 }
             };
 
@@ -1004,7 +962,7 @@
             );
         }
 
-        // ========== COMPONENTE DE SERVIÇOS DO PRESTADOR (PARA O PERFIL) ==========
+        // ========== COMPONENTE DE SERVIÇOS DO PRESTADOR ==========
         function ServicosPrestador({ prestadorId }) {
             const [servicos, setServicos] = useState([]);
             const [loading, setLoading] = useState(true);
@@ -1082,22 +1040,16 @@
             );
         }
 
-        // ========== TELA DE PERFIL COMPLETA COM SERVIÇOS REALIZADOS ==========
+        // ========== TELA DE PERFIL COMPLETA ==========
         function TelaPerfil({ prestador, onVoltar }) {
             const [loading, setLoading] = useState(false);
             const [dadosCompletos, setDadosCompletos] = useState(null);
             const [erro, setErro] = useState('');
 
-            console.log('📋 TelaPerfil RENDERIZADA!');
-            console.log('📋 prestador recebido:', prestador);
-            console.log('📋 prestador.slug:', prestador?.slug);
-            console.log('📋 prestador._id:', prestador?._id);
-
             useEffect(() => {
                 if (prestador && (prestador.slug || prestador._id)) {
                     carregarDadosCompletos();
                 } else {
-                    console.error('❌ Prestador inválido:', prestador);
                     setErro('Prestador não encontrado');
                 }
             }, [prestador]);
@@ -1106,20 +1058,14 @@
                 setLoading(true);
                 setErro('');
                 try {
-                    // Tenta primeiro com slug, depois com ID
                     const identifier = prestador.slug || prestador._id;
-                    console.log('🔍 Buscando prestador por:', identifier);
                     
                     const response = await fetch(`${API_URL}/prestadores/${identifier}`);
                     const data = await response.json();
                     
-                    console.log('✅ Resposta da API:', data);
-                    
                     if (response.ok) {
                         setDadosCompletos(data);
                     } else {
-                        // Se falhar, tenta buscar pela rota de busca com filtro
-                        console.log('⚠️ Falha na busca direta, tentando busca por ID...');
                         const buscaResponse = await fetch(`${API_URL}/prestadores/busca?q=${prestador._id}`);
                         const buscaData = await buscaResponse.json();
                         
@@ -1130,7 +1076,6 @@
                         }
                     }
                 } catch (error) {
-                    console.error('❌ Erro ao carregar perfil:', error);
                     setErro('Erro de conexão ao carregar perfil');
                 } finally {
                     setLoading(false);
@@ -1150,7 +1095,6 @@
             const p = dadosCompletos || prestador;
 
             return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8" },
-                // Botão voltar
                 React.createElement('button', {
                     onClick: onVoltar,
                     className: "mb-6 text-indigo-600 hover:text-indigo-800 flex items-center gap-2"
@@ -1175,7 +1119,6 @@
                 ),
 
                 !loading && !erro && React.createElement('div', { className: "bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm" },
-                    // Cabeçalho do perfil
                     React.createElement('div', { className: "bg-gradient-to-r from-indigo-600 to-indigo-700 p-8 text-white" },
                         React.createElement('div', { className: "flex items-center gap-6" },
                             React.createElement(Avatar, { name: p.nome, size: "xxl" }),
@@ -1194,15 +1137,12 @@
                         )
                     ),
 
-                    // Informações do perfil
                     React.createElement('div', { className: "p-8 space-y-6" },
-                        // Sobre
                         p.descricao ? React.createElement('div', null,
                             React.createElement('h2', { className: "text-xl font-semibold mb-3" }, "Sobre"),
                             React.createElement('p', { className: "text-slate-600 leading-relaxed" }, p.descricao)
                         ) : React.createElement('div', { className: "text-slate-400 italic" }, "Sem descrição cadastrada"),
 
-                        // Especialidades
                         p.tags && p.tags.length > 0 && React.createElement('div', null,
                             React.createElement('h2', { className: "text-xl font-semibold mb-3" }, "Especialidades"),
                             React.createElement('div', { className: "flex flex-wrap gap-2" },
@@ -1215,7 +1155,6 @@
                             )
                         ),
 
-                        // Contato
                         React.createElement('div', { className: "bg-slate-50 rounded-2xl p-6" },
                             React.createElement('h2', { className: "text-xl font-semibold mb-4" }, "Contato"),
                             React.createElement('div', { className: "space-y-3" },
@@ -1244,8 +1183,6 @@
                             )
                         ),
 
-                        // ===== SERVIÇOS REALIZADOS =====
-                        // Só mostrar se houver serviços avaliados
                         p.avaliacoes > 0 && React.createElement('div', { className: "mt-8 pt-6 border-t border-slate-200" },
                             React.createElement('h2', { className: "text-xl font-semibold mb-4 flex items-center gap-2" },
                                 React.createElement('svg', { className: "w-6 h-6 text-indigo-600", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -1260,14 +1197,11 @@
             );
         }
 
-        // ========== FUNÇÃO DE NAVEGAÇÃO CORRIGIDA ==========
+        // ========== FUNÇÃO DE NAVEGAÇÃO ==========
         function navigate(path) {
             const fullPath = `${BASE_PATH}${path}`;
             window.history.pushState({}, '', fullPath);
             
-            console.log('🧭 Navegando para:', path);
-            
-            // Atualizar o estado do App
             if (path.startsWith('/avaliar/')) {
                 window.appSetModo('avaliar');
             } else if (path === '/login') {
@@ -1289,7 +1223,6 @@
             const [usuario, setUsuario] = useState(null);
             const [prestadorSelecionado, setPrestadorSelecionado] = useState(null);
 
-            // Expor setModo para a função navigate
             window.appSetModo = setModo;
 
             useEffect(() => {
@@ -1356,12 +1289,8 @@
                 ),
                 
                 modo === 'busca' && React.createElement(TelaBusca, { 
-                    onVerPerfil: (prestadorSelecionado) => { 
-                        console.log('👤 App recebeu prestador:', prestadorSelecionado?.nome);
-                        console.log('👤 ID:', prestadorSelecionado?._id);
-                        console.log('👤 Chamando navigate para /perfil');
-                        
-                        setPrestadorSelecionado(prestadorSelecionado); 
+                    onVerPerfil: (prestador) => { 
+                        setPrestadorSelecionado(prestador); 
                         navigate('/perfil'); 
                     } 
                 }),
