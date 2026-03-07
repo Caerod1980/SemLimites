@@ -128,218 +128,218 @@
             }, initials);
         }
 
-        // ========== PÁGINA DE AVALIAÇÃO MELHORADA ==========
-        function AvaliarServico() {
-            const [loading, setLoading] = useState(true);
-            const [erro, setErro] = useState('');
-            const [servico, setServico] = useState(null);
-            const [estrelas, setEstrelas] = useState(0);
-            const [comentario, setComentario] = useState('');
-            const [enviando, setEnviando] = useState(false);
-            const [enviado, setEnviado] = useState(false);
-            const [hoverEstrela, setHoverEstrela] = useState(0);
+        // ========== PÁGINA DE AVALIAÇÃO CORRIGIDA ==========
+function AvaliarServico() {
+    const [loading, setLoading] = useState(true);
+    const [erro, setErro] = useState('');
+    const [servico, setServico] = useState(null);
+    const [estrelas, setEstrelas] = useState(0);
+    const [comentario, setComentario] = useState('');
+    const [enviando, setEnviando] = useState(false);
+    const [enviado, setEnviado] = useState(false);
+    const [hoverEstrela, setHoverEstrela] = useState(0);
 
-            const token = window.location.pathname.split('/')[3] || window.location.pathname.split('/')[2];
+    const token = window.location.pathname.split('/')[3] || window.location.pathname.split('/')[2];
 
-            useEffect(() => {
-                carregarServico();
-            }, []);
+    useEffect(() => {
+        carregarServico();
+    }, []);
 
-            const carregarServico = async () => {
-                try {
-                    setLoading(true);
-                    const response = await fetch(`${API_URL}/servicos/avaliar/${token}`);
-                    const data = await response.json();
-                    
-                    if (!response.ok) throw new Error(data.error || 'Erro ao carregar');
-                    
-                    setServico(data.servico);
-                } catch (error) {
-                    setErro(error.message);
-                } finally {
-                    setLoading(false);
-                }
-            };
+    const carregarServico = async () => {
+        try {
+            setLoading(true);
+            const response = await fetch(`${API_URL}/servicos/avaliar/${token}`);
+            const data = await response.json();
+            
+            if (!response.ok) throw new Error(data.error || 'Erro ao carregar');
+            
+            setServico(data.servico);
+        } catch (error) {
+            setErro(error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                if (estrelas === 0) {
-                    alert('Selecione uma nota de 1 a 5 estrelas');
-                    return;
-                }
-
-                try {
-                    setEnviando(true);
-                    const response = await fetch(`${API_URL}/servicos/avaliar/${token}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ estrelas, comentario })
-                    });
-
-                    const data = await response.json();
-
-                    if (!response.ok) throw new Error(data.error || 'Erro ao enviar avaliação');
-
-                    setEnviado(true);
-                } catch (error) {
-                    setErro(error.message);
-                } finally {
-                    setEnviando(false);
-                }
-            };
-
-            if (loading) {
-                return React.createElement('div', { className: "min-h-screen flex items-center justify-center" },
-                    React.createElement('div', { className: "text-center" },
-                        React.createElement('div', { className: "w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" }),
-                        React.createElement('p', { className: "text-slate-600" }, "Carregando...")
-                    )
-                );
-            }
-
-            if (erro) {
-                return React.createElement('div', { className: "min-h-screen flex items-center justify-center p-4" },
-                    React.createElement('div', { className: "max-w-md bg-white rounded-3xl border border-slate-200 p-8 text-center" },
-                        React.createElement('div', { className: "w-20 h-20 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-6" },
-                            React.createElement('svg', { className: "w-10 h-10 text-red-600", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" })
-                            )
-                        ),
-                        React.createElement('h2', { className: "text-2xl font-bold text-red-600 mb-4" }, "Link inválido ou expirado"),
-                        React.createElement('p', { className: "text-slate-600 mb-6" }, erro),
-                        React.createElement('button', {
-                            onClick: () => navigate('/'),
-                            className: "px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700"
-                        }, "Ir para a página inicial")
-                    )
-                );
-            }
-
-            if (enviado) {
-                return React.createElement('div', { className: "min-h-screen flex items-center justify-center p-4" },
-                    React.createElement('div', { className: "max-w-md bg-white rounded-3xl border border-slate-200 p-8 text-center animate-fadeIn" },
-                        React.createElement('div', { className: "w-20 h-20 rounded-2xl bg-emerald-100 flex items-center justify-center mx-auto mb-6" },
-                            React.createElement('svg', { className: "w-10 h-10 text-emerald-600", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M5 13l4 4L19 7" })
-                            )
-                        ),
-                        React.createElement('h2', { className: "text-2xl font-bold text-slate-900 mb-3" }, "Avaliação enviada!"),
-                        React.createElement('p', { className: "text-slate-600 mb-6" }, 
-                            "Obrigado por contribuir com a comunidade SemLimites. Sua avaliação ajuda outros clientes a escolherem melhores profissionais."
-                        ),
-                        React.createElement('button', {
-                            onClick: () => navigate('/'),
-                            className: "px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700"
-                        }, "Voltar para a página inicial")
-                    )
-                );
-            }
-
-            return React.createElement('div', { className: "min-h-screen bg-gradient-to-b from-slate-50 to-white p-4" },
-                React.createElement('div', { className: "max-w-3xl mx-auto" },
-                    React.createElement('div', { className: "bg-white rounded-3xl border border-slate-200 p-8 shadow-sm" },
-                        React.createElement('h2', { className: "text-3xl font-bold text-center mb-8" }, "Avalie o serviço"),
-                        
-                        // Informações do prestador e serviço
-                        React.createElement('div', { className: "bg-gradient-to-r from-indigo-50 to-white rounded-2xl p-6 mb-8 border border-indigo-100" },
-                            React.createElement('div', { className: "flex items-center gap-4 mb-4" },
-                                React.createElement('div', { className: "w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-700 text-white flex items-center justify-center text-2xl font-bold" },
-                                    servico?.prestador?.nome?.charAt(0) || 'P'
-                                ),
-                                React.createElement('div', null,
-                                    React.createElement('h3', { className: "text-xl font-bold text-slate-900" }, servico?.prestador?.nome),
-                                    React.createElement('p', { className: "text-sm text-indigo-600" }, 
-                                        `${servico?.prestador?.categoria || 'Profissional'} • ${servico?.prestador?.cidade || ''}`
-                                    )
-                                )
-                            ),
-                            React.createElement('div', { className: "border-t border-indigo-100 pt-4" },
-                                React.createElement('p', { className: "text-sm text-slate-500 mb-1" }, "Serviço contratado:"),
-                                React.createElement('p', { className: "font-medium text-slate-900 mb-2" }, servico?.titulo),
-                                React.createElement('p', { className: "text-sm text-slate-600" }, servico?.descricao),
-                                React.createElement('p', { className: "text-xs text-slate-400 mt-2" },
-                                    `Realizado em: ${new Date(servico?.dataRealizacao).toLocaleDateString('pt-BR')}`
-                                )
-                            )
-                        ),
-
-                        React.createElement('form', { onSubmit: handleSubmit, className: "space-y-6" },
-                            // Estrelas
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-center text-lg font-medium mb-4" }, 
-                                    "Como você avalia este serviço?"
-                                ),
-                                React.createElement('div', { className: "flex justify-center gap-2 md:gap-4" },
-                                    [1,2,3,4,5].map(v => 
-                                        React.createElement('button', {
-                                            key: v,
-                                            type: "button",
-                                            onClick: () => setEstrelas(v),
-                                            onMouseEnter: () => setHoverEstrela(v),
-                                            onMouseLeave: () => setHoverEstrela(0),
-                                            className: "focus:outline-none transform hover:scale-110 transition"
-                                        },
-                                            React.createElement('svg', {
-                                                className: `w-10 h-10 md:w-14 md:h-14 ${
-                                                    v <= (hoverEstrela || estrelas) 
-                                                        ? 'text-amber-400' 
-                                                        : 'text-slate-300'
-                                                }`,
-                                                fill: "currentColor",
-                                                viewBox: "0 0 24 24"
-                                            },
-                                                React.createElement('path', { d: "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" })
-                                            )
-                                        )
-                                    )
-                                ),
-                                estrelas > 0 && React.createElement('p', { className: "text-center text-sm text-indigo-600 mt-2 font-medium" },
-                                    `Você selecionou ${estrelas} ${estrelas === 1 ? 'estrela' : 'estrelas'}`
-                                )
-                            ),
-
-                            // Comentário
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-sm font-medium mb-2" }, 
-                                    "Deixe seu comentário (opcional)"
-                                ),
-                                React.createElement('textarea', {
-                                    value: comentario,
-                                    onChange: (e) => setComentario(e.target.value),
-                                    placeholder: "Conte-nos sobre sua experiência com este profissional...",
-                                    rows: 4,
-                                    maxLength: 500,
-                                    className: "w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                }),
-                                React.createElement('p', { className: "text-xs text-slate-400 text-right mt-1" },
-                                    `${comentario.length}/500 caracteres`
-                                )
-                            ),
-
-                            // Botão de envio
-                            React.createElement('button', {
-                                type: "submit",
-                                disabled: enviando || estrelas === 0,
-                                className: "w-full px-6 py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition flex items-center justify-center gap-2"
-                            }, 
-                                enviando ? 
-                                    React.createElement(React.Fragment, null,
-                                        React.createElement('div', { className: "w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" }),
-                                        "Enviando avaliação..."
-                                    ) : 
-                                    React.createElement(React.Fragment, null,
-                                        React.createElement('svg', { className: "w-5 h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                            React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M5 13l4 4L19 7" })
-                                        ),
-                                        "Enviar avaliação"
-                                    )
-                            )
-                        )
-                    )
-                )
-            );
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (estrelas === 0) {
+            alert('Selecione uma nota de 1 a 5 estrelas');
+            return;
         }
 
+        try {
+            setEnviando(true);
+            const response = await fetch(`${API_URL}/servicos/avaliar/${token}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ estrelas, comentario })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) throw new Error(data.error || 'Erro ao enviar avaliação');
+
+            setEnviado(true);
+        } catch (error) {
+            setErro(error.message);
+        } finally {
+            setEnviando(false);
+        }
+    };
+
+    if (loading) {
+        return React.createElement('div', { className: "min-h-screen flex items-center justify-center" },
+            React.createElement('div', { className: "text-center" },
+                React.createElement('div', { className: "w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" }),
+                React.createElement('p', { className: "text-slate-600" }, "Carregando...")
+            )
+        );
+    }
+
+    if (erro) {
+        return React.createElement('div', { className: "min-h-screen flex items-center justify-center p-4" },
+            React.createElement('div', { className: "max-w-md bg-white rounded-3xl border border-slate-200 p-8 text-center" },
+                React.createElement('div', { className: "w-20 h-20 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-6" },
+                    React.createElement('svg', { className: "w-10 h-10 text-red-600", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" })
+                    )
+                ),
+                React.createElement('h2', { className: "text-2xl font-bold text-red-600 mb-4" }, "Link inválido ou expirado"),
+                React.createElement('p', { className: "text-slate-600 mb-6" }, erro),
+                React.createElement('button', {
+                    onClick: function() { navigate('/'); },
+                    className: "px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700"
+                }, "Ir para a página inicial")
+            )
+        );
+    }
+
+    if (enviado) {
+        return React.createElement('div', { className: "min-h-screen flex items-center justify-center p-4" },
+            React.createElement('div', { className: "max-w-md bg-white rounded-3xl border border-slate-200 p-8 text-center animate-fadeIn" },
+                React.createElement('div', { className: "w-20 h-20 rounded-2xl bg-emerald-100 flex items-center justify-center mx-auto mb-6" },
+                    React.createElement('svg', { className: "w-10 h-10 text-emerald-600", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M5 13l4 4L19 7" })
+                    )
+                ),
+                React.createElement('h2', { className: "text-2xl font-bold text-slate-900 mb-3" }, "Avaliação enviada!"),
+                React.createElement('p', { className: "text-slate-600 mb-6" }, 
+                    "Obrigado por contribuir com a comunidade SemLimites. Sua avaliação ajuda outros clientes a escolherem melhores profissionais."
+                ),
+                React.createElement('button', {
+                    onClick: function() { navigate('/'); },
+                    className: "px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700"
+                }, "Voltar para a página inicial")
+            )
+        );
+    }
+
+    // Versão corrigida - sem operador ternário problemático
+    const botaoConteudo = enviando 
+        ? React.createElement(React.Fragment, null,
+            React.createElement('div', { className: "w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" }),
+            "Enviando avaliação..."
+          )
+        : React.createElement(React.Fragment, null,
+            React.createElement('svg', { className: "w-5 h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M5 13l4 4L19 7" })
+            ),
+            "Enviar avaliação"
+          );
+
+    return React.createElement('div', { className: "min-h-screen bg-gradient-to-b from-slate-50 to-white p-4" },
+        React.createElement('div', { className: "max-w-3xl mx-auto" },
+            React.createElement('div', { className: "bg-white rounded-3xl border border-slate-200 p-8 shadow-sm" },
+                React.createElement('h2', { className: "text-3xl font-bold text-center mb-8" }, "Avalie o serviço"),
+                
+                // Informações do prestador e serviço
+                React.createElement('div', { className: "bg-gradient-to-r from-indigo-50 to-white rounded-2xl p-6 mb-8 border border-indigo-100" },
+                    React.createElement('div', { className: "flex items-center gap-4 mb-4" },
+                        React.createElement('div', { className: "w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-700 text-white flex items-center justify-center text-2xl font-bold" },
+                            servico && servico.prestador && servico.prestador.nome ? servico.prestador.nome.charAt(0) : 'P'
+                        ),
+                        React.createElement('div', null,
+                            React.createElement('h3', { className: "text-xl font-bold text-slate-900" }, 
+                                servico && servico.prestador ? servico.prestador.nome : 'Profissional'
+                            ),
+                            React.createElement('p', { className: "text-sm text-indigo-600" }, 
+                                (servico && servico.prestador ? (servico.prestador.categoria || 'Profissional') : 'Profissional') + 
+                                ' • ' + 
+                                (servico && servico.prestador ? (servico.prestador.cidade || '') : '')
+                            )
+                        )
+                    ),
+                    React.createElement('div', { className: "border-t border-indigo-100 pt-4" },
+                        React.createElement('p', { className: "text-sm text-slate-500 mb-1" }, "Serviço contratado:"),
+                        React.createElement('p', { className: "font-medium text-slate-900 mb-2" }, servico ? servico.titulo : ''),
+                        React.createElement('p', { className: "text-sm text-slate-600" }, servico ? servico.descricao : ''),
+                        React.createElement('p', { className: "text-xs text-slate-400 mt-2" },
+                            servico && servico.dataRealizacao ? 'Realizado em: ' + new Date(servico.dataRealizacao).toLocaleDateString('pt-BR') : ''
+                        )
+                    )
+                ),
+
+                React.createElement('form', { onSubmit: handleSubmit, className: "space-y-6" },
+                    // Estrelas
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-center text-lg font-medium mb-4" }, 
+                            "Como você avalia este serviço?"
+                        ),
+                        React.createElement('div', { className: "flex justify-center gap-2 md:gap-4" },
+                            [1,2,3,4,5].map(function(v) {
+                                return React.createElement('button', {
+                                    key: v,
+                                    type: "button",
+                                    onClick: function() { setEstrelas(v); },
+                                    onMouseEnter: function() { setHoverEstrela(v); },
+                                    onMouseLeave: function() { setHoverEstrela(0); },
+                                    className: "focus:outline-none transform hover:scale-110 transition"
+                                },
+                                    React.createElement('svg', {
+                                        className: "w-10 h-10 md:w-14 md:h-14 " + (v <= (hoverEstrela || estrelas) ? 'text-amber-400' : 'text-slate-300'),
+                                        fill: "currentColor",
+                                        viewBox: "0 0 24 24"
+                                    },
+                                        React.createElement('path', { d: "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" })
+                                    )
+                                );
+                            })
+                        ),
+                        estrelas > 0 && React.createElement('p', { className: "text-center text-sm text-indigo-600 mt-2 font-medium" },
+                            "Você selecionou " + estrelas + " " + (estrelas === 1 ? 'estrela' : 'estrelas')
+                        )
+                    ),
+
+                    // Comentário
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-sm font-medium mb-2" }, 
+                            "Deixe seu comentário (opcional)"
+                        ),
+                        React.createElement('textarea', {
+                            value: comentario,
+                            onChange: function(e) { setComentario(e.target.value); },
+                            placeholder: "Conte-nos sobre sua experiência com este profissional...",
+                            rows: 4,
+                            maxLength: 500,
+                            className: "w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                        }),
+                        React.createElement('p', { className: "text-xs text-slate-400 text-right mt-1" },
+                            comentario.length + "/500 caracteres"
+                        )
+                    ),
+
+                    // Botão de envio - usando a variável separada
+                    React.createElement('button', {
+                        type: "submit",
+                        disabled: enviando || estrelas === 0,
+                        className: "w-full px-6 py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition flex items-center justify-center gap-2"
+                    }, botaoConteudo)
+                )
+            )
+        )
+    );
+}
         // ========== TELA DE LOGIN COM SENHA ==========
         function Login({ onLoginSuccess, onVoltar }) {
             const [email, setEmail] = useState('');
@@ -1314,3 +1314,4 @@
     </script>
 </body>
 </html>
+
