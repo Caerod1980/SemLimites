@@ -1983,9 +1983,18 @@
                             prestador.tags && prestador.tags.length > 0 && React.createElement('div', { className: "bg-white rounded-2xl border border-slate-200 p-6" },
                                 React.createElement('h3', { className: "text-lg font-semibold text-slate-900 mb-4" }, "Especialidades"),
                                 React.createElement('div', { className: "flex flex-wrap gap-2" },
-                                    prestador.tags.map(function(tag, index) {
-                                        return React.createElement('span', { key: index, className: "px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium" }, tag);
-                                    })
+                                    (function() {
+                                        var tagsElements = [];
+                                        for (var i = 0; i < prestador.tags.length; i++) {
+                                            tagsElements.push(
+                                                React.createElement('span', { 
+                                                    key: i, 
+                                                    className: "px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium" 
+                                                }, prestador.tags[i])
+                                            );
+                                        }
+                                        return tagsElements;
+                                    })()
                                 )
                             )
                         ),
@@ -2345,12 +2354,18 @@
                         p.tags && p.tags.length > 0 && React.createElement('div', null,
                             React.createElement('h2', { className: "text-xl font-semibold mb-3" }, "Especialidades"),
                             React.createElement('div', { className: "flex flex-wrap gap-2" },
-                                p.tags.map(function(tag, index) {
-                                    return React.createElement('span', { 
-                                        key: index, 
-                                        className: "px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium" 
-                                    }, tag);
-                                })
+                                (function() {
+                                    var tagsElements = [];
+                                    for (var i = 0; i < p.tags.length; i++) {
+                                        tagsElements.push(
+                                            React.createElement('span', { 
+                                                key: i, 
+                                                className: "px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium" 
+                                            }, p.tags[i])
+                                        );
+                                    }
+                                    return tagsElements;
+                                })()
                             )
                         ),
                         React.createElement('div', { className: "bg-slate-50 rounded-2xl p-6" },
