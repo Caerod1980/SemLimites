@@ -99,6 +99,83 @@ export const prestadoresAPI = {
   })
 };
 
+// ========== API DE SERVIÇOS ==========
+export const servicosAPI = {
+  /**
+   * Listar serviços do prestador logado
+   * @param {string} status - Filtrar por status (aguardando, avaliado, expirado)
+   * @returns {Promise} Lista de serviços
+   */
+  listar: (status = '') => {
+    const params = status ? `?status=${status}` : '';
+    return request(`/servicos/meus${params}`);
+  },
+  
+  /**
+   * Criar um novo serviço
+   * @param {Object} dados - Dados do serviço
+   * @returns {Promise} Serviço criado
+   */
+  criar: (dados) => request('/servicos', {
+    method: 'POST',
+    body: JSON.stringify(dados)
+  }),
+  
+  /**
+   * Buscar serviço por ID
+   * @param {string} id - ID do serviço
+   * @returns {Promise} Serviço encontrado
+   */
+  buscarPorId: (id) => request(`/servicos/${id}`),
+  
+  /**
+   * Buscar serviço por token de avaliação (público)
+   * @param {string} token - Token de avaliação
+   * @returns {Promise} Serviço encontrado
+   */
+  buscarPorToken: (token) => request(`/servicos/avaliar/${token}`),
+  
+  /**
+   * Registrar avaliação de um serviço (público)
+   * @param {string} token - Token de avaliação
+   * @param {number} estrelas - Nota de 1 a 5
+   * @param {string} comentario - Comentário do cliente
+   * @returns {Promise} Resultado da avaliação
+   */
+  avaliar: (token, estrelas, comentario) => request(`/servicos/avaliar/${token}`, {
+    method: 'POST',
+    body: JSON.stringify({ estrelas, comentario })
+  }),
+  
+  /**
+   * Reenviar link de avaliação (gerar novo token)
+   * @param {string} id - ID do serviço
+   * @returns {Promise} Novo link gerado
+   */
+  reenviarLink: (id) => request(`/servicos/${id}/reenviar`, {
+    method: 'POST'
+  }),
+  
+  /**
+   * Excluir um serviço (apenas não avaliados)
+   * @param {string} id - ID do serviço
+   * @returns {Promise} Resultado da exclusão
+   */
+  excluir: (id) => request(`/servicos/${id}`, {
+    method: 'DELETE'
+  }),
+  
+  /**
+   * Buscar serviços avaliados de um prestador (público para perfil)
+   * @param {string} prestadorId - ID do prestador
+   * @param {number} limit - Limite de resultados
+   * @returns {Promise} Lista de serviços avaliados
+   */
+  buscarPorPrestador: (prestadorId, limit = 5) => 
+    request(`/servicos/prestador/${prestadorId}?limit=${limit}`)
+};
+
+// ========== UTILITÁRIOS ==========
 export const testarConexao = async () => {
   try {
     const resultado = await fetch(`${AZURE_URL}/health`).then(r => r.json());
