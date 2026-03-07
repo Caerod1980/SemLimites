@@ -169,6 +169,725 @@
             return React.createElement('div', { className: className }, initials);
         }
 
+        // ========== COMPONENTE DE CRIAÇÃO DE SERVIÇO ==========
+        function NovoServico(props) {
+            var onSucesso = props.onSucesso;
+            var onCancelar = props.onCancelar;
+            
+            var [formData, setFormData] = useState({
+                clienteNome: '',
+                clienteWhatsApp: '',
+                clienteEmail: '',
+                titulo: '',
+                descricao: '',
+                dataRealizacao: new Date().toISOString().split('T')[0],
+                valor: ''
+            });
+            var [loading, setLoading] = useState(false);
+            var [erro, setErro] = useState('');
+
+            function formatarWhatsApp(valor) {
+                var numeros = valor.replace(/\D/g, '');
+                if (numeros.length <= 11) {
+                    return numeros.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+                }
+                return valor;
+            }
+
+            function handleChange(e) {
+                var name = e.target.name;
+                var value = e.target.value;
+                
+                if (name === 'clienteWhatsApp') {
+                    setFormData({ ...formData, [name]: formatarWhatsApp(value) });
+                } else {
+                    setFormData({ ...formData, [name]: value });
+                }
+            }
+
+            function handleSubmit(e) {
+                e.preventDefault();
+                setLoading(true);
+                setErro('');
+
+                var whatsappNumeros = formData.clienteWhatsApp.replace(/\D/g, '');
+                if (whatsappNumeros.length < 10 || whatsappNumeros.length > 11) {
+                    setErro('WhatsApp inválido. Digite um número com DDD');
+                    setLoading(false);
+                    return;
+                }
+
+                var dadosEnvio = {
+                    clienteNome: formData.clienteNome,
+                    clienteWhatsApp: whatsappNumeros,
+                    clienteEmail: formData.clienteEmail,
+                    titulo: formData.titulo,
+                    descricao: formData.descricao,
+                    dataRealizacao: formData.dataRealizacao,
+                    valor: formData.valor ? parseFloat(formData.valor) : 0
+                };
+
+                fetch(API_URL + '/servicos', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify(dadosEnvio)
+                })
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        if (data.error) {
+                            throw new Error(data.error);
+                        }
+                        alert('✅ Serviço cadastrado com sucesso!');
+                        onSucesso();
+                    })
+                    .catch(function(error) {
+                        setErro(error.message);
+                        setLoading(false);
+                    });
+            }
+
+            var erroElement = null;
+            if (erro) {
+                erroElement = React.createElement('div', { className: "mb-4 p-3 rounded-lg bg-red-50 border border-red-200" },
+                    React.createElement('p', { className: "text-sm text-red-600" }, erro)
+                );
+            }
+
+            return React.createElement('div', { className: "bg-gradient-to-br from-indigo-50 to-white rounded-2xl p-6 border border-indigo-200 shadow-sm" },
+                React.createElement('h3', { className: "text-lg font-semibold text-indigo-900 mb-4 flex items-center gap-2" },
+                    React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M12 6v6m0 0v6m0-6h6m-6 0H6" })
+                    ),
+                    "Cadastrar Novo Serviço"
+                ),
+
+                erroElement,
+
+                React.createElement('form', { onSubmit: handleSubmit, className: "space-y-4" },
+                    React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
+                        React.createElement('div', null,
+                            React.createElement('label', { className: "block text-sm font-medium text-slate-700 mb-1" }, "Nome do Cliente *"),
+                            React.createElement('input', {
+                                type: "text",
+                                name: "clienteNome",
+                                value: formData.clienteNome,
+                                onChange: handleChange,
+                                required: true,
+                                className: "w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                            })
+                        ),
+                        React.createElement('div', null,
+                            React.createElement('label', { className: "block text-sm font-medium text-slate-700 mb-1" }, "WhatsApp *"),
+                            React.createElement('input', {
+                                type: "text",
+                                name: "clienteWhatsApp",
+                                value: formData.clienteWhatsApp,
+                                onChange: handleChange,
+                                required: true,
+                                className: "w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50",
+                                placeholder: "(14) 99999-9999"
+                            })
+                        )
+                    ),
+
+                    React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
+                        React.createElement('div', null,
+                            React.createElement('label', { className: "block text-sm font-medium text-slate-700 mb-1" }, "Título do Serviço *"),
+                            React.createElement('input', {
+                                type: "text",
+                                name: "titulo",
+                                value: formData.titulo,
+                                onChange: handleChange,
+                                required: true,
+                                className: "w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                            })
+                        ),
+                        React.createElement('div', null,
+                            React.createElement('label', { className: "block text-sm font-medium text-slate-700 mb-1" }, "Data *"),
+                            React.createElement('input', {
+                                type: "date",
+                                name: "dataRealizacao",
+                                value: formData.dataRealizacao,
+                                onChange: handleChange,
+                                required: true,
+                                className: "w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                            })
+                        )
+                    ),
+
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-sm font-medium text-slate-700 mb-1" }, "E-mail (opcional)"),
+                        React.createElement('input', {
+                            type: "email",
+                            name: "clienteEmail",
+                            value: formData.clienteEmail,
+                            onChange: handleChange,
+                            className: "w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50",
+                            placeholder: "cliente@email.com"
+                        })
+                    ),
+
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-sm font-medium text-slate-700 mb-1" }, "Descrição *"),
+                        React.createElement('textarea', {
+                            name: "descricao",
+                            value: formData.descricao,
+                            onChange: handleChange,
+                            required: true,
+                            rows: 3,
+                            className: "w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                        })
+                    ),
+
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-sm font-medium text-slate-700 mb-1" }, "Valor (opcional)"),
+                        React.createElement('input', {
+                            type: "number",
+                            name: "valor",
+                            value: formData.valor,
+                            onChange: handleChange,
+                            min: "0",
+                            step: "0.01",
+                            className: "w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50",
+                            placeholder: "0,00"
+                        })
+                    ),
+
+                    React.createElement('div', { className: "flex gap-3 pt-4" },
+                        React.createElement('button', {
+                            type: "submit",
+                            disabled: loading,
+                            className: "flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-xl hover:shadow-lg disabled:opacity-50 transition"
+                        }, loading ? 'Cadastrando...' : 'Cadastrar Serviço'),
+                        React.createElement('button', {
+                            type: "button",
+                            onClick: onCancelar,
+                            className: "px-6 py-3 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition"
+                        }, "Cancelar")
+                    )
+                )
+            );
+        }
+
+        // ========== COMPONENTE DE LISTAGEM DE SERVIÇOS ==========
+        function MeusServicos() {
+            var [servicos, setServicos] = useState([]);
+            var [loading, setLoading] = useState(true);
+            var [mostrarForm, setMostrarForm] = useState(false);
+            var [filtro, setFiltro] = useState('todos');
+            var [copiado, setCopiado] = useState(null);
+
+            function carregarServicos() {
+                setLoading(true);
+                
+                var url = API_URL + '/servicos/meus';
+                if (filtro !== 'todos') {
+                    url = url + '?status=' + filtro;
+                }
+                
+                fetch(url, {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                })
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        if (data.servicos) {
+                            setServicos(data.servicos);
+                        }
+                        setLoading(false);
+                    })
+                    .catch(function(error) {
+                        console.error('Erro ao carregar serviços:', error);
+                        setLoading(false);
+                    });
+            }
+
+            useEffect(function() {
+                carregarServicos();
+            }, [filtro]);
+
+            function handleCopiarLink(link) {
+                navigator.clipboard.writeText(link);
+                setCopiado(link);
+                setTimeout(function() { setCopiado(null); }, 2000);
+            }
+
+            function handleEnviarWhatsApp(servico) {
+                var mensagem = "Olá " + servico.clienteNome + "! 👋\n\n";
+                mensagem = mensagem + "Você contratou " + servico.titulo + " pelo SemLimites.\n\n";
+                mensagem = mensagem + "Por favor, avalie o serviço clicando no link abaixo:\n";
+                mensagem = mensagem + servico.linkAvaliacao + "\n\n";
+                mensagem = mensagem + "Sua avaliação é muito importante para nós! ⭐";
+                
+                window.open('https://wa.me/' + servico.clienteWhatsApp + '?text=' + encodeURIComponent(mensagem), '_blank');
+            }
+
+            function handleReenviarLink(id) {
+                fetch(API_URL + '/servicos/' + id + '/reenviar', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                })
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        if (data.linkAvaliacao) {
+                            alert('✅ Novo link gerado!');
+                            carregarServicos();
+                        }
+                    })
+                    .catch(function(error) {
+                        alert('Erro ao gerar novo link');
+                    });
+            }
+
+            function handleExcluir(id) {
+                if (!window.confirm('Tem certeza que deseja excluir este serviço?')) {
+                    return;
+                }
+                
+                fetch(API_URL + '/servicos/' + id, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                })
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        if (data.message) {
+                            alert('✅ Serviço excluído!');
+                            carregarServicos();
+                        }
+                    })
+                    .catch(function(error) {
+                        alert('Erro ao excluir serviço');
+                    });
+            }
+
+            if (loading) {
+                return React.createElement('div', { className: "text-center py-12" },
+                    React.createElement('div', { className: "w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" }),
+                    React.createElement('p', { className: "text-slate-600" }, "Carregando serviços...")
+                );
+            }
+
+            var servicosFiltrados = servicos;
+            if (filtro !== 'todos') {
+                servicosFiltrados = servicos.filter(function(s) { return s.status === filtro; });
+            }
+
+            return React.createElement('div', { className: "space-y-6" },
+                React.createElement('div', { className: "flex justify-between items-center" },
+                    React.createElement('h2', { className: "text-2xl font-bold text-slate-900" }, "Meus Serviços"),
+                    React.createElement('button', {
+                        onClick: function() { setMostrarForm(!mostrarForm); },
+                        className: "px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
+                    },
+                        React.createElement('svg', { className: "w-5 h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                            React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M12 4v16m8-8H4" })
+                        ),
+                        "Novo Serviço"
+                    )
+                ),
+
+                mostrarForm && React.createElement(NovoServico, {
+                    onSucesso: function() {
+                        setMostrarForm(false);
+                        carregarServicos();
+                    },
+                    onCancelar: function() { setMostrarForm(false); }
+                }),
+
+                React.createElement('div', { className: "flex gap-2 border-b border-slate-200 pb-4" },
+                    React.createElement('button', {
+                        onClick: function() { setFiltro('todos'); },
+                        className: "px-4 py-2 rounded-xl text-sm font-medium transition " + (filtro === 'todos' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-500 hover:bg-slate-100')
+                    }, "Todos"),
+                    React.createElement('button', {
+                        onClick: function() { setFiltro('aguardando'); },
+                        className: "px-4 py-2 rounded-xl text-sm font-medium transition " + (filtro === 'aguardando' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-500 hover:bg-slate-100')
+                    }, "Aguardando"),
+                    React.createElement('button', {
+                        onClick: function() { setFiltro('avaliado'); },
+                        className: "px-4 py-2 rounded-xl text-sm font-medium transition " + (filtro === 'avaliado' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-500 hover:bg-slate-100')
+                    }, "Avaliados"),
+                    React.createElement('button', {
+                        onClick: function() { setFiltro('expirado'); },
+                        className: "px-4 py-2 rounded-xl text-sm font-medium transition " + (filtro === 'expirado' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-500 hover:bg-slate-100')
+                    }, "Expirados")
+                ),
+
+                servicosFiltrados.length === 0 ?
+                    React.createElement('div', { className: "text-center py-12 bg-slate-50 rounded-2xl border border-slate-200" },
+                        React.createElement('svg', { className: "w-16 h-16 text-slate-300 mx-auto mb-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                            React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" })
+                        ),
+                        React.createElement('p', { className: "text-lg font-medium text-slate-700 mb-2" }, "Nenhum serviço encontrado"),
+                        React.createElement('p', { className: "text-sm text-slate-500 mb-6" }, "Cadastre seu primeiro serviço para começar"),
+                        React.createElement('button', {
+                            onClick: function() { setMostrarForm(true); },
+                            className: "px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700"
+                        }, "+ Novo Serviço")
+                    ) :
+                    React.createElement('div', { className: "grid gap-4" },
+                        servicosFiltrados.map(function(s) {
+                            var statusConfig = {
+                                aguardando: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', label: 'Aguardando', icon: '⏳' },
+                                avaliado: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', label: 'Avaliado', icon: '✅' },
+                                expirado: { bg: 'bg-slate-50', text: 'text-slate-500', border: 'border-slate-200', label: 'Expirado', icon: '⌛' }
+                            };
+                            var status = statusConfig[s.status] || statusConfig.aguardando;
+
+                            var dataRealizacao = '';
+                            if (s.dataRealizacao) {
+                                dataRealizacao = new Date(s.dataRealizacao).toLocaleDateString('pt-BR');
+                            }
+
+                            return React.createElement('div', { 
+                                key: s._id, 
+                                className: "bg-white rounded-2xl border " + status.border + " overflow-hidden hover:shadow-lg transition-all"
+                            },
+                                React.createElement('div', { className: status.bg + " px-6 py-4 border-b " + status.border + " flex justify-between items-center" },
+                                    React.createElement('div', { className: "flex items-center gap-3" },
+                                        React.createElement('span', { className: "text-2xl" }, status.icon),
+                                        React.createElement('div', null,
+                                            React.createElement('h3', { className: "font-bold text-lg text-slate-900" }, s.titulo),
+                                            React.createElement('p', { className: "text-sm text-slate-600" },
+                                                s.clienteNome + " • " + dataRealizacao
+                                            )
+                                        )
+                                    ),
+                                    React.createElement('span', { className: "px-3 py-1 rounded-full text-xs font-medium " + status.bg + " " + status.text + " border " + status.border },
+                                        status.label
+                                    )
+                                ),
+
+                                React.createElement('div', { className: "p-6 space-y-4" },
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, s.descricao),
+
+                                    s.valor > 0 && React.createElement('div', { className: "flex items-center gap-2 text-sm" },
+                                        React.createElement('span', { className: "font-medium text-slate-700" }, "Valor:"),
+                                        React.createElement('span', { className: "text-emerald-600 font-semibold" },
+                                            "R$ " + s.valor.toFixed(2).replace('.', ',')
+                                        )
+                                    ),
+
+                                    s.status === 'aguardando' && React.createElement('div', { className: "bg-indigo-50 rounded-xl p-4 border border-indigo-200" },
+                                        React.createElement('p', { className: "text-sm font-medium text-indigo-900 mb-3 flex items-center gap-2" },
+                                            React.createElement('svg', { className: "w-5 h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" })
+                                            ),
+                                            "Link de avaliação"
+                                        ),
+                                        React.createElement('div', { className: "flex flex-col sm:flex-row gap-2" },
+                                            React.createElement('input', {
+                                                type: "text",
+                                                value: s.linkAvaliacao,
+                                                readOnly: true,
+                                                className: "flex-1 px-4 py-3 bg-white rounded-xl border border-indigo-200 text-sm font-mono"
+                                            }),
+                                            React.createElement('div', { className: "flex gap-2" },
+                                                React.createElement('button', {
+                                                    onClick: function() { handleCopiarLink(s.linkAvaliacao); },
+                                                    className: "px-4 py-3 rounded-xl text-sm font-medium transition " + (copiado === s.linkAvaliacao ? 'bg-emerald-600 text-white' : 'bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50')
+                                                }, copiado === s.linkAvaliacao ? '✓ Copiado!' : '📋 Copiar'),
+                                                React.createElement('button', {
+                                                    onClick: function() { handleEnviarWhatsApp(s); },
+                                                    className: "px-4 py-3 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition flex items-center gap-2"
+                                                },
+                                                    React.createElement('svg', { className: "w-5 h-5", fill: "currentColor", viewBox: "0 0 24 24" },
+                                                        React.createElement('path', { d: "M12.001 2C6.478 2 2 6.478 2 12c0 1.85.502 3.647 1.425 5.204L2.038 21.5l4.379-1.282c1.5.852 3.2 1.321 5.022 1.321 5.523 0 10-4.478 10-10s-4.477-10-10-10zm0 18c-1.502 0-2.93-.421-4.166-1.166l-.3-.178-2.7.79.79-2.6-.164-.312A7.968 7.968 0 014 12c0-4.411 3.589-8 8.001-8 4.41 0 7.999 3.589 7.999 8 0 4.412-3.589 8-7.999 8z" }),
+                                                        React.createElement('path', { d: "M13.099 14.302l-1.8-.8c-.3-.1-.6-.1-.8.1l-1.2 1.4c-.1.1-.2.1-.3.1-.1 0-.2 0-.3-.1-1.3-.8-2.4-1.9-3.2-3.2 0-.1 0-.2.1-.3l1.4-1.2c.1-.1.2-.3.1-.5l-.8-1.8c0-.2-.2-.4-.4-.4h-1.4c-.2 0-.4.2-.4.4 0 2.8 1.4 5.4 3.7 7 2.3 1.6 5 2.1 7.6 1.2.2-.1.4-.3.4-.5v-1.4c.2-.2 0-.4-.2-.5z" })
+                                                    ),
+                                                    "WhatsApp"
+                                                )
+                                            )
+                                        ),
+                                        s.tokenExpiracao && React.createElement('p', { className: "text-xs text-indigo-600 mt-3" },
+                                            "Expira em: " + new Date(s.tokenExpiracao).toLocaleDateString('pt-BR')
+                                        )
+                                    ),
+
+                                    s.avaliacao && React.createElement('div', { className: "bg-amber-50 rounded-xl p-4 border border-amber-200" },
+                                        React.createElement('div', { className: "flex items-center justify-between mb-2" },
+                                            React.createElement('div', { className: "flex items-center gap-2" },
+                                                React.createElement('div', { className: "flex" },
+                                                    [1,2,3,4,5].map(function(e) {
+                                                        return React.createElement('svg', {
+                                                            key: e,
+                                                            className: "w-5 h-5 " + (e <= s.avaliacao.estrelas ? 'text-amber-400' : 'text-slate-300'),
+                                                            fill: "currentColor",
+                                                            viewBox: "0 0 20 20"
+                                                        },
+                                                            React.createElement('path', { d: "M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" })
+                                                        );
+                                                    })
+                                                ),
+                                                React.createElement('span', { className: "text-sm font-medium text-amber-800" }, s.avaliacao.estrelas + ".0")
+                                            ),
+                                            s.avaliacao.dataAvaliacao && React.createElement('span', { className: "text-xs text-slate-500" },
+                                                new Date(s.avaliacao.dataAvaliacao).toLocaleDateString('pt-BR')
+                                            )
+                                        ),
+                                        s.avaliacao.comentario && React.createElement('p', { className: "text-sm text-slate-700 italic" },
+                                            '"' + s.avaliacao.comentario + '"'
+                                        )
+                                    ),
+
+                                    s.status === 'aguardando' && React.createElement('div', { className: "flex justify-end gap-2 pt-2 border-t border-slate-100" },
+                                        React.createElement('button', {
+                                            onClick: function() { handleReenviarLink(s._id); },
+                                            className: "px-3 py-2 text-sm text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition"
+                                        }, "Gerar novo link"),
+                                        React.createElement('button', {
+                                            onClick: function() { handleExcluir(s._id); },
+                                            className: "px-3 py-2 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition"
+                                        }, "Excluir")
+                                    )
+                                )
+                            );
+                        })
+                    )
+            );
+        }
+
+        // ========== COMPONENTE DE AVALIAÇÕES ==========
+        function MinhasAvaliacoes() {
+            var [avaliacoes, setAvaliacoes] = useState([]);
+            var [loading, setLoading] = useState(true);
+
+            useEffect(function() {
+                fetch(API_URL + '/servicos/meus?status=avaliado&limit=50', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                })
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        if (data.servicos) {
+                            setAvaliacoes(data.servicos);
+                        }
+                        setLoading(false);
+                    })
+                    .catch(function(error) {
+                        console.error('Erro ao carregar avaliações:', error);
+                        setLoading(false);
+                    });
+            }, []);
+
+            if (loading) {
+                return React.createElement('div', { className: "text-center py-12" },
+                    React.createElement('div', { className: "w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" }),
+                    React.createElement('p', { className: "text-slate-600" }, "Carregando avaliações...")
+                );
+            }
+
+            if (avaliacoes.length === 0) {
+                return React.createElement('div', { className: "text-center py-12 bg-slate-50 rounded-2xl border border-slate-200" },
+                    React.createElement('svg', { className: "w-16 h-16 text-slate-300 mx-auto mb-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" })
+                    ),
+                    React.createElement('p', { className: "text-lg font-medium text-slate-700 mb-2" }, "Nenhuma avaliação ainda"),
+                    React.createElement('p', { className: "text-sm text-slate-500" }, "As avaliações aparecerão aqui quando seus clientes avaliarem os serviços.")
+                );
+            }
+
+            return React.createElement('div', { className: "space-y-4" },
+                React.createElement('h2', { className: "text-2xl font-bold text-slate-900" }, "Minhas Avaliações"),
+                React.createElement('div', { className: "grid gap-4" },
+                    avaliacoes.map(function(s) {
+                        return React.createElement('div', { key: s._id, className: "bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-md transition" },
+                            React.createElement('div', { className: "flex items-start justify-between mb-4" },
+                                React.createElement('div', null,
+                                    React.createElement('h3', { className: "font-semibold text-lg text-slate-900" }, s.titulo),
+                                    React.createElement('p', { className: "text-sm text-slate-500 mt-1" }, "Cliente: " + s.clienteNome)
+                                ),
+                                React.createElement('div', { className: "flex items-center gap-1" },
+                                    [1,2,3,4,5].map(function(e) {
+                                        return React.createElement('svg', {
+                                            key: e,
+                                            className: "w-5 h-5 " + (e <= s.avaliacao.estrelas ? 'text-amber-400' : 'text-slate-300'),
+                                            fill: "currentColor",
+                                            viewBox: "0 0 20 20"
+                                        },
+                                            React.createElement('path', { d: "M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" })
+                                        );
+                                    })
+                                )
+                            ),
+                            s.avaliacao.comentario && React.createElement('div', { className: "bg-slate-50 rounded-xl p-4 border border-slate-200" },
+                                React.createElement('p', { className: "text-sm text-slate-700 italic" }, '"' + s.avaliacao.comentario + '"')
+                            ),
+                            React.createElement('div', { className: "flex justify-between items-center mt-4 text-sm text-slate-500" },
+                                React.createElement('span', null, "Realizado em: " + new Date(s.dataRealizacao).toLocaleDateString('pt-BR')),
+                                React.createElement('span', null, "Avaliado em: " + new Date(s.avaliacao.dataAvaliacao).toLocaleDateString('pt-BR'))
+                            )
+                        );
+                    })
+                )
+            );
+        }
+
+        // ========== COMPONENTE DE PERFIL (EDIÇÃO) ==========
+        function EditarPerfil(props) {
+            var prestador = props.prestador;
+            var onSalvo = props.onSalvo;
+            
+            var [formData, setFormData] = useState({
+                nome: prestador.nome || '',
+                descricao: prestador.descricao || '',
+                whatsapp: prestador.whatsapp || '',
+                telefone: prestador.telefone || '',
+                cidade: prestador.cidade || 'Bauru',
+                categoria: prestador.categoria || '',
+                tags: prestador.tags ? prestador.tags.join(', ') : ''
+            });
+            var [loading, setLoading] = useState(false);
+            var [erro, setErro] = useState('');
+
+            function handleChange(e) {
+                var name = e.target.name;
+                var value = e.target.value;
+                setFormData({ ...formData, [name]: value });
+            }
+
+            function handleSubmit(e) {
+                e.preventDefault();
+                setLoading(true);
+                setErro('');
+
+                var dadosEnvio = {
+                    ...formData,
+                    tags: formData.tags.split(',').map(function(t) { return t.trim(); }).filter(function(t) { return t; })
+                };
+
+                fetch(API_URL + '/prestadores/perfil', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify(dadosEnvio)
+                })
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        if (data.error) {
+                            throw new Error(data.error);
+                        }
+                        alert('✅ Perfil atualizado com sucesso!');
+                        onSalvo();
+                    })
+                    .catch(function(error) {
+                        setErro(error.message);
+                        setLoading(false);
+                    });
+            }
+
+            var erroElement = null;
+            if (erro) {
+                erroElement = React.createElement('div', { className: "mb-4 p-3 rounded-lg bg-red-50 border border-red-200" },
+                    React.createElement('p', { className: "text-sm text-red-600" }, erro)
+                );
+            }
+
+            return React.createElement('div', { className: "space-y-4" },
+                React.createElement('h2', { className: "text-2xl font-bold text-slate-900" }, "Editar Perfil"),
+                erroElement,
+                React.createElement('form', { onSubmit: handleSubmit, className: "space-y-4" },
+                    React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
+                        React.createElement('div', null,
+                            React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Nome"),
+                            React.createElement('input', {
+                                type: "text",
+                                name: "nome",
+                                value: formData.nome,
+                                onChange: handleChange,
+                                required: true,
+                                className: "w-full px-4 py-2 rounded-xl border border-slate-200"
+                            })
+                        ),
+                        React.createElement('div', null,
+                            React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Categoria"),
+                            React.createElement('select', {
+                                name: "categoria",
+                                value: formData.categoria,
+                                onChange: handleChange,
+                                required: true,
+                                className: "w-full px-4 py-2 rounded-xl border border-slate-200"
+                            },
+                                React.createElement('option', { value: "" }, "Selecione"),
+                                CATEGORIAS.map(function(c) { return React.createElement('option', { key: c, value: c }, c); })
+                            )
+                        )
+                    ),
+
+                    React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
+                        React.createElement('div', null,
+                            React.createElement('label', { className: "block text-sm font-medium mb-1" }, "WhatsApp"),
+                            React.createElement('input', {
+                                type: "text",
+                                name: "whatsapp",
+                                value: formData.whatsapp,
+                                onChange: handleChange,
+                                required: true,
+                                className: "w-full px-4 py-2 rounded-xl border border-slate-200"
+                            })
+                        ),
+                        React.createElement('div', null,
+                            React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Telefone"),
+                            React.createElement('input', {
+                                type: "text",
+                                name: "telefone",
+                                value: formData.telefone,
+                                onChange: handleChange,
+                                className: "w-full px-4 py-2 rounded-xl border border-slate-200"
+                            })
+                        )
+                    ),
+
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Cidade"),
+                        React.createElement('select', {
+                            name: "cidade",
+                            value: formData.cidade,
+                            onChange: handleChange,
+                            required: true,
+                            className: "w-full px-4 py-2 rounded-xl border border-slate-200"
+                        },
+                            CIDADES.map(function(c) { return React.createElement('option', { key: c, value: c }, c); })
+                        )
+                    ),
+
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Descrição"),
+                        React.createElement('textarea', {
+                            name: "descricao",
+                            value: formData.descricao,
+                            onChange: handleChange,
+                            rows: 4,
+                            className: "w-full px-4 py-2 rounded-xl border border-slate-200"
+                        })
+                    ),
+
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-sm font-medium mb-1" }, "Tags (separadas por vírgula)"),
+                        React.createElement('input', {
+                            type: "text",
+                            name: "tags",
+                            value: formData.tags,
+                            onChange: handleChange,
+                            className: "w-full px-4 py-2 rounded-xl border border-slate-200",
+                            placeholder: "Ex: Emergência, Residencial, Comercial"
+                        })
+                    ),
+
+                    React.createElement('div', { className: "flex gap-3 pt-4" },
+                        React.createElement('button', {
+                            type: "submit",
+                            disabled: loading,
+                            className: "px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-xl hover:shadow-lg disabled:opacity-50"
+                        }, loading ? 'Salvando...' : 'Salvar alterações')
+                    )
+                )
+            );
+        }
+
         // ========== COMPONENTE DE SERVIÇOS DO PRESTADOR ==========
         function ServicosPrestador(props) {
             var prestadorId = props.prestadorId;
@@ -1061,7 +1780,7 @@
             );
         }
 
-        // ========== DASHBOARD DO PRESTADOR - VERSÃO COMPLETA ==========
+        // ========== DASHBOARD DO PRESTADOR ==========
         function DashboardPrestador(props) {
             var usuario = props.usuario;
             var onSair = props.onSair;
@@ -1069,6 +1788,7 @@
             var [prestador, setPrestador] = useState(null);
             var [loading, setLoading] = useState(true);
             var [aba, setAba] = useState('resumo');
+            var [editando, setEditando] = useState(false);
 
             useEffect(function() {
                 carregarDados();
@@ -1135,7 +1855,7 @@
                             ),
                             React.createElement('span', { className: "text-sm font-medium" }, "Reputação")
                         ),
-                        React.createElement('div', { className: "text-2xl font-bold text-slate-900" }, prestador.estrelas || 0),
+                        React.createElement('div', { className: "text-2xl font-bold text-slate-900" }, prestador.estrelas ? prestador.estrelas.toFixed(1) : "0.0"),
                         React.createElement('div', { className: "text-xs text-slate-500 mt-1" }, (prestador.avaliacoes || 0) + " avaliações")
                     ),
                     React.createElement('div', { className: "bg-white rounded-xl border border-slate-200 p-4" },
@@ -1155,7 +1875,7 @@
                             ),
                             React.createElement('span', { className: "text-sm font-medium" }, "Fiéis")
                         ),
-                        React.createElement('div', { className: "text-2xl font-bold text-slate-900" }, prestador.clientesFieis || 0 + "%"),
+                        React.createElement('div', { className: "text-2xl font-bold text-slate-900" }, (prestador.clientesFieis || 0) + "%"),
                         React.createElement('div', { className: "text-xs text-slate-500 mt-1" }, "retornaram")
                     ),
                     React.createElement('div', { className: "bg-white rounded-xl border border-slate-200 p-4" },
@@ -1165,7 +1885,7 @@
                             ),
                             React.createElement('span', { className: "text-sm font-medium" }, "Resposta")
                         ),
-                        React.createElement('div', { className: "text-2xl font-bold text-slate-900" }, prestador.tempoResposta || "~30"),
+                        React.createElement('div', { className: "text-2xl font-bold text-slate-900" }, prestador.tempoResposta || "30"),
                         React.createElement('div', { className: "text-xs text-slate-500 mt-1" }, "minutos")
                     )
                 ),
@@ -1175,7 +1895,7 @@
                     React.createElement('div', { className: "border-b border-slate-200 bg-slate-50/50" },
                         React.createElement('div', { className: "flex overflow-x-auto hide-scrollbar" },
                             React.createElement('button', {
-                                onClick: function() { setAba('resumo'); },
+                                onClick: function() { setAba('resumo'); setEditando(false); },
                                 className: "px-6 py-4 text-sm font-medium whitespace-nowrap transition-all relative " + (aba === 'resumo' ? 'text-indigo-600 bg-white' : 'text-slate-500 hover:text-slate-700')
                             },
                                 React.createElement('span', { className: "flex items-center gap-2" },
@@ -1186,7 +1906,7 @@
                                 )
                             ),
                             React.createElement('button', {
-                                onClick: function() { setAba('perfil'); },
+                                onClick: function() { setAba('perfil'); setEditando(false); },
                                 className: "px-6 py-4 text-sm font-medium whitespace-nowrap transition-all relative " + (aba === 'perfil' ? 'text-indigo-600 bg-white' : 'text-slate-500 hover:text-slate-700')
                             },
                                 React.createElement('span', { className: "flex items-center gap-2" },
@@ -1224,17 +1944,94 @@
                     // Conteúdo das abas
                     React.createElement('div', { className: "p-6" },
                         aba === 'resumo' && React.createElement('div', { className: "space-y-4" },
-                            React.createElement('p', { className: "text-slate-600" }, "Bem-vindo ao seu dashboard! Aqui você pode gerenciar seus serviços e acompanhar sua reputação.")
+                            React.createElement('div', { className: "grid md:grid-cols-2 gap-6" },
+                                React.createElement('div', { className: "bg-gradient-to-br from-indigo-50 to-white rounded-2xl border border-indigo-100 p-6" },
+                                    React.createElement('h3', { className: "text-lg font-semibold text-indigo-900 mb-4" }, "Informações do Perfil"),
+                                    React.createElement('div', { className: "space-y-3" },
+                                        React.createElement('div', null,
+                                            React.createElement('span', { className: "text-xs text-indigo-500 block" }, "Nome"),
+                                            React.createElement('span', { className: "text-sm font-medium text-indigo-900" }, prestador.nome)
+                                        ),
+                                        React.createElement('div', null,
+                                            React.createElement('span', { className: "text-xs text-indigo-500 block" }, "Categoria"),
+                                            React.createElement('span', { className: "text-sm font-medium text-indigo-900" }, prestador.categoria || "Não informada")
+                                        ),
+                                        React.createElement('div', null,
+                                            React.createElement('span', { className: "text-xs text-indigo-500 block" }, "Cidade"),
+                                            React.createElement('span', { className: "text-sm font-medium text-indigo-900" }, prestador.cidade || "Não informada")
+                                        )
+                                    )
+                                ),
+                                React.createElement('div', { className: "bg-gradient-to-br from-emerald-50 to-white rounded-2xl border border-emerald-100 p-6" },
+                                    React.createElement('h3', { className: "text-lg font-semibold text-emerald-900 mb-4" }, "Contato"),
+                                    React.createElement('div', { className: "space-y-3" },
+                                        React.createElement('div', null,
+                                            React.createElement('span', { className: "text-xs text-emerald-500 block" }, "WhatsApp"),
+                                            React.createElement('span', { className: "text-sm font-medium text-emerald-900" }, prestador.whatsapp || "Não informado")
+                                        ),
+                                        React.createElement('div', null,
+                                            React.createElement('span', { className: "text-xs text-emerald-500 block" }, "E-mail"),
+                                            React.createElement('span', { className: "text-sm font-medium text-emerald-900" }, prestador.email || "Não informado")
+                                        )
+                                    )
+                                )
+                            ),
+                            prestador.descricao && React.createElement('div', { className: "bg-white rounded-2xl border border-slate-200 p-6" },
+                                React.createElement('h3', { className: "text-lg font-semibold text-slate-900 mb-4" }, "Sobre"),
+                                React.createElement('p', { className: "text-slate-600" }, prestador.descricao)
+                            ),
+                            prestador.tags && prestador.tags.length > 0 && React.createElement('div', { className: "bg-white rounded-2xl border border-slate-200 p-6" },
+                                React.createElement('h3', { className: "text-lg font-semibold text-slate-900 mb-4" }, "Especialidades"),
+                                React.createElement('div', { className: "flex flex-wrap gap-2" },
+                                    prestador.tags.map(function(tag, index) {
+                                        return React.createElement('span', { key: index, className: "px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium" }, tag);
+                                    })
+                                )
+                            )
                         ),
                         aba === 'perfil' && React.createElement('div', { className: "space-y-4" },
-                            React.createElement('p', { className: "text-slate-600" }, "Em breve: edição de perfil")
+                            !editando ?
+                                React.createElement('div', { className: "flex justify-end mb-4" },
+                                    React.createElement('button', {
+                                        onClick: function() { setEditando(true); },
+                                        className: "px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 text-sm font-medium"
+                                    }, "Editar Perfil")
+                                ) : null,
+                            editando ?
+                                React.createElement(EditarPerfil, {
+                                    prestador: prestador,
+                                    onSalvo: function() {
+                                        setEditando(false);
+                                        carregarDados();
+                                    }
+                                }) :
+                                React.createElement('div', { className: "space-y-4" },
+                                    React.createElement('div', { className: "grid md:grid-cols-2 gap-4" },
+                                        React.createElement('div', { className: "p-4 bg-slate-50 rounded-xl" },
+                                            React.createElement('span', { className: "text-xs text-slate-500 block" }, "Nome"),
+                                            React.createElement('span', { className: "text-sm font-medium text-slate-900" }, prestador.nome)
+                                        ),
+                                        React.createElement('div', { className: "p-4 bg-slate-50 rounded-xl" },
+                                            React.createElement('span', { className: "text-xs text-slate-500 block" }, "Categoria"),
+                                            React.createElement('span', { className: "text-sm font-medium text-slate-900" }, prestador.categoria || "Não informada")
+                                        ),
+                                        React.createElement('div', { className: "p-4 bg-slate-50 rounded-xl" },
+                                            React.createElement('span', { className: "text-xs text-slate-500 block" }, "Cidade"),
+                                            React.createElement('span', { className: "text-sm font-medium text-slate-900" }, prestador.cidade || "Não informada")
+                                        ),
+                                        React.createElement('div', { className: "p-4 bg-slate-50 rounded-xl" },
+                                            React.createElement('span', { className: "text-xs text-slate-500 block" }, "WhatsApp"),
+                                            React.createElement('span', { className: "text-sm font-medium text-slate-900" }, prestador.whatsapp || "Não informado")
+                                        )
+                                    ),
+                                    prestador.descricao && React.createElement('div', { className: "p-4 bg-slate-50 rounded-xl" },
+                                        React.createElement('span', { className: "text-xs text-slate-500 block mb-2" }, "Descrição"),
+                                        React.createElement('p', { className: "text-sm text-slate-700" }, prestador.descricao)
+                                    )
+                                )
                         ),
-                        aba === 'servicos' && React.createElement('div', { className: "space-y-4" },
-                            React.createElement('p', { className: "text-slate-600" }, "Em breve: gerenciamento de serviços")
-                        ),
-                        aba === 'avaliacoes' && React.createElement('div', { className: "space-y-4" },
-                            React.createElement('p', { className: "text-slate-600" }, "Em breve: lista de avaliações")
-                        )
+                        aba === 'servicos' && React.createElement(MeusServicos, null),
+                        aba === 'avaliacoes' && React.createElement(MinhasAvaliacoes, null)
                     )
                 )
             );
@@ -1422,11 +2219,45 @@
             );
         }
 
-        // ========== TELA DE PERFIL SIMPLIFICADA ==========
+        // ========== TELA DE PERFIL PÚBLICO ==========
         function TelaPerfil(props) {
             var prestador = props.prestador;
             var onVoltar = props.onVoltar;
             
+            var [loading, setLoading] = useState(false);
+            var [dadosCompletos, setDadosCompletos] = useState(null);
+            var [erro, setErro] = useState('');
+
+            useEffect(function() {
+                if (prestador && (prestador.slug || prestador._id)) {
+                    carregarDadosCompletos();
+                } else {
+                    setErro('Prestador não encontrado');
+                }
+            }, [prestador]);
+
+            function carregarDadosCompletos() {
+                setLoading(true);
+                setErro('');
+                
+                var identifier = prestador.slug || prestador._id;
+                
+                fetch(API_URL + '/prestadores/' + identifier)
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        if (data._id) {
+                            setDadosCompletos(data);
+                        } else {
+                            setErro('Erro ao carregar perfil');
+                        }
+                        setLoading(false);
+                    })
+                    .catch(function() {
+                        setErro('Erro de conexão ao carregar perfil');
+                        setLoading(false);
+                    });
+            }
+
             if (!prestador) {
                 return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8 text-center" },
                     React.createElement('p', { className: "text-red-600" }, "Prestador não encontrado"),
@@ -1436,6 +2267,47 @@
                     }, "Voltar")
                 );
             }
+
+            if (loading) {
+                return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8" },
+                    React.createElement('button', {
+                        onClick: onVoltar,
+                        className: "mb-6 text-indigo-600 hover:text-indigo-800 flex items-center gap-2"
+                    },
+                        React.createElement('svg', { className: "w-5 h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                            React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M10 19l-7-7m0 0l7-7m-7 7h18" })
+                        ),
+                        "Voltar para busca"
+                    ),
+                    React.createElement('div', { className: "text-center py-8" },
+                        React.createElement('div', { className: "w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" }),
+                        React.createElement('p', null, "Carregando perfil...")
+                    )
+                );
+            }
+
+            if (erro) {
+                return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8" },
+                    React.createElement('button', {
+                        onClick: onVoltar,
+                        className: "mb-6 text-indigo-600 hover:text-indigo-800 flex items-center gap-2"
+                    },
+                        React.createElement('svg', { className: "w-5 h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                            React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M10 19l-7-7m0 0l7-7m-7 7h18" })
+                        ),
+                        "Voltar para busca"
+                    ),
+                    React.createElement('div', { className: "text-center py-8" },
+                        React.createElement('p', { className: "text-red-600 mb-4" }, erro),
+                        React.createElement('button', {
+                            onClick: carregarDadosCompletos,
+                            className: "px-4 py-2 bg-indigo-600 text-white rounded-xl"
+                        }, "Tentar novamente")
+                    )
+                );
+            }
+
+            var p = dadosCompletos || prestador;
 
             return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8" },
                 React.createElement('button', {
@@ -1447,8 +2319,77 @@
                     ),
                     "Voltar para busca"
                 ),
-                React.createElement('div', { className: "bg-white rounded-3xl border border-slate-200 p-8" },
-                    React.createElement('h1', { className: "text-2xl font-bold" }, prestador.nome || "Profissional")
+                React.createElement('div', { className: "bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm" },
+                    React.createElement('div', { className: "bg-gradient-to-r from-indigo-600 to-indigo-700 p-8 text-white" },
+                        React.createElement('div', { className: "flex items-center gap-6" },
+                            React.createElement(Avatar, { name: p.nome, size: "xxl" }),
+                            React.createElement('div', null,
+                                React.createElement('h1', { className: "text-3xl font-bold mb-2" }, p.nome),
+                                React.createElement('p', { className: "text-indigo-100" }, 
+                                    (p.categoria || 'Categoria não informada') + ' • ' + (p.cidade || 'Cidade não informada')
+                                ),
+                                React.createElement('div', { className: "flex items-center gap-2 mt-3" },
+                                    React.createElement(Stars, { value: p.estrelas || 0, size: "lg" }),
+                                    React.createElement('span', { className: "text-sm text-indigo-200" }, 
+                                        '(' + (p.avaliacoes || 0) + ' avaliações)'
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    React.createElement('div', { className: "p-8 space-y-6" },
+                        p.descricao && React.createElement('div', null,
+                            React.createElement('h2', { className: "text-xl font-semibold mb-3" }, "Sobre"),
+                            React.createElement('p', { className: "text-slate-600 leading-relaxed" }, p.descricao)
+                        ),
+                        p.tags && p.tags.length > 0 && React.createElement('div', null,
+                            React.createElement('h2', { className: "text-xl font-semibold mb-3" }, "Especialidades"),
+                            React.createElement('div', { className: "flex flex-wrap gap-2" },
+                                p.tags.map(function(tag, index) {
+                                    return React.createElement('span', { 
+                                        key: index, 
+                                        className: "px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium" 
+                                    }, tag);
+                                })
+                            )
+                        ),
+                        React.createElement('div', { className: "bg-slate-50 rounded-2xl p-6" },
+                            React.createElement('h2', { className: "text-xl font-semibold mb-4" }, "Contato"),
+                            React.createElement('div', { className: "space-y-3" },
+                                p.whatsapp && React.createElement('div', { className: "flex items-center gap-3" },
+                                    React.createElement('svg', { className: "w-5 h-5 text-emerald-600", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" })
+                                    ),
+                                    React.createElement('a', {
+                                        href: 'https://wa.me/' + p.whatsapp + '?text=' + encodeURIComponent('Olá! Vi seu perfil no SemLimites e gostaria de solicitar um orçamento.'),
+                                        target: "_blank",
+                                        className: "text-emerald-700 hover:text-emerald-900"
+                                    }, p.whatsapp)
+                                ),
+                                p.telefone && React.createElement('div', { className: "flex items-center gap-3" },
+                                    React.createElement('svg', { className: "w-5 h-5 text-slate-500", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" })
+                                    ),
+                                    React.createElement('span', { className: "text-slate-700" }, p.telefone)
+                                ),
+                                p.email && React.createElement('div', { className: "flex items-center gap-3" },
+                                    React.createElement('svg', { className: "w-5 h-5 text-slate-500", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" })
+                                    ),
+                                    React.createElement('span', { className: "text-slate-700" }, p.email)
+                                )
+                            )
+                        ),
+                        p.avaliacoes > 0 && React.createElement('div', { className: "mt-8 pt-6 border-t border-slate-200" },
+                            React.createElement('h2', { className: "text-xl font-semibold mb-4 flex items-center gap-2" },
+                                React.createElement('svg', { className: "w-6 h-6 text-indigo-600", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                    React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                ),
+                                "Serviços Realizados"
+                            ),
+                            React.createElement(ServicosPrestador, { prestadorId: p._id })
+                        )
+                    )
                 )
             );
         }
