@@ -201,7 +201,13 @@
                 
                 var estrelasElements = [];
                 for (var e = 1; e <= 5; e++) {
-                    var estrelaClass = "w-4 h-4 " + (e <= (s.avaliacao && s.avaliacao.estrelas ? s.avaliacao.estrelas : 0) ? 'text-amber-400' : 'text-slate-300');
+                    var estrelaClass = "w-4 h-4 ";
+                    if (e <= (s.avaliacao && s.avaliacao.estrelas ? s.avaliacao.estrelas : 0)) {
+                        estrelaClass += "text-amber-400";
+                    } else {
+                        estrelaClass += "text-slate-300";
+                    }
+                    
                     estrelasElements.push(
                         React.createElement('svg', {
                             key: e,
@@ -242,7 +248,7 @@
             return React.createElement('div', { className: "space-y-3" }, servicosElements);
         }
 
-        // ========== PÁGINA DE AVALIAÇÃO CORRIGIDA ==========
+        // ========== PÁGINA DE AVALIAÇÃO SIMPLIFICADA ==========
         function AvaliarServico() {
             var [loading, setLoading] = useState(true);
             var [erro, setErro] = useState('');
@@ -340,7 +346,7 @@
                         ),
                         React.createElement('h2', { className: "text-2xl font-bold text-slate-900 mb-3" }, "Avaliação enviada!"),
                         React.createElement('p', { className: "text-slate-600 mb-6" }, 
-                            "Obrigado por contribuir com a comunidade SemLimites. Sua avaliação ajuda outros clientes a escolherem melhores profissionais."
+                            "Obrigado por contribuir com a comunidade SemLimites."
                         ),
                         React.createElement('p', { className: "text-sm text-slate-400" }, "Redirecionando...")
                     )
@@ -352,9 +358,12 @@
             var prestadorCidade = servico && servico.prestador ? (servico.prestador.cidade || '') : '';
             var servicoTitulo = servico ? servico.titulo : '';
             var servicoDescricao = servico ? servico.descricao : '';
-            var servicoData = servico && servico.dataRealizacao ? 'Realizado em: ' + new Date(servico.dataRealizacao).toLocaleDateString('pt-BR') : '';
+            var servicoData = '';
+            if (servico && servico.dataRealizacao) {
+                servicoData = 'Realizado em: ' + new Date(servico.dataRealizacao).toLocaleDateString('pt-BR');
+            }
 
-            // Criar botões de estrelas de forma simples e segura
+            // Criar botões de estrelas
             var estrelasButtons = [];
             for (var v = 1; v <= 5; v++) {
                 var corEstrela = 'text-slate-300';
@@ -362,50 +371,35 @@
                     corEstrela = 'text-amber-400';
                 }
                 
-                (function(valor) {
-                    estrelasButtons.push(
-                        React.createElement('button', {
-                            key: valor,
-                            type: "button",
-                            onClick: function() { setEstrelas(valor); },
-                            onMouseEnter: function() { setHoverEstrela(valor); },
-                            onMouseLeave: function() { setHoverEstrela(0); },
-                            className: "focus:outline-none transform hover:scale-110 transition"
-                        },
-                            React.createElement('svg', {
-                                className: "w-10 h-10 md:w-14 md:h-14 " + corEstrela,
-                                fill: "currentColor",
-                                viewBox: "0 0 24 24"
-                            },
-                                React.createElement('path', { d: "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" })
-                            )
-                        )
-                    );
-                })(v);
+                var botaoEstrela = React.createElement('button', {
+                    key: v,
+                    type: "button",
+                    onClick: (function(val) {
+                        return function() { setEstrelas(val); };
+                    })(v),
+                    onMouseEnter: (function(val) {
+                        return function() { setHoverEstrela(val); };
+                    })(v),
+                    onMouseLeave: function() { setHoverEstrela(0); },
+                    className: "focus:outline-none transform hover:scale-110 transition"
+                },
+                    React.createElement('svg', {
+                        className: "w-10 h-10 md:w-14 md:h-14 " + corEstrela,
+                        fill: "currentColor",
+                        viewBox: "0 0 24 24"
+                    },
+                        React.createElement('path', { d: "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" })
+                    )
+                );
+                estrelasButtons.push(botaoEstrela);
             }
 
-            // Criar texto de seleção
+            // Texto de seleção
             var textoSelecao = null;
             if (estrelas > 0) {
                 var palavra = estrelas === 1 ? 'estrela' : 'estrelas';
                 textoSelecao = React.createElement('p', { className: "text-center text-sm text-indigo-600 mt-2 font-medium" },
                     "Você selecionou " + estrelas + " " + palavra
-                );
-            }
-
-            // Criar conteúdo do botão de envio
-            var botaoConteudo;
-            if (enviando) {
-                botaoConteudo = React.createElement(React.Fragment, null,
-                    React.createElement('div', { className: "w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" }),
-                    "Enviando avaliação..."
-                );
-            } else {
-                botaoConteudo = React.createElement(React.Fragment, null,
-                    React.createElement('svg', { className: "w-5 h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M5 13l4 4L19 7" })
-                    ),
-                    "Enviar avaliação"
                 );
             }
 
@@ -450,7 +444,7 @@
                                 React.createElement('textarea', {
                                     value: comentario,
                                     onChange: function(e) { setComentario(e.target.value); },
-                                    placeholder: "Conte-nos sobre sua experiência com este profissional...",
+                                    placeholder: "Conte-nos sobre sua experiência...",
                                     rows: 4,
                                     maxLength: 500,
                                     className: "w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
@@ -464,7 +458,7 @@
                                 type: "submit",
                                 disabled: enviando || estrelas === 0,
                                 className: "w-full px-6 py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition flex items-center justify-center gap-2"
-                            }, botaoConteudo)
+                            }, enviando ? 'Enviando...' : 'Enviar avaliação')
                         )
                     )
                 )
@@ -524,22 +518,22 @@
             var tipos = ['cliente', 'prestador'];
             for (var i = 0; i < tipos.length; i++) {
                 var t = tipos[i];
-                (function(valor) {
-                    radioButtons.push(
-                        React.createElement('label', { key: valor, className: "flex items-center gap-2" },
-                            React.createElement('input', {
-                                type: "radio",
-                                value: valor,
-                                checked: tipo === valor,
-                                onChange: function() { setTipo(valor); },
-                                className: "w-4 h-4 text-indigo-600"
-                            }),
-                            React.createElement('span', { className: "text-sm" }, 
-                                valor === 'cliente' ? 'Cliente' : 'Prestador'
-                            )
+                radioButtons.push(
+                    React.createElement('label', { key: t, className: "flex items-center gap-2" },
+                        React.createElement('input', {
+                            type: "radio",
+                            value: t,
+                            checked: tipo === t,
+                            onChange: function(val) {
+                                return function() { setTipo(val); };
+                            }(t),
+                            className: "w-4 h-4 text-indigo-600"
+                        }),
+                        React.createElement('span', { className: "text-sm" }, 
+                            t === 'cliente' ? 'Cliente' : 'Prestador'
                         )
-                    );
-                })(t);
+                    )
+                );
             }
 
             return React.createElement('div', { className: "max-w-md mx-auto px-4 py-12" },
