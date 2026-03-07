@@ -242,7 +242,7 @@
             return React.createElement('div', { className: "space-y-3" }, servicosElements);
         }
 
-        // ========== PÁGINA DE AVALIAÇÃO ==========
+        // ========== PÁGINA DE AVALIAÇÃO CORRIGIDA ==========
         function AvaliarServico() {
             var [loading, setLoading] = useState(true);
             var [erro, setErro] = useState('');
@@ -354,29 +354,46 @@
             var servicoDescricao = servico ? servico.descricao : '';
             var servicoData = servico && servico.dataRealizacao ? 'Realizado em: ' + new Date(servico.dataRealizacao).toLocaleDateString('pt-BR') : '';
 
+            // Criar botões de estrelas de forma simples e segura
             var estrelasButtons = [];
             for (var v = 1; v <= 5; v++) {
-                var estrelaClass = "w-10 h-10 md:w-14 md:h-14 " + (v <= (hoverEstrela || estrelas) ? 'text-amber-400' : 'text-slate-300');
-                estrelasButtons.push(
-                    React.createElement('button', {
-                        key: v,
-                        type: "button",
-                        onClick: function(val) { return function() { setEstrelas(val); }; }(v),
-                        onMouseEnter: function(val) { return function() { setHoverEstrela(val); }; }(v),
-                        onMouseLeave: function() { setHoverEstrela(0); },
-                        className: "focus:outline-none transform hover:scale-110 transition"
-                    },
-                        React.createElement('svg', {
-                            className: estrelaClass,
-                            fill: "currentColor",
-                            viewBox: "0 0 24 24"
+                var corEstrela = 'text-slate-300';
+                if (v <= (hoverEstrela || estrelas)) {
+                    corEstrela = 'text-amber-400';
+                }
+                
+                (function(valor) {
+                    estrelasButtons.push(
+                        React.createElement('button', {
+                            key: valor,
+                            type: "button",
+                            onClick: function() { setEstrelas(valor); },
+                            onMouseEnter: function() { setHoverEstrela(valor); },
+                            onMouseLeave: function() { setHoverEstrela(0); },
+                            className: "focus:outline-none transform hover:scale-110 transition"
                         },
-                            React.createElement('path', { d: "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" })
+                            React.createElement('svg', {
+                                className: "w-10 h-10 md:w-14 md:h-14 " + corEstrela,
+                                fill: "currentColor",
+                                viewBox: "0 0 24 24"
+                            },
+                                React.createElement('path', { d: "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" })
+                            )
                         )
-                    )
+                    );
+                })(v);
+            }
+
+            // Criar texto de seleção
+            var textoSelecao = null;
+            if (estrelas > 0) {
+                var palavra = estrelas === 1 ? 'estrela' : 'estrelas';
+                textoSelecao = React.createElement('p', { className: "text-center text-sm text-indigo-600 mt-2 font-medium" },
+                    "Você selecionou " + estrelas + " " + palavra
                 );
             }
 
+            // Criar conteúdo do botão de envio
             var botaoConteudo;
             if (enviando) {
                 botaoConteudo = React.createElement(React.Fragment, null,
@@ -423,9 +440,7 @@
                                     "Como você avalia este serviço?"
                                 ),
                                 React.createElement('div', { className: "flex justify-center gap-2 md:gap-4" }, estrelasButtons),
-                                estrelas > 0 ? React.createElement('p', { className: "text-center text-sm text-indigo-600 mt-2 font-medium" },
-                                    "Você selecionou " + estrelas + " " + (estrelas === 1 ? 'estrela' : 'estrelas')
-                                ) : null
+                                textoSelecao
                             ),
 
                             React.createElement('div', null,
@@ -509,20 +524,22 @@
             var tipos = ['cliente', 'prestador'];
             for (var i = 0; i < tipos.length; i++) {
                 var t = tipos[i];
-                radioButtons.push(
-                    React.createElement('label', { key: t, className: "flex items-center gap-2" },
-                        React.createElement('input', {
-                            type: "radio",
-                            value: t,
-                            checked: tipo === t,
-                            onChange: function(val) { return function() { setTipo(val); }; }(t),
-                            className: "w-4 h-4 text-indigo-600"
-                        }),
-                        React.createElement('span', { className: "text-sm" }, 
-                            t === 'cliente' ? 'Cliente' : 'Prestador'
+                (function(valor) {
+                    radioButtons.push(
+                        React.createElement('label', { key: valor, className: "flex items-center gap-2" },
+                            React.createElement('input', {
+                                type: "radio",
+                                value: valor,
+                                checked: tipo === valor,
+                                onChange: function() { setTipo(valor); },
+                                className: "w-4 h-4 text-indigo-600"
+                            }),
+                            React.createElement('span', { className: "text-sm" }, 
+                                valor === 'cliente' ? 'Cliente' : 'Prestador'
+                            )
                         )
-                    )
-                );
+                    );
+                })(t);
             }
 
             return React.createElement('div', { className: "max-w-md mx-auto px-4 py-12" },
