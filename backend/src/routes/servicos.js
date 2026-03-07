@@ -307,4 +307,43 @@ router.post('/avaliar/:token', async (req, res) => {
   }
 });
 
+// ========== BUSCAR SERVIÇOS AVALIADOS DE UM PRESTADOR (PÚBLICO) ==========
+// Rota para exibir serviços avaliados no perfil do prestador
+router.get('/prestador/:prestadorId', async (req, res) => {
+  try {
+    const { prestadorId } = req.params;
+    const { limit = 10 } = req.query;
+
+    // Validar se o prestadorId é válido
+    if (!prestadorId) {
+      return res.status(400).json({ error: 'ID do prestador não fornecido' });
+    }
+
+    // Buscar serviços avaliados do prestador
+    const servicos = await Servico.find({
+      prestadorId,
+      status: 'avaliado'
+    })
+    .sort({ 'avaliacao.dataAvaliacao': -1 }) // Mais recentes primeiro
+    .limit(parseInt(limit))
+    .select('titulo descricao dataRealizacao clienteNome avaliacao'); // Apenas campos necessários
+
+    // Contar total de serviços avaliados
+    const total = await Servico.countDocuments({
+      prestadorId,
+      status: 'avaliado'
+    });
+
+    res.json({
+      servicos,
+      total,
+      limit: parseInt(limit)
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao buscar serviços do prestador:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
