@@ -1984,16 +1984,16 @@
                                 React.createElement('h3', { className: "text-lg font-semibold text-slate-900 mb-4" }, "Especialidades"),
                                 React.createElement('div', { className: "flex flex-wrap gap-2" },
                                     (function() {
-                                        var tagsElements = [];
+                                        var elementos = [];
                                         for (var i = 0; i < prestador.tags.length; i++) {
-                                            tagsElements.push(
+                                            elementos.push(
                                                 React.createElement('span', { 
                                                     key: i, 
                                                     className: "px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium" 
                                                 }, prestador.tags[i])
                                             );
                                         }
-                                        return tagsElements;
+                                        return elementos;
                                     })()
                                 )
                             )
@@ -2355,16 +2355,16 @@
                             React.createElement('h2', { className: "text-xl font-semibold mb-3" }, "Especialidades"),
                             React.createElement('div', { className: "flex flex-wrap gap-2" },
                                 (function() {
-                                    var tagsElements = [];
+                                    var elementos = [];
                                     for (var i = 0; i < p.tags.length; i++) {
-                                        tagsElements.push(
+                                        elementos.push(
                                             React.createElement('span', { 
                                                 key: i, 
                                                 className: "px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium" 
                                             }, p.tags[i])
                                         );
                                     }
-                                    return tagsElements;
+                                    return elementos;
                                 })()
                             )
                         ),
