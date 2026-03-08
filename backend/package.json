@@ -7,6 +7,7 @@
     "dev": "nodemon src/app.js"
   },
   "dependencies": {
+    "multer": "^1.4.5-lts.1",
     "express": "^4.18.2",
     "mongoose": "^7.5.0",
     "cors": "^2.8.5",
