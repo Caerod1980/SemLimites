@@ -1,8 +1,28 @@
 import express from 'express';
 import Prestador from '../models/Prestador.js';
+import User from '../models/User.js';
 import { consultarCNPJ } from '../services/receitaFederal.js';
 
 const router = express.Router();
+
+// ========== MIDDLEWARE DE AUTENTICAÇÃO ==========
+// (Assumindo que você tem um middleware de autenticação)
+const autenticar = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: 'Token não fornecido' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(401).json({ error: 'Token inválido' });
+  }
+};
 
 // ========== BUSCAR PRESTADORES COM FILTROS ==========
 router.get('/busca', async (req, res) => {
@@ -24,10 +44,9 @@ router.get('/busca', async (req, res) => {
     if (categoria) query.categoria = categoria;
     if (apenasVerificados === 'true') query.verificado = true;
 
-    // ========== BUSCA POR TEXTO (SEM ÍNDICE) ==========
+    // ========== BUSCA POR TEXTO ==========
     if (q && q.trim() !== '') {
       const termoBusca = q.trim();
-      // Usando regex para busca case-insensitive em múltiplos campos
       query.$or = [
         { nome: { $regex: termoBusca, $options: 'i' } },
         { descricao: { $regex: termoBusca, $options: 'i' } },
@@ -63,7 +82,6 @@ router.get('/busca', async (req, res) => {
 
     const total = await Prestador.countDocuments(query);
 
-    // Log para debug (opcional - remover em produção)
     console.log(`🔍 Busca realizada:`, {
       query,
       total,
@@ -84,6 +102,85 @@ router.get('/busca', async (req, res) => {
   }
 });
 
+// ========== BUSCAR PERFIL DO PRESTADOR LOGADO (NOVA ROTA) ==========
+router.get('/perfil', autenticar, async (req, res) => {
+  try {
+    console.log('🔍 Buscando perfil do usuário:', req.user.userId);
+
+    // Buscar o usuário para obter o prestadorId
+    const user = await User.findById(req.user.userId);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    if (user.tipo !== 'prestador') {
+      return res.status(403).json({ error: 'Usuário não é um prestador' });
+    }
+
+    if (!user.prestadorId) {
+      return res.status(404).json({ error: 'Prestador não vinculado ao usuário' });
+    }
+
+    // Buscar o prestador pelo ID
+    const prestador = await Prestador.findById(user.prestadorId);
+    
+    if (!prestador) {
+      return res.status(404).json({ error: 'Prestador não encontrado' });
+    }
+
+    // Retornar dados completos do prestador + email do usuário
+    res.json({
+      ...prestador.toObject(),
+      email: user.email
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao buscar perfil:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========== ATUALIZAR PERFIL DO PRESTADOR ==========
+router.put('/perfil', autenticar, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    
+    if (!user || user.tipo !== 'prestador' || !user.prestadorId) {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
+
+    const dadosAtualizados = {
+      nome: req.body.nome,
+      descricao: req.body.descricao,
+      whatsapp: req.body.whatsapp,
+      telefone: req.body.telefone,
+      cidade: req.body.cidade,
+      categoria: req.body.categoria,
+      tags: req.body.tags || []
+    };
+
+    const prestador = await Prestador.findByIdAndUpdate(
+      user.prestadorId,
+      dadosAtualizados,
+      { new: true, runValidators: true }
+    );
+
+    if (!prestador) {
+      return res.status(404).json({ error: 'Prestador não encontrado' });
+    }
+
+    res.json({
+      message: '✅ Perfil atualizado com sucesso!',
+      prestador
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao atualizar perfil:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ========== BUSCAR PRESTADOR POR SLUG ==========
 router.get('/:slug', async (req, res) => {
   try {
@@ -96,6 +193,22 @@ router.get('/:slug', async (req, res) => {
     res.json(prestador);
   } catch (error) {
     console.error('❌ Erro ao buscar prestador por slug:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========== BUSCAR PRESTADOR POR ID (ÚTIL PARA O FRONT) ==========
+router.get('/id/:id', async (req, res) => {
+  try {
+    const prestador = await Prestador.findById(req.params.id);
+    
+    if (!prestador) {
+      return res.status(404).json({ error: 'Prestador não encontrado' });
+    }
+
+    res.json(prestador);
+  } catch (error) {
+    console.error('❌ Erro ao buscar prestador por ID:', error);
     res.status(500).json({ error: error.message });
   }
 });
