@@ -36,6 +36,7 @@ const servicoSchema = new mongoose.Schema({
   
   clienteEmail: { 
     type: String,
+    required: true, // <---- ADICIONADO: AGORA É OBRIGATÓRIO
     trim: true,
     lowercase: true,
     match: [/^\S+@\S+\.\S+$/, 'E-mail inválido']
