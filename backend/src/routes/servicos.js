@@ -38,10 +38,18 @@ router.post('/', autenticar, async (req, res) => {
       valor 
     } = req.body;
 
-    // Validações básicas
-    if (!clienteNome || !clienteWhatsApp || !titulo || !descricao) {
+    // Validações básicas - INCLUINDO EMAIL
+    if (!clienteNome || !clienteWhatsApp || !clienteEmail || !titulo || !descricao) {
       return res.status(400).json({ 
-        error: 'Nome do cliente, WhatsApp, título e descrição são obrigatórios' 
+        error: 'Nome do cliente, WhatsApp, e-mail, título e descrição são obrigatórios' 
+      });
+    }
+
+    // Validar formato do email
+    const emailRegex = /^\S+@\S+\.\S+$/;
+    if (!emailRegex.test(clienteEmail)) {
+      return res.status(400).json({ 
+        error: 'E-mail inválido' 
       });
     }
 
@@ -57,7 +65,7 @@ router.post('/', autenticar, async (req, res) => {
       userId: user._id,
       clienteNome,
       clienteWhatsApp: clienteWhatsApp.replace(/\D/g, ''),
-      clienteEmail,
+      clienteEmail: clienteEmail.toLowerCase(), // Garantir minúsculas
       titulo,
       descricao,
       dataRealizacao: dataRealizacao || new Date(),
@@ -242,6 +250,13 @@ router.get('/avaliar/:token', async (req, res) => {
       });
     }
 
+    // Verificar se o serviço tem email cadastrado
+    if (!servico.clienteEmail) {
+      return res.status(400).json({
+        error: 'Este serviço não possui e-mail cadastrado para validação'
+      });
+    }
+
     res.json({
       valido: true,
       servico: {
@@ -250,6 +265,7 @@ router.get('/avaliar/:token', async (req, res) => {
         descricao: servico.descricao,
         dataRealizacao: servico.dataRealizacao,
         clienteNome: servico.clienteNome,
+        clienteEmail: servico.clienteEmail, // <---- ADICIONADO: AGORA RETORNA O EMAIL
         prestador: {
           nome: servico.prestadorId.nome,
           categoria: servico.prestadorId.categoria,
@@ -264,11 +280,11 @@ router.get('/avaliar/:token', async (req, res) => {
   }
 });
 
-// ========== REGISTRAR AVALIAÇÃO ==========
+// ========== REGISTRAR AVALIAÇÃO COM VALIDAÇÃO DE EMAIL ==========
 router.post('/avaliar/:token', async (req, res) => {
   try {
     const { token } = req.params;
-    const { estrelas, comentario } = req.body;
+    const { estrelas, comentario, email } = req.body;
     
     // Validações
     if (!estrelas || estrelas < 1 || estrelas > 5) {
@@ -282,6 +298,25 @@ router.post('/avaliar/:token', async (req, res) => {
     if (!servico) {
       return res.status(404).json({ 
         error: 'Link inválido ou expirado' 
+      });
+    }
+
+    // VALIDAÇÃO DE EMAIL - OBRIGATÓRIA
+    if (!servico.clienteEmail) {
+      return res.status(400).json({
+        error: 'Este serviço não possui e-mail cadastrado para validação'
+      });
+    }
+
+    if (!email) {
+      return res.status(400).json({
+        error: 'E-mail é obrigatório para avaliar este serviço'
+      });
+    }
+
+    if (email.toLowerCase() !== servico.clienteEmail.toLowerCase()) {
+      return res.status(400).json({
+        error: 'E-mail não corresponde ao cadastrado'
       });
     }
 
@@ -308,27 +343,23 @@ router.post('/avaliar/:token', async (req, res) => {
 });
 
 // ========== BUSCAR SERVIÇOS AVALIADOS DE UM PRESTADOR (PÚBLICO) ==========
-// Rota para exibir serviços avaliados no perfil do prestador
 router.get('/prestador/:prestadorId', async (req, res) => {
   try {
     const { prestadorId } = req.params;
     const { limit = 10 } = req.query;
 
-    // Validar se o prestadorId é válido
     if (!prestadorId) {
       return res.status(400).json({ error: 'ID do prestador não fornecido' });
     }
 
-    // Buscar serviços avaliados do prestador
     const servicos = await Servico.find({
       prestadorId,
       status: 'avaliado'
     })
-    .sort({ 'avaliacao.dataAvaliacao': -1 }) // Mais recentes primeiro
+    .sort({ 'avaliacao.dataAvaliacao': -1 })
     .limit(parseInt(limit))
-    .select('titulo descricao dataRealizacao clienteNome avaliacao'); // Apenas campos necessários
+    .select('titulo descricao dataRealizacao clienteNome avaliacao');
 
-    // Contar total de serviços avaliados
     const total = await Servico.countDocuments({
       prestadorId,
       status: 'avaliado'
