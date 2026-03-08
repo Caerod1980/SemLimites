@@ -3,42 +3,8 @@ import jwt from 'jsonwebtoken';
 import Prestador from '../models/Prestador.js';
 import User from '../models/User.js';
 import { consultarCNPJ } from '../services/receitaFederal.js';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 
 const router = express.Router();
-
-// ========== CONFIGURAÇÃO DE UPLOAD DE FOTOS ==========
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const dir = './uploads/perfil';
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, 'perfil-' + uniqueSuffix + ext);
-  }
-});
-
-const upload = multer({ 
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
-  fileFilter: function (req, file, cb) {
-    const filetypes = /jpeg|jpg|png|gif/;
-    const mimetype = filetypes.test(file.mimetype);
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    
-    if (mimetype && extname) {
-      return cb(null, true);
-    }
-    cb(new Error('Apenas imagens são permitidas (jpeg, jpg, png, gif)'));
-  }
-});
 
 // ========== MIDDLEWARE DE AUTENTICAÇÃO ==========
 const autenticar = async (req, res, next) => {
@@ -64,6 +30,7 @@ router.get('/busca', async (req, res) => {
   try {
     const { 
       cidade, 
+      estado,
       categoria, 
       q, 
       apenasVerificados,
@@ -76,6 +43,7 @@ router.get('/busca', async (req, res) => {
 
     // Filtros básicos
     if (cidade) query.cidade = cidade;
+    if (estado) query.estado = estado;
     if (categoria) query.categoria = categoria;
     if (apenasVerificados === 'true') query.verificado = true;
 
@@ -87,7 +55,8 @@ router.get('/busca', async (req, res) => {
         { descricao: { $regex: termoBusca, $options: 'i' } },
         { categoria: { $regex: termoBusca, $options: 'i' } },
         { especialidades: { $in: [new RegExp(termoBusca, 'i')] } },
-        { certificacoes: { $in: [new RegExp(termoBusca, 'i')] } }
+        { certificacoes: { $in: [new RegExp(termoBusca, 'i')] } },
+        { tags: { $in: [new RegExp(termoBusca, 'i')] } }
       ];
     }
 
@@ -165,16 +134,10 @@ router.get('/perfil', autenticar, async (req, res) => {
       return res.status(404).json({ error: 'Prestador não encontrado' });
     }
 
-    // Construir URL da foto de perfil
-    const fotoPerfilUrl = prestador.fotoPerfil 
-      ? `${process.env.API_URL}/uploads/perfil/${prestador.fotoPerfil}`
-      : null;
-
     // Retornar dados completos do prestador + email do usuário
     res.json({
       ...prestador.toObject(),
-      email: user.email,
-      fotoPerfilUrl
+      email: user.email
     });
 
   } catch (error) {
@@ -195,9 +158,9 @@ router.put('/perfil', autenticar, async (req, res) => {
     }
 
     // Validar campos obrigatórios
-    if (!req.body.nome || !req.body.categoria || !req.body.cidade || !req.body.whatsapp) {
+    if (!req.body.nome || !req.body.categoria || !req.body.cidade || !req.body.estado || !req.body.whatsapp) {
       return res.status(400).json({ 
-        error: 'Nome, categoria, cidade e WhatsApp são obrigatórios' 
+        error: 'Nome, categoria, cidade, estado e WhatsApp são obrigatórios' 
       });
     }
 
@@ -220,18 +183,25 @@ router.put('/perfil', autenticar, async (req, res) => {
           : req.body.regioesAtendimento.split(',').map(r => r.trim()).filter(r => r))
       : [];
 
+    const tags = req.body.tags 
+      ? (Array.isArray(req.body.tags) 
+          ? req.body.tags 
+          : req.body.tags.split(',').map(t => t.trim()).filter(t => t))
+      : [];
+
     const dadosAtualizados = {
       nome: req.body.nome,
       descricao: req.body.descricao || '',
+      experiencia: req.body.experiencia || '',
       especialidades: especialidades,
       certificacoes: certificacoes,
-      experiencia: req.body.experiencia || '',
       regioesAtendimento: regioesAtendimento,
       whatsapp: req.body.whatsapp.replace(/\D/g, ''),
       telefone: req.body.telefone ? req.body.telefone.replace(/\D/g, '') : '',
       cidade: req.body.cidade,
+      estado: req.body.estado,
       categoria: req.body.categoria,
-      tags: req.body.tags || []
+      tags: tags
     };
 
     const prestador = await Prestador.findByIdAndUpdate(
@@ -257,73 +227,6 @@ router.put('/perfil', autenticar, async (req, res) => {
   }
 });
 
-// ========== UPLOAD DE FOTO DE PERFIL ==========
-router.post('/foto', autenticar, upload.single('foto'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'Nenhuma foto enviada' });
-    }
-
-    const user = await User.findById(req.user.userId);
-    if (!user || !user.prestadorId) {
-      return res.status(403).json({ error: 'Acesso negado' });
-    }
-
-    const prestador = await Prestador.findById(user.prestadorId);
-    
-    // Se já tinha foto, remover a antiga
-    if (prestador.fotoPerfil) {
-      const oldPath = path.join('./uploads/perfil', prestador.fotoPerfil);
-      if (fs.existsSync(oldPath)) {
-        fs.unlinkSync(oldPath);
-      }
-    }
-
-    // Atualizar com a nova foto
-    prestador.fotoPerfil = req.file.filename;
-    await prestador.save();
-
-    const fotoUrl = `${process.env.API_URL}/uploads/perfil/${req.file.filename}`;
-
-    res.json({
-      message: '✅ Foto de perfil atualizada com sucesso!',
-      fotoPerfil: req.file.filename,
-      fotoPerfilUrl: fotoUrl
-    });
-
-  } catch (error) {
-    console.error('❌ Erro no upload de foto:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ========== REMOVER FOTO DE PERFIL ==========
-router.delete('/foto', autenticar, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.userId);
-    if (!user || !user.prestadorId) {
-      return res.status(403).json({ error: 'Acesso negado' });
-    }
-
-    const prestador = await Prestador.findById(user.prestadorId);
-    
-    if (prestador.fotoPerfil) {
-      const oldPath = path.join('./uploads/perfil', prestador.fotoPerfil);
-      if (fs.existsSync(oldPath)) {
-        fs.unlinkSync(oldPath);
-      }
-      prestador.fotoPerfil = null;
-      await prestador.save();
-    }
-
-    res.json({ message: '✅ Foto removida com sucesso' });
-
-  } catch (error) {
-    console.error('❌ Erro ao remover foto:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // ========== BUSCAR PRESTADOR POR SLUG ==========
 router.get('/:slug', async (req, res) => {
   try {
@@ -333,14 +236,7 @@ router.get('/:slug', async (req, res) => {
       return res.status(404).json({ error: 'Prestador não encontrado' });
     }
 
-    const fotoPerfilUrl = prestador.fotoPerfil 
-      ? `${process.env.API_URL}/uploads/perfil/${prestador.fotoPerfil}`
-      : null;
-
-    res.json({
-      ...prestador.toObject(),
-      fotoPerfilUrl
-    });
+    res.json(prestador);
   } catch (error) {
     console.error('❌ Erro ao buscar prestador por slug:', error);
     res.status(500).json({ error: error.message });
@@ -356,14 +252,7 @@ router.get('/id/:id', async (req, res) => {
       return res.status(404).json({ error: 'Prestador não encontrado' });
     }
 
-    const fotoPerfilUrl = prestador.fotoPerfil 
-      ? `${process.env.API_URL}/uploads/perfil/${prestador.fotoPerfil}`
-      : null;
-
-    res.json({
-      ...prestador.toObject(),
-      fotoPerfilUrl
-    });
+    res.json(prestador);
   } catch (error) {
     console.error('❌ Erro ao buscar prestador por ID:', error);
     res.status(500).json({ error: error.message });
@@ -409,6 +298,12 @@ router.post('/', async (req, res) => {
           : req.body.regioesAtendimento.split(',').map(r => r.trim()).filter(r => r))
       : [];
 
+    const tags = req.body.tags 
+      ? (Array.isArray(req.body.tags) 
+          ? req.body.tags 
+          : req.body.tags.split(',').map(t => t.trim()).filter(t => t))
+      : [];
+
     // Prepara os dados
     const dadosPrestador = {
       ...req.body,
@@ -425,6 +320,7 @@ router.post('/', async (req, res) => {
       certificacoes: certificacoes,
       experiencia: req.body.experiencia || '',
       regioesAtendimento: regioesAtendimento,
+      tags: tags,
       estrelas: 0,
       avaliacoes: 0,
       servicosRealizados: 0,
@@ -445,6 +341,7 @@ router.post('/', async (req, res) => {
         email: prestador.email,
         categoria: prestador.categoria,
         cidade: prestador.cidade,
+        estado: prestador.estado,
         verificado: prestador.verificado || false
       }
     });
@@ -492,16 +389,6 @@ router.post('/verificar-cnpj', async (req, res) => {
   } catch (error) {
     console.error('❌ Erro na verificação de CNPJ:', error);
     res.status(500).json({ error: error.message });
-  }
-});
-
-// ========== SERVIÇO PARA SIRVA AS IMAGENS ==========
-router.get('/uploads/perfil/:filename', (req, res) => {
-  const filePath = path.join('./uploads/perfil', req.params.filename);
-  if (fs.existsSync(filePath)) {
-    res.sendFile(path.resolve(filePath));
-  } else {
-    res.status(404).json({ error: 'Imagem não encontrada' });
   }
 });
 
