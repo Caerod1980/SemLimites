@@ -6,6 +6,58 @@ import { consultarCNPJ } from '../services/receitaFederal.js';
 
 const router = express.Router();
 
+// ========== CONFIGURAÇÃO PARA CRIAR ÍNDICES AUTOMATICAMENTE ==========
+// Esta função será chamada na inicialização para garantir que os índices existam
+async function garantirIndices() {
+  try {
+    console.log('🔧 Verificando/criando índices da coleção Prestador...');
+    
+    // Índices compostos para busca por localização e categoria
+    await Prestador.collection.createIndex({ cidade: 1, estado: 1 });
+    await Prestador.collection.createIndex({ estado: 1 });
+    await Prestador.collection.createIndex({ categoria: 1 });
+    
+    // Índices para ordenação por reputação
+    await Prestador.collection.createIndex({ estrelas: -1, avaliacoes: -1 });
+    await Prestador.collection.createIndex({ avaliacoes: -1 });
+    
+    // Índice para busca por texto (especialidades, certificações, tags)
+    await Prestador.collection.createIndex(
+      { 
+        nome: "text",
+        descricao: "text", 
+        especialidades: "text", 
+        certificacoes: "text", 
+        tags: "text" 
+      },
+      { 
+        name: "busca_textual",
+        weights: {
+          nome: 10,
+          especialidades: 8,
+          certificacoes: 5,
+          tags: 3,
+          descricao: 1
+        }
+      }
+    );
+    
+    // Índices para campos usados em filtros comuns
+    await Prestador.collection.createIndex({ verificado: 1 });
+    await Prestador.collection.createIndex({ experiencia: -1 });
+    await Prestador.collection.createIndex({ nome: 1 });
+    await Prestador.collection.createIndex({ slug: 1 }, { unique: true });
+    
+    console.log('✅ Todos os índices criados/verificados com sucesso!');
+  } catch (error) {
+    console.error('❌ Erro ao criar índices:', error);
+    // Não interrompe a aplicação se os índices falharem
+  }
+}
+
+// Chamar a função de criação de índices (não bloqueante)
+garantirIndices();
+
 // ========== MIDDLEWARE DE AUTENTICAÇÃO ==========
 const autenticar = async (req, res, next) => {
   try {
@@ -36,7 +88,7 @@ router.get('/busca', async (req, res) => {
       apenasVerificados,
       ordenacao = 'reputacao',
       page = 1,
-      limit = 20
+      limit = 12 // Reduzido para melhor performance
     } = req.query;
 
     let query = {};
@@ -50,45 +102,60 @@ router.get('/busca', async (req, res) => {
     // ========== BUSCA POR TEXTO ==========
     if (q && q.trim() !== '') {
       const termoBusca = q.trim();
-      query.$or = [
-        { nome: { $regex: termoBusca, $options: 'i' } },
-        { descricao: { $regex: termoBusca, $options: 'i' } },
-        { categoria: { $regex: termoBusca, $options: 'i' } },
-        { especialidades: { $in: [new RegExp(termoBusca, 'i')] } },
-        { certificacoes: { $in: [new RegExp(termoBusca, 'i')] } },
-        { tags: { $in: [new RegExp(termoBusca, 'i')] } }
-      ];
+      
+      // Usando o índice de texto para busca mais eficiente
+      query.$text = { $search: termoBusca };
+      
+      // Fallback para regex se o índice de texto não funcionar
+      // (comentado pois já temos o índice)
+      // query.$or = [
+      //   { nome: { $regex: termoBusca, $options: 'i' } },
+      //   { descricao: { $regex: termoBusca, $options: 'i' } },
+      //   { especialidades: { $in: [new RegExp(termoBusca, 'i')] } }
+      // ];
     }
 
     // Configurar ordenação
     let sort = {};
-    switch(ordenacao) {
-      case 'reputacao':
-        sort = { estrelas: -1, avaliacoes: -1 };
-        break;
-      case 'avaliacoes':
-        sort = { avaliacoes: -1 };
-        break;
-      case 'experiencia':
-        sort = { experiencia: -1 };
-        break;
-      case 'nome':
-        sort = { nome: 1 };
-        break;
-      default:
-        sort = { estrelas: -1, avaliacoes: -1 };
+    if (q && q.trim() !== '' && query.$text) {
+      // Se for busca textual, ordenar por relevância
+      sort = { score: { $meta: "textScore" } };
+    } else {
+      switch(ordenacao) {
+        case 'reputacao':
+          sort = { estrelas: -1, avaliacoes: -1 };
+          break;
+        case 'avaliacoes':
+          sort = { avaliacoes: -1 };
+          break;
+        case 'experiencia':
+          sort = { experiencia: -1 };
+          break;
+        case 'nome':
+          sort = { nome: 1 };
+          break;
+        default:
+          sort = { estrelas: -1, avaliacoes: -1 };
+      }
     }
 
     // Executar a consulta com paginação
-    const prestadores = await Prestador.find(query)
-      .sort(sort)
+    let prestadoresQuery = Prestador.find(query)
       .limit(parseInt(limit))
       .skip((parseInt(page) - 1) * parseInt(limit));
 
+    // Adicionar ordenação por relevância se for busca textual
+    if (q && q.trim() !== '' && query.$text) {
+      prestadoresQuery = prestadoresQuery.sort({ score: { $meta: "textScore" } });
+    } else {
+      prestadoresQuery = prestadoresQuery.sort(sort);
+    }
+
+    const prestadores = await prestadoresQuery;
     const total = await Prestador.countDocuments(query);
 
     console.log(`🔍 Busca realizada:`, {
-      query,
+      query: JSON.stringify(query),
       total,
       page: parseInt(page),
       limit: parseInt(limit)
@@ -112,7 +179,6 @@ router.get('/perfil', autenticar, async (req, res) => {
   try {
     console.log('🔍 Buscando perfil do usuário:', req.user.userId);
 
-    // Buscar o usuário para obter o prestadorId
     const user = await User.findById(req.user.userId);
     
     if (!user) {
@@ -127,14 +193,12 @@ router.get('/perfil', autenticar, async (req, res) => {
       return res.status(404).json({ error: 'Prestador não vinculado ao usuário' });
     }
 
-    // Buscar o prestador pelo ID
     const prestador = await Prestador.findById(user.prestadorId);
     
     if (!prestador) {
       return res.status(404).json({ error: 'Prestador não encontrado' });
     }
 
-    // Retornar dados completos do prestador + email do usuário
     res.json({
       ...prestador.toObject(),
       email: user.email
@@ -146,7 +210,7 @@ router.get('/perfil', autenticar, async (req, res) => {
   }
 });
 
-// ========== ATUALIZAR PERFIL DO PRESTADOR (COM TODOS OS CAMPOS) ==========
+// ========== ATUALIZAR PERFIL DO PRESTADOR ==========
 router.put('/perfil', autenticar, async (req, res) => {
   try {
     console.log('📝 Atualizando perfil do usuário:', req.user.userId);
@@ -157,14 +221,12 @@ router.put('/perfil', autenticar, async (req, res) => {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
-    // Validar campos obrigatórios
     if (!req.body.nome || !req.body.categoria || !req.body.cidade || !req.body.estado || !req.body.whatsapp) {
       return res.status(400).json({ 
         error: 'Nome, categoria, cidade, estado e WhatsApp são obrigatórios' 
       });
     }
 
-    // Processar arrays
     const especialidades = req.body.especialidades 
       ? (Array.isArray(req.body.especialidades) 
           ? req.body.especialidades 
@@ -262,7 +324,6 @@ router.get('/id/:id', async (req, res) => {
 // ========== CRIAR NOVO PRESTADOR ==========
 router.post('/', async (req, res) => {
   try {
-    // Verifica se já existe prestador com este CNPJ
     if (req.body.cnpj) {
       const cnpjLimpo = req.body.cnpj.replace(/\D/g, '');
       const existe = await Prestador.findOne({ cnpj: cnpjLimpo });
@@ -271,7 +332,6 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // Verifica se já existe prestador com este e-mail
     if (req.body.email) {
       const existe = await Prestador.findOne({ email: req.body.email });
       if (existe) {
@@ -279,7 +339,6 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // Processar arrays
     const especialidades = req.body.especialidades 
       ? (Array.isArray(req.body.especialidades) 
           ? req.body.especialidades 
@@ -304,7 +363,6 @@ router.post('/', async (req, res) => {
           : req.body.tags.split(',').map(t => t.trim()).filter(t => t))
       : [];
 
-    // Prepara os dados
     const dadosPrestador = {
       ...req.body,
       cnpj: req.body.cnpj?.replace(/\D/g, ''),
