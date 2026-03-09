@@ -1441,13 +1441,27 @@
                 );
             }
 
-            var prestadorNome = servico && servico.prestador ? servico.prestador.nome : "Profissional";
-            var prestadorCategoria = servico && servico.prestador ? (servico.prestador.categoria || "Profissional") : "Profissional";
-            var prestadorCidade = servico && servico.prestador ? (servico.prestador.cidade || "") : "";
-            var prestadorEstado = servico && servico.prestador ? (servico.prestador.estado || "") : "";
-            var servicoTitulo = servico ? servico.titulo : "";
-            var servicoDescricao = servico ? servico.descricao : "";
-            var servicoData = servico && servico.dataRealizacao ? "Realizado em: " + new Date(servico.dataRealizacao).toLocaleDateString('pt-BR') : "";
+            var prestadorNome = "Profissional";
+            var prestadorCategoria = "Profissional";
+            var prestadorCidade = "";
+            var prestadorEstado = "";
+            var servicoTitulo = "";
+            var servicoDescricao = "";
+            var servicoData = "";
+
+            if (servico) {
+                if (servico.prestador) {
+                    prestadorNome = servico.prestador.nome || "Profissional";
+                    prestadorCategoria = servico.prestador.categoria || "Profissional";
+                    prestadorCidade = servico.prestador.cidade || "";
+                    prestadorEstado = servico.prestador.estado || "";
+                }
+                servicoTitulo = servico.titulo || "";
+                servicoDescricao = servico.descricao || "";
+                if (servico.dataRealizacao) {
+                    servicoData = "Realizado em: " + new Date(servico.dataRealizacao).toLocaleDateString('pt-BR');
+                }
+            }
 
             var localizacao = prestadorCidade;
             if (prestadorEstado) {
@@ -2469,7 +2483,7 @@
             );
         }
 
-        // ========== TELA DE BUSCA COM ESTADO (CORRIGIDA) ==========
+        // ========== TELA DE BUSCA COM ESTADO ==========
         function TelaBusca(props) {
             var onVerPerfil = props.onVerPerfil;
             
@@ -2493,7 +2507,6 @@
                 if (categoria) params.push('categoria=' + encodeURIComponent(categoria));
                 if (buscaTexto) params.push('q=' + encodeURIComponent(buscaTexto));
                 
-                // Adicionar limite para melhor performance
                 params.push('limit=12');
                 
                 url = url + params.join('&');
@@ -2631,7 +2644,9 @@
             if (p.estado) {
                 localizacao = localizacao + ' - ' + p.estado;
             } else {
-                localizacao = localizacao || 'Localização não informada';
+                if (localizacao === '') {
+                    localizacao = 'Localização não informada';
+                }
             }
             var descricaoTexto = p.descricao || 'Sem descrição';
 
@@ -2766,7 +2781,6 @@
                 ),
 
                 React.createElement('div', { className: "bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm" },
-                    // Cabeçalho
                     React.createElement('div', { className: "bg-gradient-to-r from-indigo-600 to-indigo-700 p-8 text-white" },
                         React.createElement('div', { className: "flex items-center gap-6" },
                             React.createElement(Avatar, { name: p.nome, size: "xxl" }),
@@ -2787,21 +2801,17 @@
                         )
                     ),
 
-                    // Informações do perfil
                     React.createElement('div', { className: "p-8 space-y-6" },
-                        // Sobre
                         p.descricao && React.createElement('div', null,
                             React.createElement('h2', { className: "text-xl font-semibold mb-3" }, "Sobre"),
                             React.createElement('p', { className: "text-slate-600 leading-relaxed" }, p.descricao)
                         ),
 
-                        // Experiência
                         p.experiencia && React.createElement('div', null,
                             React.createElement('h2', { className: "text-xl font-semibold mb-3" }, "Experiência"),
                             React.createElement('p', { className: "text-slate-600" }, p.experiencia)
                         ),
 
-                        // Especialidades
                         p.especialidades && p.especialidades.length > 0 && React.createElement('div', null,
                             React.createElement('h2', { className: "text-xl font-semibold mb-3" }, "Especialidades"),
                             React.createElement('div', { className: "flex flex-wrap gap-2" },
@@ -2820,7 +2830,6 @@
                             )
                         ),
 
-                        // Certificações
                         p.certificacoes && p.certificacoes.length > 0 && React.createElement('div', null,
                             React.createElement('h2', { className: "text-xl font-semibold mb-3" }, "Certificações"),
                             React.createElement('div', { className: "flex flex-wrap gap-2" },
@@ -2839,7 +2848,6 @@
                             )
                         ),
 
-                        // Regiões de Atendimento
                         p.regioesAtendimento && p.regioesAtendimento.length > 0 && React.createElement('div', null,
                             React.createElement('h2', { className: "text-xl font-semibold mb-3" }, "Regiões de Atendimento"),
                             React.createElement('div', { className: "flex flex-wrap gap-2" },
@@ -2858,7 +2866,6 @@
                             )
                         ),
 
-                        // Contato
                         React.createElement('div', { className: "bg-slate-50 rounded-2xl p-6" },
                             React.createElement('h2', { className: "text-xl font-semibold mb-4" }, "Contato"),
                             React.createElement('div', { className: "space-y-3" },
@@ -2881,7 +2888,6 @@
                             )
                         ),
 
-                        // Serviços realizados
                         p.avaliacoes > 0 && React.createElement('div', { className: "mt-8 pt-6 border-t border-slate-200" },
                             React.createElement('h2', { className: "text-xl font-semibold mb-4 flex items-center gap-2" },
                                 React.createElement('svg', { className: "w-6 h-6 text-indigo-600", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
