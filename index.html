@@ -2643,10 +2643,9 @@
             var localizacao = p.cidade || '';
             if (p.estado) {
                 localizacao = localizacao + ' - ' + p.estado;
-            } else {
-                if (localizacao === '') {
-                    localizacao = 'Localização não informada';
-                }
+            }
+            if (localizacao === '') {
+                localizacao = 'Localização não informada';
             }
             var descricaoTexto = p.descricao || 'Sem descrição';
 
