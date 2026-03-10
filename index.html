@@ -2535,6 +2535,13 @@
                     })
                     .then(function(data) {
                         console.log('📥 Resultados:', data);
+                        
+                        // Log para verificar a estrutura dos prestadores
+                        if (data.prestadores && data.prestadores.length > 0) {
+                            console.log('📋 Primeiro prestador:', data.prestadores[0]);
+                            console.log('📋 Campos disponíveis:', Object.keys(data.prestadores[0]));
+                        }
+                        
                         if (data.prestadores) {
                             setResultados(data.prestadores);
                         } else {
@@ -2659,14 +2666,22 @@
             }
 
             var categoriaTexto = p.categoria || 'Profissional';
+            
+            // CORREÇÃO: Verificar todos os campos possíveis para estado
+            var estadoDoPrestador = p.estado || p.uf || p.UF || '';
+            
             var localizacao = p.cidade || '';
-            if (p.estado) {
-                localizacao = localizacao + ' - ' + p.estado;
+            if (estadoDoPrestador) {
+                localizacao = localizacao + (localizacao ? ' - ' : '') + estadoDoPrestador;
             }
-            if (localizacao === '') {
+            if (!localizacao) {
                 localizacao = 'Localização não informada';
             }
+            
             var descricaoTexto = p.descricao || 'Sem descrição';
+
+            // Log para debug
+            console.log('🏠 Card prestador:', p.nome, 'Estado original:', p.estado, 'Estado corrigido:', estadoDoPrestador, 'Localização final:', localizacao);
 
             return React.createElement('div', { 
                 className: "bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg transition-all hover:border-indigo-200" 
@@ -2786,6 +2801,9 @@
             }
 
             var p = dadosCompletos || prestador;
+            
+            // CORREÇÃO: Verificar todos os campos possíveis para estado
+            var estadoDoPrestador = p.estado || p.uf || p.UF || '';
 
             return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8" },
                 React.createElement('button', {
@@ -2807,7 +2825,7 @@
                                 React.createElement('p', { className: "text-indigo-100" }, 
                                     (p.categoria || 'Categoria não informada') + 
                                     ' • ' + 
-                                    (p.cidade || '') + (p.estado ? ' - ' + p.estado : '')
+                                    (p.cidade || '') + (estadoDoPrestador ? ' - ' + estadoDoPrestador : '')
                                 ),
                                 React.createElement('div', { className: "flex items-center gap-2 mt-3" },
                                     React.createElement(Stars, { value: p.estrelas || 0, size: "lg" }),
