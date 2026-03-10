@@ -2685,7 +2685,7 @@
             );
         }
 
-        // ========== TELA DE PERFIL PÚBLICO COMPLETA - CORRIGIDA ==========
+        // ========== TELA DE PERFIL PÚBLICO COMPLETA - TOTALMENTE REFAITA ==========
         function TelaPerfil(props) {
             var prestador = props.prestador;
             var onVoltar = props.onVoltar;
@@ -2786,7 +2786,6 @@
                     ),
                     "Voltar para busca"
                 ),
-
                 React.createElement('div', { className: "bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm" },
                     React.createElement('div', { className: "bg-gradient-to-r from-indigo-600 to-indigo-700 p-8 text-white" },
                         React.createElement('div', { className: "flex items-center gap-6" },
@@ -2807,18 +2806,15 @@
                             )
                         )
                     ),
-
                     React.createElement('div', { className: "p-8 space-y-6" },
                         p.descricao && React.createElement('div', null,
                             React.createElement('h2', { className: "text-xl font-semibold mb-3" }, "Sobre"),
                             React.createElement('p', { className: "text-slate-600 leading-relaxed" }, p.descricao)
                         ),
-
                         p.experiencia && React.createElement('div', null,
                             React.createElement('h2', { className: "text-xl font-semibold mb-3" }, "Experiência"),
                             React.createElement('p', { className: "text-slate-600" }, p.experiencia)
                         ),
-
                         p.especialidades && p.especialidades.length > 0 && React.createElement('div', null,
                             React.createElement('h2', { className: "text-xl font-semibold mb-3" }, "Especialidades"),
                             React.createElement('div', { className: "flex flex-wrap gap-2" },
@@ -2836,7 +2832,6 @@
                                 })()
                             )
                         ),
-
                         p.certificacoes && p.certificacoes.length > 0 && React.createElement('div', null,
                             React.createElement('h2', { className: "text-xl font-semibold mb-3" }, "Certificações"),
                             React.createElement('div', { className: "flex flex-wrap gap-2" },
@@ -2854,7 +2849,6 @@
                                 })()
                             )
                         ),
-
                         p.regioesAtendimento && p.regioesAtendimento.length > 0 && React.createElement('div', null,
                             React.createElement('h2', { className: "text-xl font-semibold mb-3" }, "Regiões de Atendimento"),
                             React.createElement('div', { className: "flex flex-wrap gap-2" },
@@ -2872,7 +2866,6 @@
                                 })()
                             )
                         ),
-
                         React.createElement('div', { className: "bg-slate-50 rounded-2xl p-6" },
                             React.createElement('h2', { className: "text-xl font-semibold mb-4" }, "Contato"),
                             React.createElement('div', { className: "space-y-3" },
@@ -2894,7 +2887,6 @@
                                 )
                             )
                         ),
-
                         p.avaliacoes > 0 && React.createElement('div', { className: "mt-8 pt-6 border-t border-slate-200" },
                             React.createElement('h2', { className: "text-xl font-semibold mb-4 flex items-center gap-2" },
                                 React.createElement('svg', { className: "w-6 h-6 text-indigo-600", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
