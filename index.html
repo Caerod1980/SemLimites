@@ -746,7 +746,7 @@
             );
         }
 
-        // ========== COMPONENTE DE PERFIL (EDIÇÃO) - VERSÃO COMPLETA ==========
+        // ========== COMPONENTE DE PERFIL (EDIÇÃO) - CORRIGIDO ==========
         function EditarPerfil(props) {
             var prestador = props.prestador;
             var onSalvo = props.onSalvo;
@@ -823,6 +823,9 @@
             function handleRemoverFoto() {
                 if (!window.confirm('Remover foto de perfil?')) return;
 
+                setLoading(true);
+                setErro('');
+
                 fetch(API_URL + '/prestadores/foto', {
                     method: 'DELETE',
                     headers: {
@@ -837,9 +840,11 @@
                         setFotoPreview(null);
                         setFotoPerfil(null);
                         alert('✅ Foto removida!');
+                        setLoading(false);
                     })
                     .catch(function(error) {
                         setErro(error.message);
+                        setLoading(false);
                     });
             }
 
@@ -957,7 +962,8 @@
                                 ),
                                 fotoPreview && React.createElement('button', {
                                     onClick: handleRemoverFoto,
-                                    className: "px-4 py-2 border border-red-200 text-red-600 rounded-xl text-sm hover:bg-red-50"
+                                    disabled: loading,
+                                    className: "px-4 py-2 border border-red-200 text-red-600 rounded-xl text-sm hover:bg-red-50 disabled:opacity-50"
                                 }, "Remover")
                             ),
                             React.createElement('p', { className: "text-xs text-slate-500" },
