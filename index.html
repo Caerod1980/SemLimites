@@ -1414,7 +1414,6 @@
                 );
             }
 
-            // CORREÇÃO APLICADA AQUI - BLOCO DE ERRO COMPLETO
             if (erro || !servico) {
                 return React.createElement('div', { className: "min-h-screen flex items-center justify-center p-4" },
                     React.createElement('div', { className: "max-w-md bg-white rounded-3xl border border-slate-200 p-8 text-center" },
@@ -2514,6 +2513,7 @@
                 var url = API_URL + '/prestadores/busca?';
                 var params = [];
                 
+                // Adicionar parâmetros de busca corretamente
                 if (estado) params.push('estado=' + encodeURIComponent(estado));
                 if (cidade) params.push('cidade=' + encodeURIComponent(cidade));
                 if (categoria) params.push('categoria=' + encodeURIComponent(categoria));
@@ -2549,12 +2549,18 @@
                     });
             }
 
+            // Buscar automaticamente quando os filtros mudarem
             useEffect(function() {
                 var timer = setTimeout(function() {
                     buscar();
                 }, 500);
                 return function() { clearTimeout(timer); };
             }, [estado, cidade, categoria, buscaTexto]);
+
+            // Busca inicial quando o componente montar
+            useEffect(function() {
+                buscar();
+            }, []);
 
             var estadoOptions = [
                 React.createElement('option', { key: "empty", value: "" }, "Todos os estados")
@@ -2583,7 +2589,7 @@
                     React.createElement('div', { className: "grid md:grid-cols-4 gap-4" },
                         React.createElement('select', {
                             value: estado,
-                            onChange: function(e) { setEstado(e.target.value); setCidade(''); },
+                            onChange: function(e) { setEstado(e.target.value); },
                             className: "px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200"
                         }, estadoOptions),
                         
@@ -2903,7 +2909,6 @@
                         p.avaliacoes > 0 && React.createElement('div', { className: "mt-8 pt-6 border-t border-slate-200" },
                             React.createElement('h2', { className: "text-xl font-semibold mb-4 flex items-center gap-2" },
                                 React.createElement('svg', { className: "w-6 h-6 text-indigo-600", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                    // CORREÇÃO APLICADA AQUI - O "/>" foi removido e o objeto de props foi formatado corretamente
                                     React.createElement('path', {
                                         strokeLinecap: "round",
                                         strokeLinejoin: "round",
