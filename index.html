@@ -2495,7 +2495,7 @@
             );
         }
 
-        // ========== TELA DE BUSCA COM ESTADO ==========
+        // ========== TELA DE BUSCA COM ESTADO (CORRIGIDA) ==========
         function TelaBusca(props) {
             var onVerPerfil = props.onVerPerfil;
             
@@ -2519,6 +2519,7 @@
                 if (categoria) params.push('categoria=' + encodeURIComponent(categoria));
                 if (buscaTexto) params.push('q=' + encodeURIComponent(buscaTexto));
                 
+                // Adicionar limite para melhor performance
                 params.push('limit=12');
                 
                 url = url + params.join('&');
@@ -2689,7 +2690,7 @@
             );
         }
 
-        // ========== TELA DE PERFIL PÚBLICO COMPLETA ==========
+        // ========== TELA DE PERFIL PÚBLICO COMPLETA - CORRIGIDA ==========
         function TelaPerfil(props) {
             var prestador = props.prestador;
             var onVoltar = props.onVoltar;
@@ -2902,7 +2903,13 @@
                         p.avaliacoes > 0 && React.createElement('div', { className: "mt-8 pt-6 border-t border-slate-200" },
                             React.createElement('h2', { className: "text-xl font-semibold mb-4 flex items-center gap-2" },
                                 React.createElement('svg', { className: "w-6 h-6 text-indigo-600", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                    React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                    // CORREÇÃO APLICADA AQUI - O "/>" foi removido e o objeto de props foi formatado corretamente
+                                    React.createElement('path', {
+                                        strokeLinecap: "round",
+                                        strokeLinejoin: "round",
+                                        strokeWidth: 2,
+                                        d: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                                    })
                                 ),
                                 "Serviços Realizados"
                             ),
