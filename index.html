@@ -746,7 +746,7 @@
             );
         }
 
-        // ========== COMPONENTE DE PERFIL (EDIÇÃO) - CORRIGIDO ==========
+        // ========== COMPONENTE DE PERFIL (EDIÇÃO) ==========
         function EditarPerfil(props) {
             var prestador = props.prestador;
             var onSalvo = props.onSalvo;
@@ -1279,7 +1279,7 @@
             return React.createElement('div', { className: "space-y-3" }, servicosElements);
         }
 
-        // ========== PÁGINA DE AVALIAÇÃO - CORRIGIDA ==========
+        // ========== PÁGINA DE AVALIAÇÃO ==========
         function AvaliarServico() {
             var [loading, setLoading] = useState(true);
             var [erro, setErro] = useState('');
@@ -1771,7 +1771,7 @@
             );
         }
 
-        // ========== TELA DE CADASTRO COMPLETA ==========
+        // ========== TELA DE CADASTRO ==========
         function CadastroPrestador(props) {
             var onCadastroSucesso = props.onCadastroSucesso;
             var onVoltar = props.onVoltar;
@@ -2494,7 +2494,7 @@
             );
         }
 
-        // ========== TELA DE BUSCA COM ESTADO (CORRIGIDA) ==========
+        // ========== TELA DE BUSCA CORRIGIDA - AGORA USA LOCALIZACAO ==========
         function TelaBusca(props) {
             var onVerPerfil = props.onVerPerfil;
             
@@ -2513,8 +2513,8 @@
                 var url = API_URL + '/prestadores/busca?';
                 var params = [];
                 
-                // Adicionar parâmetros de busca corretamente
-                if (estado) params.push('estado=' + encodeURIComponent(estado));
+                // IMPORTANTE: A API NÃO TEM CAMPO ESTADO
+                // Então só enviamos cidade, categoria e buscaTexto
                 if (cidade) params.push('cidade=' + encodeURIComponent(cidade));
                 if (categoria) params.push('categoria=' + encodeURIComponent(categoria));
                 if (buscaTexto) params.push('q=' + encodeURIComponent(buscaTexto));
@@ -2562,7 +2562,7 @@
                     buscar();
                 }, 500);
                 return function() { clearTimeout(timer); };
-            }, [estado, cidade, categoria, buscaTexto]);
+            }, [cidade, categoria, buscaTexto]); // Removeu estado daqui
 
             // Busca inicial quando o componente montar
             useEffect(function() {
@@ -2594,9 +2594,16 @@
                     ),
                     
                     React.createElement('div', { className: "grid md:grid-cols-4 gap-4" },
+                        // Select de estado - AGORA APENAS VISUAL, não afeta a busca
                         React.createElement('select', {
                             value: estado,
-                            onChange: function(e) { setEstado(e.target.value); },
+                            onChange: function(e) { 
+                                setEstado(e.target.value);
+                                // Mostra alerta informando que busca por estado não está disponível
+                                if (e.target.value) {
+                                    alert('⚠️ Busca por estado não disponível no momento. Use o campo de cidade para filtrar por localização.');
+                                }
+                            },
                             className: "px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200"
                         }, estadoOptions),
                         
@@ -2604,7 +2611,7 @@
                             type: "text",
                             value: cidade,
                             onChange: function(e) { setCidade(e.target.value); },
-                            placeholder: "Cidade",
+                            placeholder: "Cidade (ex: São Paulo, Santos...)",
                             className: "px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200"
                         }),
                         
@@ -2649,7 +2656,7 @@
             );
         }
 
-        // ========== CARD DE PRESTADOR COM LOCALIZAÇÃO COMPLETA ==========
+        // ========== CARD DE PRESTADOR CORRIGIDO ==========
         function CardPrestador(props) {
             var prestador = props.prestador;
             var onVerPerfil = props.onVerPerfil;
@@ -2667,12 +2674,16 @@
 
             var categoriaTexto = p.categoria || 'Profissional';
             
-            // CORREÇÃO: Verificar todos os campos possíveis para estado
-            var estadoDoPrestador = p.estado || p.uf || p.UF || '';
+            // CORREÇÃO: O estado pode estar em localizacao ou ser undefined
+            // Vamos extrair o estado da localizacao se disponível
+            var estadoDoPrestador = '';
+            if (p.localizacao && p.localizacao.estado) {
+                estadoDoPrestador = p.localizacao.estado;
+            }
             
             var localizacao = p.cidade || '';
             if (estadoDoPrestador) {
-                localizacao = localizacao + (localizacao ? ' - ' : '') + estadoDoPrestador;
+                localizacao = localizacao + ' - ' + estadoDoPrestador;
             }
             if (!localizacao) {
                 localizacao = 'Localização não informada';
@@ -2681,7 +2692,7 @@
             var descricaoTexto = p.descricao || 'Sem descrição';
 
             // Log para debug
-            console.log('🏠 Card prestador:', p.nome, 'Estado original:', p.estado, 'Estado corrigido:', estadoDoPrestador, 'Localização final:', localizacao);
+            console.log('🏠 Card prestador:', p.nome, 'Estado da localizacao:', estadoDoPrestador, 'Localização final:', localizacao);
 
             return React.createElement('div', { 
                 className: "bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg transition-all hover:border-indigo-200" 
@@ -2711,7 +2722,7 @@
             );
         }
 
-        // ========== TELA DE PERFIL PÚBLICO COMPLETA - CORRIGIDA ==========
+        // ========== TELA DE PERFIL PÚBLICO CORRIGIDA ==========
         function TelaPerfil(props) {
             var prestador = props.prestador;
             var onVoltar = props.onVoltar;
@@ -2802,8 +2813,11 @@
 
             var p = dadosCompletos || prestador;
             
-            // CORREÇÃO: Verificar todos os campos possíveis para estado
-            var estadoDoPrestador = p.estado || p.uf || p.UF || '';
+            // CORREÇÃO: O estado pode estar em localizacao
+            var estadoDoPrestador = '';
+            if (p.localizacao && p.localizacao.estado) {
+                estadoDoPrestador = p.localizacao.estado;
+            }
 
             return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8" },
                 React.createElement('button', {
