@@ -70,6 +70,11 @@ export const authAPI = {
 
 // ========== API DE PRESTADORES ==========
 export const prestadoresAPI = {
+  /**
+   * Buscar prestadores com filtros
+   * @param {Object} filtros - Filtros de busca (cidade, categoria, q)
+   * @returns {Promise} Lista de prestadores
+   */
   buscar: async (filtros = {}) => {
     const params = new URLSearchParams();
     if (filtros.cidade) params.append('cidade', filtros.cidade);
@@ -79,23 +84,56 @@ export const prestadoresAPI = {
     return request(`/prestadores/busca?${params}`);
   },
 
+  /**
+   * Buscar prestador por slug (URL amigável)
+   * @param {string} slug - Slug do prestador
+   * @returns {Promise} Dados do prestador
+   */
   getBySlug: (slug) => request(`/prestadores/${slug}`),
 
+  /**
+   * Verificar se CNPJ já está cadastrado
+   * @param {string} cnpj - CNPJ para verificar
+   * @returns {Promise} Resultado da verificação
+   */
   verificarCNPJ: (cnpj) => request('/prestadores/verificar-cnpj', {
     method: 'POST',
     body: JSON.stringify({ cnpj })
   }),
 
+  /**
+   * Criar novo prestador
+   * @param {Object} dados - Dados do prestador
+   * @returns {Promise} Prestador criado
+   */
   criar: (dados) => request('/prestadores', {
     method: 'POST',
     body: JSON.stringify(dados)
   }),
 
+  /**
+   * Buscar perfil do prestador logado
+   * @returns {Promise} Dados do perfil
+   */
   getPerfil: () => request('/prestadores/perfil'),
 
+  /**
+   * Atualizar perfil do prestador logado
+   * @param {Object} dados - Novos dados do perfil
+   * @returns {Promise} Perfil atualizado
+   */
   atualizarPerfil: (dados) => request('/prestadores/perfil', {
     method: 'PUT',
     body: JSON.stringify(dados)
+  }),
+
+  /**
+   * EXCLUIR PERFIL PERMANENTEMENTE
+   * Remove todos os dados do prestador do banco de dados
+   * @returns {Promise} Confirmação de exclusão
+   */
+  excluirPerfilPermanente: () => request('/prestadores/perfil', {
+    method: 'DELETE'
   })
 };
 
@@ -176,6 +214,10 @@ export const servicosAPI = {
 };
 
 // ========== UTILITÁRIOS ==========
+/**
+ * Testar conexão com a API
+ * @returns {Promise<boolean>} True se conectado com sucesso
+ */
 export const testarConexao = async () => {
   try {
     const resultado = await fetch(`${AZURE_URL}/health`).then(r => r.json());
