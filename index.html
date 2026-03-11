@@ -2466,70 +2466,149 @@
             );
         }
 
-        // ========== DASHBOARD DO PRESTADOR ==========
-        function DashboardPrestador(props) {
-            var usuario = props.usuario;
-            var onSair = props.onSair;
-            
-            var [prestador, setPrestador] = useState(null);
-            var [loading, setLoading] = useState(true);
-            var [aba, setAba] = useState('resumo');
-            var [editando, setEditando] = useState(false);
+      
+// ========== DASHBOARD DO PRESTADOR (COM BOTÃO DE EXCLUSÃO) ==========
+function DashboardPrestador(props) {
+    var usuario = props.usuario;
+    var onSair = props.onSair;
+    
+    var [prestador, setPrestador] = useState(null);
+    var [loading, setLoading] = useState(true);
+    var [aba, setAba] = useState('resumo');
+    var [editando, setEditando] = useState(false);
+    var [excluindo, setExcluindo] = useState(false);
 
-            useEffect(function() {
-                carregarDados();
-            }, []);
+    useEffect(function() {
+        carregarDados();
+    }, []);
 
-            function carregarDados() {
-                setLoading(true);
-                
-                fetch(API_URL + '/prestadores/perfil', {
-                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
-                })
-                    .then(function(response) { return response.json(); })
-                    .then(function(data) {
-                        setPrestador(data);
-                        setLoading(false);
-                    })
-                    .catch(function(error) {
-                        console.error('Erro ao carregar dados:', error);
-                        setLoading(false);
-                    });
+    function carregarDados() {
+        setLoading(true);
+        
+        fetch(API_URL + '/prestadores/perfil', {
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                setPrestador(data);
+                setLoading(false);
+            })
+            .catch(function(error) {
+                console.error('Erro ao carregar dados:', error);
+                setLoading(false);
+            });
+    }
+
+    // FUNÇÃO DE EXCLUSÃO PERMANENTE
+    function handleExcluirPerfil() {
+        var confirmacao1 = window.confirm(
+            '⚠️ ATENÇÃO! Esta ação é PERMANENTE e IRREVERSÍVEL!\n\n' +
+            'Todo o seu histórico, serviços, avaliações e dados serão excluídos do Sem Limites.\n\n' +
+            'Deseja continuar?'
+        );
+        if (!confirmacao1) return;
+
+        var confirmacao2 = window.prompt('Para confirmar a exclusão PERMANENTE, digite o seu NOME completo:');
+        if (!confirmacao2) {
+            alert('Operação cancelada.');
+            return;
+        }
+        
+        if (confirmacao2.trim().toLowerCase() !== prestador?.nome?.toLowerCase()) {
+            alert('❌ Nome incorreto. Operação cancelada.');
+            return;
+        }
+
+        var confirmacao3 = window.prompt('Digite "EXCLUIR PERMANENTEMENTE" para confirmação final:');
+        if (confirmacao3 !== 'EXCLUIR PERMANENTEMENTE') {
+            alert('❌ Código de confirmação incorreto. Operação cancelada.');
+            return;
+        }
+
+        setExcluindo(true);
+
+        fetch(API_URL + '/prestadores/perfil', {
+            method: 'DELETE',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                'Content-Type': 'application/json'
             }
+        })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.message) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    alert('✅ Perfil excluído permanentemente com sucesso.\n\nObrigado por utilizar o Sem Limites!');
+                    onSair();
+                } else {
+                    throw new Error(data.error || 'Erro ao excluir perfil');
+                }
+            })
+            .catch(function(error) {
+                console.error('❌ Erro ao excluir:', error);
+                alert('Erro ao excluir perfil. Tente novamente.');
+                setExcluindo(false);
+            });
+    }
 
-            if (loading) {
-                return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-12 text-center" },
-                    React.createElement('div', { className: "w-12 h-12 md:w-16 md:h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" }),
-                    React.createElement('p', { className: "text-sm md:text-base text-slate-600" }, "Carregando dashboard...")
-                );
-            }
+    if (loading) {
+        return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-12 text-center" },
+            React.createElement('div', { className: "w-12 h-12 md:w-16 md:h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" }),
+            React.createElement('p', { className: "text-sm md:text-base text-slate-600" }, "Carregando dashboard...")
+        );
+    }
 
-            if (!prestador) {
-                return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-12 text-center" },
-                    React.createElement('p', { className: "text-red-600" }, "Erro ao carregar dados do prestador")
-                );
-            }
+    if (!prestador) {
+        return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-12 text-center" },
+            React.createElement('p', { className: "text-red-600" }, "Erro ao carregar dados do prestador")
+        );
+    }
 
-            return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8" },
-                React.createElement('div', { className: "bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-2xl md:rounded-3xl p-6 md:p-8 text-white mb-8 relative overflow-hidden" },
-                    React.createElement('div', { className: "relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4" },
-                        React.createElement('div', null,
-                            React.createElement('h1', { className: "text-xl md:text-3xl font-bold mb-2" },
-                                "Olá, " + (prestador.nome || 'Prestador') + "!"
-                            ),
-                            React.createElement('p', { className: "text-sm md:text-base text-indigo-100" }, "Gerencie seus serviços e reputação")
+    return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8" },
+        // BOTÃO DE EXCLUSÃO NO TOPO (BEM VISÍVEL)
+        React.createElement('div', { className: "mb-6" },
+            React.createElement('div', { className: "bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border border-red-200 p-4" },
+                React.createElement('div', { className: "flex flex-col sm:flex-row items-center justify-between gap-4" },
+                    React.createElement('div', { className: "flex items-center gap-3" },
+                        React.createElement('div', { className: "bg-red-100 rounded-full p-2" },
+                            React.createElement('svg', { className: "w-5 h-5 text-red-600", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" })
+                            )
                         ),
-                        React.createElement('button', {
-                            onClick: onSair,
-                            className: "px-3 md:px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl transition flex items-center gap-2 text-sm md:text-base w-full sm:w-auto justify-center"
-                        },
-                            React.createElement('svg', { className: "w-4 h-4 md:w-5 md:h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" })
-                            ),
-                            "Sair"
-                        )
+                        React.createElement('span', { className: "text-sm font-medium text-red-800" }, "Zona de Perigo")
+                    ),
+                    React.createElement('button', {
+                        onClick: handleExcluirPerfil,
+                        disabled: excluindo,
+                        className: "px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition disabled:opacity-50 w-full sm:w-auto justify-center"
+                    },
+                        excluindo ? 'Excluindo...' : 'Excluir minha conta permanentemente'
                     )
+                )
+            )
+        ),
+
+        // Cabeçalho existente...
+        React.createElement('div', { className: "bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-2xl md:rounded-3xl p-6 md:p-8 text-white mb-8 relative overflow-hidden" },
+            React.createElement('div', { className: "relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4" },
+                React.createElement('div', null,
+                    React.createElement('h1', { className: "text-xl md:text-3xl font-bold mb-2" },
+                        "Olá, " + (prestador.nome || 'Prestador') + "!"
+                    ),
+                    React.createElement('p', { className: "text-sm md:text-base text-indigo-100" }, "Gerencie seus serviços e reputação")
                 ),
+                React.createElement('button', {
+                    onClick: onSair,
+                    className: "px-3 md:px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl transition flex items-center gap-2 text-sm md:text-base w-full sm:w-auto justify-center"
+                },
+                    React.createElement('svg', { className: "w-4 h-4 md:w-5 md:h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" })
+                    ),
+                    "Sair"
+                )
+            )
+        ),
 
                 React.createElement('div', { className: "grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8" },
                     React.createElement('div', { className: "bg-white rounded-xl border border-slate-200 p-3 md:p-4" },
@@ -3183,3 +3262,4 @@
     </script>
 </body>
 </html>
+
