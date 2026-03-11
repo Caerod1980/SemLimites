@@ -140,7 +140,7 @@ function DashboardPrestador({ usuario, onSair }) {
 
   // NOVA FUNÇÃO: Excluir perfil permanentemente
   const handleExcluirPerfilPermanente = async () => {
-    // Primeira confirmação
+    // Primeira confirmação de exclusão
     const confirmacao1 = window.confirm(
       '⚠️ ATENÇÃO! Esta ação é PERMANENTE e IRREVERSÍVEL!\n\n' +
       'Todo o seu histórico, serviços, avaliações e dados serão excluídos do Sem Limites.\n\n' +
