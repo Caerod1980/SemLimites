@@ -2,6 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import Prestador from '../models/Prestador.js';
 import User from '../models/User.js';
+import Servico from '../models/Servico.js'; // ADICIONE ESTA IMPORTAÇÃO
 import { consultarCNPJ } from '../services/receitaFederal.js';
 
 const router = express.Router();
@@ -286,6 +287,61 @@ router.put('/perfil', autenticar, async (req, res) => {
   } catch (error) {
     console.error('❌ Erro ao atualizar perfil:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// ========== EXCLUIR PERFIL DO PRESTADOR PERMANENTEMENTE ==========
+/**
+ * @route   DELETE /api/prestadores/perfil
+ * @desc    Excluir perfil do prestador permanentemente
+ * @access  Private
+ */
+router.delete('/perfil', autenticar, async (req, res) => {
+  try {
+    console.log('🗑️ Iniciando exclusão permanente do prestador:', req.user.userId);
+
+    // Buscar o usuário
+    const user = await User.findById(req.user.userId);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    if (user.tipo !== 'prestador') {
+      return res.status(403).json({ error: 'Usuário não é um prestador' });
+    }
+
+    if (!user.prestadorId) {
+      return res.status(404).json({ error: 'Prestador não vinculado ao usuário' });
+    }
+
+    const prestadorId = user.prestadorId;
+
+    // 1. Excluir todos os serviços relacionados a este prestador
+    const servicosExcluidos = await Servico.deleteMany({ prestadorId: prestadorId });
+    console.log(`✅ ${servicosExcluidos.deletedCount} serviços excluídos`);
+
+    // 2. Excluir o prestador
+    const prestadorExcluido = await Prestador.findByIdAndDelete(prestadorId);
+    
+    if (!prestadorExcluido) {
+      return res.status(404).json({ error: 'Prestador não encontrado' });
+    }
+
+    // 3. Excluir o usuário
+    await User.findByIdAndDelete(req.user.userId);
+
+    console.log(`✅ Prestador ${prestadorId} e usuário ${req.user.userId} excluídos permanentemente`);
+
+    res.json({ 
+      success: true,
+      message: 'Perfil excluído permanentemente com sucesso',
+      servicosExcluidos: servicosExcluidos.deletedCount
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao excluir perfil permanentemente:', error);
+    res.status(500).json({ error: 'Erro ao excluir perfil permanentemente: ' + error.message });
   }
 });
 
