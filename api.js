@@ -213,7 +213,7 @@ export const servicosAPI = {
     request(`/servicos/prestador/${prestadorId}?limit=${limit}`)
 };
 
-// ========== UTILITÁRIOS ==========
+// ========== UTILITÁRIOS CONEXÃO ==========
 /**
  * Testar conexão com a API
  * @returns {Promise<boolean>} True se conectado com sucesso
