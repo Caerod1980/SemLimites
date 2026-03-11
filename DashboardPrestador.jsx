@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { prestadoresAPI } from './api';
+import React, { useState, useEffect, useMemo } from 'react';
+import { prestadoresAPI, servicosAPI } from './api';
 import MeusServicos from './MeusServicos';
 
 function DashboardPrestador({ usuario, onSair }) {
@@ -10,6 +10,7 @@ function DashboardPrestador({ usuario, onSair }) {
   const [editando, setEditando] = useState(false);
   const [formData, setFormData] = useState({});
   const [salvando, setSalvando] = useState(false);
+  const [servicos, setServicos] = useState([]); // Para calcular estatísticas
 
   // Carregar dados do prestador
   useEffect(() => {
@@ -25,6 +26,11 @@ function DashboardPrestador({ usuario, onSair }) {
       const data = await prestadoresAPI.getPerfil();
       setPrestador(data);
       setFormData(data);
+      
+      // Carregar serviços para calcular estatísticas
+      const servicosData = await servicosAPI.listar();
+      setServicos(servicosData.servicos || []);
+      
       console.log('✅ Dados carregados:', data);
     } catch (error) {
       console.error('❌ Erro ao carregar dados:', error);
@@ -33,6 +39,63 @@ function DashboardPrestador({ usuario, onSair }) {
       setLoading(false);
     }
   };
+
+  // CALCULAR PERCENTUAL DE CLIENTES FIÉIS
+  const calcularClientesFieis = useMemo(() => {
+    if (!servicos || servicos.length === 0) return 0;
+    
+    // Filtrar apenas serviços concluídos/avaliados
+    const servicosConcluidos = servicos.filter(s => s.status === 'avaliado');
+    
+    if (servicosConcluidos.length === 0) return 0;
+    
+    // Agrupar serviços por cliente (usando nome + whatsapp como identificador único)
+    const servicosPorCliente = servicosConcluidos.reduce((acc, servico) => {
+      // Criar chave única para o cliente (nome + whatsapp)
+      const chaveCliente = `${servico.clienteNome}-${servico.clienteWhatsApp}`;
+      
+      if (!acc[chaveCliente]) {
+        acc[chaveCliente] = [];
+      }
+      acc[chaveCliente].push(servico);
+      return acc;
+    }, {});
+    
+    // Calcular clientes que retornaram (mais de 1 serviço)
+    const clientesComRetorno = Object.values(servicosPorCliente).filter(
+      servicosCliente => servicosCliente.length > 1
+    ).length;
+    
+    const totalClientes = Object.keys(servicosPorCliente).length;
+    
+    return totalClientes > 0 
+      ? Math.round((clientesComRetorno / totalClientes) * 100)
+      : 0;
+  }, [servicos]);
+
+  // CALCULAR ESTATÍSTICAS GERAIS
+  const estatisticas = useMemo(() => {
+    const servicosAvaliados = servicos.filter(s => s.status === 'avaliado').length;
+    const totalAvaliacoes = servicos.reduce((acc, s) => {
+      if (s.avaliacao?.estrelas) {
+        return acc + s.avaliacao.estrelas;
+      }
+      return acc;
+    }, 0);
+    
+    const mediaEstrelas = servicosAvaliados > 0 
+      ? (totalAvaliacoes / servicosAvaliados).toFixed(1)
+      : 0;
+    
+    return {
+      servicosRealizados: servicosAvaliados,
+      totalServicos: servicos.length,
+      mediaEstrelas,
+      clientesFieis: calcularClientesFieis,
+      aguardando: servicos.filter(s => s.status === 'aguardando').length,
+      expirados: servicos.filter(s => s.status === 'expirado').length
+    };
+  }, [servicos, calcularClientesFieis]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -64,15 +127,75 @@ function DashboardPrestador({ usuario, onSair }) {
     }
   };
 
-  const handleExcluirConta = async () => {
-    if (window.confirm('Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.')) {
+  const handleDesativarConta = async () => {
+    if (window.confirm('Tem certeza que deseja desativar sua conta temporariamente?')) {
       try {
-        await prestadoresAPI.excluirConta();
-        alert('Conta excluída com sucesso.');
-        onSair();
+        // Implementar lógica de desativação se necessário
+        alert('Funcionalidade em desenvolvimento.');
       } catch (error) {
-        setErro('Erro ao excluir conta.');
+        setErro('Erro ao desativar conta.');
       }
+    }
+  };
+
+  // NOVA FUNÇÃO: Excluir perfil permanentemente
+  const handleExcluirPerfilPermanente = async () => {
+    // Primeira confirmação
+    const confirmacao1 = window.confirm(
+      '⚠️ ATENÇÃO! Esta ação é PERMANENTE e IRREVERSÍVEL!\n\n' +
+      'Todo o seu histórico, serviços, avaliações e dados serão excluídos do Sem Limites.\n\n' +
+      'Deseja continuar?'
+    );
+    
+    if (!confirmacao1) return;
+
+    // Segunda confirmação com digitação
+    const confirmacao2 = window.prompt(
+      'Para confirmar a exclusão PERMANENTE da sua conta, digite o seu NOME completo:'
+    );
+
+    if (!confirmacao2) {
+      alert('Operação cancelada.');
+      return;
+    }
+
+    // Verificar se o nome digitado corresponde ao nome do prestador
+    if (confirmacao2.trim().toLowerCase() !== prestador?.nome?.toLowerCase()) {
+      alert('❌ Nome incorreto. Operação cancelada.');
+      return;
+    }
+
+    // Terceira confirmação com "EXCLUIR"
+    const confirmacao3 = window.prompt(
+      'Digite "EXCLUIR PERMANENTEMENTE" para confirmação final:'
+    );
+
+    if (confirmacao3 !== 'EXCLUIR PERMANENTEMENTE') {
+      alert('❌ Código de confirmação incorreto. Operação cancelada.');
+      return;
+    }
+
+    try {
+      setSalvando(true);
+      setErro('');
+      
+      // Chamar API para excluir permanentemente
+      await prestadoresAPI.excluirPerfilPermanente();
+      
+      // Limpar localStorage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
+      alert('✅ Perfil excluído permanentemente com sucesso.\n\nObrigado por utilizar o Sem Limites!');
+      
+      // Redirecionar para página inicial
+      onSair();
+      
+    } catch (error) {
+      console.error('❌ Erro ao excluir perfil:', error);
+      setErro('Erro ao excluir perfil permanentemente. Tente novamente ou contate o suporte.');
+    } finally {
+      setSalvando(false);
     }
   };
 
@@ -122,7 +245,7 @@ function DashboardPrestador({ usuario, onSair }) {
               <div className="bg-white/20 rounded-xl px-4 py-2">
                 <span className="text-sm opacity-90">Membro desde </span>
                 <span className="font-semibold">
-                  {new Date(prestador?.createdAt).toLocaleDateString('pt-BR')}
+                  {prestador?.createdAt ? new Date(prestador.createdAt).toLocaleDateString('pt-BR') : 'N/A'}
                 </span>
               </div>
               {prestador?.verificado && (
@@ -147,7 +270,7 @@ function DashboardPrestador({ usuario, onSair }) {
         </div>
       </div>
 
-      {/* Cards de Estatísticas */}
+      {/* Cards de Estatísticas ATUALIZADOS com dados reais */}
       <div className="grid md:grid-cols-5 gap-4 mb-8">
         <div className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition">
           <div className="flex items-center gap-2 text-amber-500 mb-2">
@@ -156,8 +279,10 @@ function DashboardPrestador({ usuario, onSair }) {
             </svg>
             <span className="text-sm font-medium">Reputação</span>
           </div>
-          <div className="text-2xl font-bold text-slate-900">{prestador?.estrelas || 0}</div>
-          <div className="text-xs text-slate-500 mt-1">{prestador?.avaliacoes || 0} avaliações</div>
+          <div className="text-2xl font-bold text-slate-900">
+            {estatisticas.mediaEstrelas || prestador?.estrelas || 0}
+          </div>
+          <div className="text-xs text-slate-500 mt-1">{estatisticas.servicosRealizados || 0} avaliações</div>
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition">
@@ -167,10 +292,11 @@ function DashboardPrestador({ usuario, onSair }) {
             </svg>
             <span className="text-sm font-medium">Serviços</span>
           </div>
-          <div className="text-2xl font-bold text-slate-900">{prestador?.servicosRealizados || 0}</div>
+          <div className="text-2xl font-bold text-slate-900">{estatisticas.servicosRealizados || 0}</div>
           <div className="text-xs text-slate-500 mt-1">realizados</div>
         </div>
 
+        {/* CARD FIÉIS ATUALIZADO com percentual real */}
         <div className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition">
           <div className="flex items-center gap-2 text-blue-500 mb-2">
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -178,7 +304,9 @@ function DashboardPrestador({ usuario, onSair }) {
             </svg>
             <span className="text-sm font-medium">Fiéis</span>
           </div>
-          <div className="text-2xl font-bold text-slate-900">{prestador?.clientesFieis || 0}%</div>
+          <div className="text-2xl font-bold text-slate-900">
+            {estatisticas.clientesFieis}%
+          </div>
           <div className="text-xs text-slate-500 mt-1">retornaram</div>
         </div>
 
@@ -187,10 +315,10 @@ function DashboardPrestador({ usuario, onSair }) {
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879.586.585.879 1.353.879 2.121s-.293 1.536-.879 2.121z" clipRule="evenodd" />
             </svg>
-            <span className="text-sm font-medium">Dias</span>
+            <span className="text-sm font-medium">Aguardando</span>
           </div>
-          <div className="text-2xl font-bold text-slate-900">{prestador?.tempoResposta || '~30'}</div>
-          <div className="text-xs text-slate-500 mt-1">tempo resposta</div>
+          <div className="text-2xl font-bold text-slate-900">{estatisticas.aguardando || 0}</div>
+          <div className="text-xs text-slate-500 mt-1">avaliações</div>
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition">
@@ -198,14 +326,14 @@ function DashboardPrestador({ usuario, onSair }) {
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
             </svg>
-            <span className="text-sm font-medium">Garantia</span>
+            <span className="text-sm font-medium">Total</span>
           </div>
-          <div className="text-2xl font-bold text-slate-900">{prestador?.garantia || '3 meses'}</div>
-          <div className="text-xs text-slate-500 mt-1">pós-serviço</div>
+          <div className="text-2xl font-bold text-slate-900">{estatisticas.totalServicos || 0}</div>
+          <div className="text-xs text-slate-500 mt-1">serviços</div>
         </div>
       </div>
 
-      {/* Abas */}
+      {/* Abas (mantém o mesmo código existente) */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden mb-8">
         <div className="border-b border-slate-200 bg-slate-50/50">
           <div className="flex overflow-x-auto hide-scrollbar">
@@ -306,9 +434,8 @@ function DashboardPrestador({ usuario, onSair }) {
           </div>
         </div>
 
-        {/* Conteúdo das abas */}
+        {/* Conteúdo das abas (mantém o mesmo código existente) */}
         <div className="p-6">
-          {/* ABA: RESUMO */}
           {aba === 'resumo' && (
             <div className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
@@ -373,7 +500,6 @@ function DashboardPrestador({ usuario, onSair }) {
             </div>
           )}
 
-          {/* ABA: PERFIL (EDIÇÃO) */}
           {aba === 'perfil' && (
             <div className="space-y-6">
               <div className="flex justify-between items-center mb-6">
@@ -535,21 +661,8 @@ function DashboardPrestador({ usuario, onSair }) {
             </div>
           )}
 
-          {/* ABA: SERVIÇOS */}
           {aba === 'servicos' && <MeusServicos />}
-            <div className="text-center py-12 text-slate-500">
-              <svg className="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-              <p className="text-lg font-medium text-slate-700 mb-2">Nenhum serviço cadastrado</p>
-              <p className="text-sm mb-6">Cadastre seu primeiro serviço para começar a receber avaliações.</p>
-              <button className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700">
-                + Novo Serviço
-              </button>
-            </div>
-          )}
-
-          {/* ABA: AVALIAÇÕES */}
+          
           {aba === 'avaliacoes' && (
             <div className="text-center py-12 text-slate-500">
               <svg className="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -560,7 +673,6 @@ function DashboardPrestador({ usuario, onSair }) {
             </div>
           )}
 
-          {/* ABA: CERTIFICAÇÕES */}
           {aba === 'certificacoes' && (
             <div>
               <div className="flex justify-end mb-4">
@@ -590,17 +702,56 @@ function DashboardPrestador({ usuario, onSair }) {
         </div>
       </div>
 
-      {/* Botão de exclusão de conta */}
+      {/* BOTÃO DE EXCLUSÃO PERMANENTE - NOVO DESIGN */}
       <div className="mt-8 pt-6 border-t border-slate-200">
-        <button
-          onClick={handleExcluirConta}
-          className="px-4 py-2 text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-          Excluir minha conta
-        </button>
+        <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-2xl p-6 border border-red-200">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="bg-red-100 rounded-full p-3">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-red-800 mb-1">Zona de Perigo</h3>
+                <p className="text-sm text-red-600 max-w-xl">
+                  Ações abaixo são irreversíveis. A exclusão permanente remove todos os seus dados, 
+                  serviços, avaliações e histórico do Sem Limites.
+                </p>
+              </div>
+            </div>
+            
+            <button
+              onClick={handleExcluirPerfilPermanente}
+              disabled={salvando}
+              className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition disabled:opacity-50 shadow-lg hover:shadow-xl min-w-[200px]"
+            >
+              {salvando ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Excluindo...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  <span>Excluir Perfil Permanentemente</span>
+                </>
+              )}
+            </button>
+          </div>
+          
+          <div className="mt-4 flex items-center gap-2 text-xs text-red-500 bg-red-100/50 p-3 rounded-xl">
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>
+              Esta ação é PERMANENTE e IRREVERSÍVEL. Você precisará criar uma nova conta se desejar 
+              utilizar o Sem Limites novamente.
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );
