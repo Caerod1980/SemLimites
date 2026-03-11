@@ -6,13 +6,12 @@ function DashboardPrestador({ usuario, onSair }) {
   const [prestador, setPrestador] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState('');
-  const [aba, setAba] = useState('resumo'); // resumo, perfil, servicos, avaliacoes, certificacoes
+  const [aba, setAba] = useState('resumo');
   const [editando, setEditando] = useState(false);
   const [formData, setFormData] = useState({});
   const [salvando, setSalvando] = useState(false);
-  const [servicos, setServicos] = useState([]); // Para calcular estatísticas
+  const [servicos, setServicos] = useState([]);
 
-  // Carregar dados do prestador
   useEffect(() => {
     carregarDados();
   }, [usuario]);
@@ -22,12 +21,10 @@ function DashboardPrestador({ usuario, onSair }) {
       setLoading(true);
       setErro('');
       
-      // Buscar dados do prestador logado
       const data = await prestadoresAPI.getPerfil();
       setPrestador(data);
       setFormData(data);
       
-      // Carregar serviços para calcular estatísticas
       const servicosData = await servicosAPI.listar();
       setServicos(servicosData.servicos || []);
       
@@ -40,18 +37,14 @@ function DashboardPrestador({ usuario, onSair }) {
     }
   };
 
-  // CALCULAR PERCENTUAL DE CLIENTES FIÉIS
   const calcularClientesFieis = useMemo(() => {
     if (!servicos || servicos.length === 0) return 0;
     
-    // Filtrar apenas serviços concluídos/avaliados
     const servicosConcluidos = servicos.filter(s => s.status === 'avaliado');
     
     if (servicosConcluidos.length === 0) return 0;
     
-    // Agrupar serviços por cliente (usando nome + whatsapp como identificador único)
     const servicosPorCliente = servicosConcluidos.reduce((acc, servico) => {
-      // Criar chave única para o cliente (nome + whatsapp)
       const chaveCliente = `${servico.clienteNome}-${servico.clienteWhatsApp}`;
       
       if (!acc[chaveCliente]) {
@@ -61,7 +54,6 @@ function DashboardPrestador({ usuario, onSair }) {
       return acc;
     }, {});
     
-    // Calcular clientes que retornaram (mais de 1 serviço)
     const clientesComRetorno = Object.values(servicosPorCliente).filter(
       servicosCliente => servicosCliente.length > 1
     ).length;
@@ -73,7 +65,6 @@ function DashboardPrestador({ usuario, onSair }) {
       : 0;
   }, [servicos]);
 
-  // CALCULAR ESTATÍSTICAS GERAIS
   const estatisticas = useMemo(() => {
     const servicosAvaliados = servicos.filter(s => s.status === 'avaliado').length;
     const totalAvaliacoes = servicos.reduce((acc, s) => {
@@ -127,20 +118,9 @@ function DashboardPrestador({ usuario, onSair }) {
     }
   };
 
-  const handleDesativarConta = async () => {
-    if (window.confirm('Tem certeza que deseja desativar sua conta temporariamente?')) {
-      try {
-        // Implementar lógica de desativação se necessário
-        alert('Funcionalidade em desenvolvimento.');
-      } catch (error) {
-        setErro('Erro ao desativar conta.');
-      }
-    }
-  };
-
   // NOVA FUNÇÃO: Excluir perfil permanentemente
   const handleExcluirPerfilPermanente = async () => {
-    // Primeira confirmação de exclusão
+    // Primeira confirmação
     const confirmacao1 = window.confirm(
       '⚠️ ATENÇÃO! Esta ação é PERMANENTE e IRREVERSÍVEL!\n\n' +
       'Todo o seu histórico, serviços, avaliações e dados serão excluídos do Sem Limites.\n\n' +
@@ -159,13 +139,12 @@ function DashboardPrestador({ usuario, onSair }) {
       return;
     }
 
-    // Verificar se o nome digitado corresponde ao nome do prestador
     if (confirmacao2.trim().toLowerCase() !== prestador?.nome?.toLowerCase()) {
       alert('❌ Nome incorreto. Operação cancelada.');
       return;
     }
 
-    // Terceira confirmação com "EXCLUIR"
+    // Terceira confirmação
     const confirmacao3 = window.prompt(
       'Digite "EXCLUIR PERMANENTEMENTE" para confirmação final:'
     );
@@ -179,16 +158,13 @@ function DashboardPrestador({ usuario, onSair }) {
       setSalvando(true);
       setErro('');
       
-      // Chamar API para excluir permanentemente
       await prestadoresAPI.excluirPerfilPermanente();
       
-      // Limpar localStorage
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       
       alert('✅ Perfil excluído permanentemente com sucesso.\n\nObrigado por utilizar o Sem Limites!');
       
-      // Redirecionar para página inicial
       onSair();
       
     } catch (error) {
@@ -270,7 +246,7 @@ function DashboardPrestador({ usuario, onSair }) {
         </div>
       </div>
 
-      {/* Cards de Estatísticas ATUALIZADOS com dados reais */}
+      {/* Cards de Estatísticas */}
       <div className="grid md:grid-cols-5 gap-4 mb-8">
         <div className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition">
           <div className="flex items-center gap-2 text-amber-500 mb-2">
@@ -296,7 +272,6 @@ function DashboardPrestador({ usuario, onSair }) {
           <div className="text-xs text-slate-500 mt-1">realizados</div>
         </div>
 
-        {/* CARD FIÉIS ATUALIZADO com percentual real */}
         <div className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition">
           <div className="flex items-center gap-2 text-blue-500 mb-2">
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -333,7 +308,7 @@ function DashboardPrestador({ usuario, onSair }) {
         </div>
       </div>
 
-      {/* Abas (mantém o mesmo código existente) */}
+      {/* Abas */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden mb-8">
         <div className="border-b border-slate-200 bg-slate-50/50">
           <div className="flex overflow-x-auto hide-scrollbar">
@@ -434,7 +409,7 @@ function DashboardPrestador({ usuario, onSair }) {
           </div>
         </div>
 
-        {/* Conteúdo das abas (mantém o mesmo código existente) */}
+        {/* Conteúdo das abas */}
         <div className="p-6">
           {aba === 'resumo' && (
             <div className="space-y-6">
@@ -702,7 +677,7 @@ function DashboardPrestador({ usuario, onSair }) {
         </div>
       </div>
 
-      {/* BOTÃO DE EXCLUSÃO PERMANENTE - NOVO DESIGN */}
+      {/* BOTÃO DE EXCLUSÃO PERMANENTE - VISÍVEL NO FINAL DA PÁGINA */}
       <div className="mt-8 pt-6 border-t border-slate-200">
         <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-2xl p-6 border border-red-200">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
