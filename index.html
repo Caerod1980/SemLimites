@@ -85,6 +85,11 @@
             overflow-x: hidden;
             max-width: 100vw;
         }
+        
+        /* Estilo para o placeholder de avatar vazio */
+        .avatar-placeholder {
+            background: linear-gradient(135deg, #e0efe0 0%, #fff1cf 100%);
+        }
     </style>
 </head>
 <body class="overflow-guard">
@@ -115,6 +120,7 @@
 
         var API_URL = 'https://semlimites-api-rodrigo-b5ckghhkbxdqd7a8.canadacentral-01.azurewebsites.net/api';
         var BASE_PATH = '/SemLimites';
+        var SITE_URL = 'https://semlimites.com.br'; // URL do site
 
         // URL do logotipo (usando raw=true para garantir a imagem direta)
         var LOGO_URL = 'https://github.com/Caerod1980/Imagens-Sem-Limites/blob/1e9c9ecb02affcaf8cd684466da02d235671a1cb/logo%20oficial%20transparente.png?raw=true';
@@ -190,7 +196,7 @@
             return React.createElement('span', { className: className }, children);
         }
 
-        // Avatar removido dos cards - será usado apenas no perfil
+        // Avatar modificado - sem iniciais, apenas um placeholder visual
         function Avatar(props) {
             var size = props.size || "md";
             var src = props.src || null;
@@ -210,16 +216,16 @@
                 });
             }
 
-            // Placeholder vazio com gradiente suave (usado apenas no perfil)
+            // Placeholder vazio com gradiente suave (sem iniciais)
             return React.createElement('div', {
                 className: cls(
-                    "rounded-2xl bg-gradient-to-br from-indigo-100 to-indigo-200 border-2 border-white shadow-md",
+                    "rounded-2xl avatar-placeholder border-2 border-white shadow-md",
                     sizeClasses[size]
                 )
             });
         }
 
-        // ========== COMPONENTE DO CABEÇALHO ==========
+        // ========== COMPONENTE DO CABEÇALHO (SEM LOGOTIPO) ==========
         function Header(props) {
             var onVoltar = props.onVoltar;
             var usuario = props.usuario;
@@ -230,7 +236,7 @@
             },
                 React.createElement('div', { className: "max-w-7xl mx-auto px-3 md:px-4 py-2 md:py-3" },
                     React.createElement('div', { className: "flex items-center justify-between gap-2" },
-                        // Título e subtítulo alinhados à esquerda
+                        // Apenas título e subtítulo alinhados à esquerda (sem logotipo)
                         React.createElement('div', {
                             onClick: onVoltar,
                             className: "flex flex-col cursor-pointer group"
@@ -269,7 +275,7 @@
             );
         }
 
-        // ========== CARD DE PRESTADOR (SEM AVATAR) ==========
+        // ========== CARD DE PRESTADOR (SEM INICIAIS) ==========
         function CardPrestador(props) {
             var prestador = props.prestador;
             var onVerPerfil = props.onVerPerfil;
@@ -290,8 +296,9 @@
             return React.createElement('div', {
                 className: "bg-white/90 backdrop-blur-sm rounded-2xl md:rounded-3xl border border-neutral-200 p-4 md:p-6 hover:shadow-xl transition-all duration-300 hover:border-[#FFD966]/50 group"
             },
-                React.createElement('div', { className: "flex flex-col" },
-                    React.createElement('div', { className: "flex-1 w-full" },
+                React.createElement('div', { className: "flex flex-col xs:flex-row items-start gap-3 md:gap-4" },
+                    // Avatar removido - apenas informações textuais
+                    React.createElement('div', { className: "flex-1 w-full xs:w-auto" },
                         React.createElement('h3', { className: "font-logo text-base md:text-lg font-semibold text-neutral-800 group-hover:text-[#3d7a3d] transition-colors break-words" },
                             p.nome
                         ),
@@ -389,7 +396,7 @@
             }
 
             return React.createElement('div', { className: "max-w-7xl mx-auto px-3 md:px-4 py-4 md:py-8" },
-                // Banner com logotipo (visível em mobile e desktop)
+                // Banner com logotipo e frase fixa
                 React.createElement('div', {
                     className: "bg-gradient-to-r from-[#f0f7f0] to-[#fff8e7] rounded-3xl md:rounded-4xl p-4 md:p-8 mb-4 md:mb-8 border border-[#c0dfc0] shadow-sm"
                 },
@@ -418,7 +425,7 @@
                     )
                 ),
 
-                // Filtros (sem campo de estado)
+                // Filtros
                 React.createElement('div', { className: "bg-white/70 backdrop-blur-sm rounded-2xl md:rounded-3xl border border-neutral-200 p-4 md:p-6 mb-4 md:mb-8 shadow-sm" },
                     React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4" },
                         React.createElement('input', {
@@ -2749,7 +2756,7 @@
             );
         }
 
-        // ========== TELA DE PERFIL PÚBLICO (DO INDEX20) ==========
+        // ========== TELA DE PERFIL PÚBLICO COM BOTÃO COMPARTILHAR (DO INDEX20) ==========
         function TelaPerfil(props) {
             var prestador = props.prestador;
             var onVoltar = props.onVoltar;
@@ -2757,6 +2764,7 @@
             var [loading, setLoading] = useState(false);
             var [dadosCompletos, setDadosCompletos] = useState(null);
             var [erro, setErro] = useState('');
+            var [compartilhado, setCompartilhado] = useState(false);
 
             useEffect(function() {
                 if (prestador && prestador._id) {
@@ -2787,6 +2795,59 @@
                         setErro('Erro ao carregar perfil. Tente novamente.');
                         setLoading(false);
                     });
+            }
+
+            function handleCompartilhar() {
+                var p = dadosCompletos || prestador;
+                
+                // Construir mensagem para compartilhamento
+                var mensagem = "👤 *" + p.nome + "*\n\n";
+                mensagem += "📌 Categoria: " + (p.categoria || 'Não informada') + "\n";
+                mensagem += "📍 Localização: " + (p.cidade || '') + (p.estado ? ' - ' + p.estado : '') + "\n\n";
+                
+                if (p.descricao) {
+                    mensagem += "📝 Sobre: " + p.descricao + "\n\n";
+                }
+                
+                if (p.experiencia) {
+                    mensagem += "💼 Experiência: " + p.experiencia + "\n\n";
+                }
+                
+                if (p.especialidades && p.especialidades.length > 0) {
+                    mensagem += "🔧 Especialidades: " + p.especialidades.join(', ') + "\n\n";
+                }
+                
+                if (p.certificacoes && p.certificacoes.length > 0) {
+                    mensagem += "📜 Certificações: " + p.certificacoes.join(', ') + "\n\n";
+                }
+                
+                if (p.regioesAtendimento && p.regioesAtendimento.length > 0) {
+                    mensagem += "🗺️ Regiões de atendimento: " + p.regioesAtendimento.join(', ') + "\n\n";
+                }
+                
+                mensagem += "⭐ Avaliação: " + (p.estrelas || 0).toFixed(1) + " (" + (p.avaliacoes || 0) + " avaliações)\n\n";
+                mensagem += "Para saber mais sobre os serviços realizados, avaliações e contato, acesse o link abaixo:\n";
+                mensagem += SITE_URL + BASE_PATH + "/perfil/" + p._id;
+                
+                // Usar Web Share API se disponível
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Perfil de ' + p.nome,
+                        text: mensagem,
+                        url: SITE_URL + BASE_PATH + "/perfil/" + p._id,
+                    })
+                    .then(function() { setCompartilhado(true); })
+                    .catch(function(error) { console.log('Erro ao compartilhar:', error); });
+                } else {
+                    // Fallback para clipboard
+                    navigator.clipboard.writeText(mensagem).then(function() {
+                        setCompartilhado(true);
+                        setTimeout(function() { setCompartilhado(false); }, 3000);
+                    }).catch(function(error) {
+                        console.error('Erro ao copiar:', error);
+                        alert('Não foi possível compartilhar. Copie o link manualmente.');
+                    });
+                }
             }
 
             if (!prestador) {
@@ -2846,14 +2907,30 @@
             }
 
             return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8" },
-                React.createElement('button', {
-                    onClick: onVoltar,
-                    className: "mb-6 text-indigo-600 hover:text-indigo-800 flex items-center gap-2 text-sm md:text-base"
-                },
-                    React.createElement('svg', { className: "w-4 h-4 md:w-5 md:h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M10 19l-7-7m0 0l7-7m-7 7h18" })
+                React.createElement('div', { className: "flex justify-between items-center mb-6" },
+                    React.createElement('button', {
+                        onClick: onVoltar,
+                        className: "text-indigo-600 hover:text-indigo-800 flex items-center gap-2 text-sm md:text-base"
+                    },
+                        React.createElement('svg', { className: "w-4 h-4 md:w-5 md:h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                            React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M10 19l-7-7m0 0l7-7m-7 7h18" })
+                        ),
+                        "Voltar para busca"
                     ),
-                    "Voltar para busca"
+                    
+                    // Botão de compartilhar
+                    React.createElement('div', { className: "flex items-center gap-2" },
+                        compartilhado && React.createElement('span', { className: "text-xs text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full" }, "Copiado!"),
+                        React.createElement('button', {
+                            onClick: handleCompartilhar,
+                            className: "px-3 md:px-4 py-2 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white rounded-xl text-xs md:text-sm font-medium hover:shadow-md transition-all flex items-center gap-2"
+                        },
+                            React.createElement('svg', { className: "w-4 h-4 md:w-5 md:h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" })
+                            ),
+                            "Compartilhar perfil"
+                        )
+                    )
                 ),
 
                 React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-slate-200 overflow-hidden shadow-sm" },
@@ -2947,6 +3024,7 @@
                             )
                         ),
 
+                        // Seção de contato (será exibida normalmente)
                         React.createElement('div', { className: "bg-slate-50 rounded-xl md:rounded-2xl p-4 md:p-6" },
                             React.createElement('h2', { className: "text-base md:text-xl font-semibold mb-4" }, "Contato"),
                             React.createElement('div', { className: "space-y-3" },
