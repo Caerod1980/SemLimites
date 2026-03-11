@@ -85,11 +85,6 @@
             overflow-x: hidden;
             max-width: 100vw;
         }
-        
-        /* Estilo para o placeholder de avatar vazio */
-        .avatar-placeholder {
-            background: linear-gradient(135deg, #e0efe0 0%, #fff1cf 100%);
-        }
     </style>
 </head>
 <body class="overflow-guard">
@@ -195,7 +190,7 @@
             return React.createElement('span', { className: className }, children);
         }
 
-        // Avatar modificado - sem iniciais, apenas um placeholder visual
+        // Avatar removido dos cards - será usado apenas no perfil
         function Avatar(props) {
             var size = props.size || "md";
             var src = props.src || null;
@@ -215,16 +210,16 @@
                 });
             }
 
-            // Placeholder vazio com gradiente suave (sem iniciais)
+            // Placeholder vazio com gradiente suave (usado apenas no perfil)
             return React.createElement('div', {
                 className: cls(
-                    "rounded-2xl avatar-placeholder border-2 border-white shadow-md",
+                    "rounded-2xl bg-gradient-to-br from-indigo-100 to-indigo-200 border-2 border-white shadow-md",
                     sizeClasses[size]
                 )
             });
         }
 
-        // ========== COMPONENTE DO CABEÇALHO (SEM LOGOTIPO) ==========
+        // ========== COMPONENTE DO CABEÇALHO ==========
         function Header(props) {
             var onVoltar = props.onVoltar;
             var usuario = props.usuario;
@@ -235,7 +230,7 @@
             },
                 React.createElement('div', { className: "max-w-7xl mx-auto px-3 md:px-4 py-2 md:py-3" },
                     React.createElement('div', { className: "flex items-center justify-between gap-2" },
-                        // Apenas título e subtítulo alinhados à esquerda (sem logotipo)
+                        // Título e subtítulo alinhados à esquerda
                         React.createElement('div', {
                             onClick: onVoltar,
                             className: "flex flex-col cursor-pointer group"
@@ -274,7 +269,7 @@
             );
         }
 
-        // ========== CARD DE PRESTADOR (SEM INICIAIS) ==========
+        // ========== CARD DE PRESTADOR (SEM AVATAR) ==========
         function CardPrestador(props) {
             var prestador = props.prestador;
             var onVerPerfil = props.onVerPerfil;
@@ -295,10 +290,8 @@
             return React.createElement('div', {
                 className: "bg-white/90 backdrop-blur-sm rounded-2xl md:rounded-3xl border border-neutral-200 p-4 md:p-6 hover:shadow-xl transition-all duration-300 hover:border-[#FFD966]/50 group"
             },
-                React.createElement('div', { className: "flex flex-col xs:flex-row items-start gap-3 md:gap-4" },
-                    // Avatar vazio (sem iniciais)
-                    React.createElement(Avatar, { size: window.innerWidth < 640 ? "md" : "lg" }),
-                    React.createElement('div', { className: "flex-1 w-full xs:w-auto" },
+                React.createElement('div', { className: "flex flex-col" },
+                    React.createElement('div', { className: "flex-1 w-full" },
                         React.createElement('h3', { className: "font-logo text-base md:text-lg font-semibold text-neutral-800 group-hover:text-[#3d7a3d] transition-colors break-words" },
                             p.nome
                         ),
@@ -323,11 +316,10 @@
             );
         }
 
-        // ========== TELA DE BUSCA COM LOGOTIPO E FRASE FIXA ==========
+        // ========== TELA DE BUSCA (SEM FILTRO DE ESTADO) ==========
         function TelaBusca(props) {
             var onVerPerfil = props.onVerPerfil;
 
-            var [estado, setEstado] = useState('');
             var [cidade, setCidade] = useState('');
             var [categoria, setCategoria] = useState('');
             var [buscaTexto, setBuscaTexto] = useState('');
@@ -387,15 +379,6 @@
                 buscar();
             }, []);
 
-            var estadoOptions = [
-                React.createElement('option', { key: "empty", value: "" }, "Todos os estados")
-            ];
-            for (var i = 0; i < ESTADOS.length; i++) {
-                estadoOptions.push(
-                    React.createElement('option', { key: ESTADOS[i], value: ESTADOS[i] }, ESTADOS[i])
-                );
-            }
-
             var categoriaOptions = [
                 React.createElement('option', { key: "empty", value: "" }, "Todas as categorias")
             ];
@@ -406,7 +389,7 @@
             }
 
             return React.createElement('div', { className: "max-w-7xl mx-auto px-3 md:px-4 py-4 md:py-8" },
-                // Banner com logotipo e frase fixa
+                // Banner com logotipo (visível em mobile e desktop)
                 React.createElement('div', {
                     className: "bg-gradient-to-r from-[#f0f7f0] to-[#fff8e7] rounded-3xl md:rounded-4xl p-4 md:p-8 mb-4 md:mb-8 border border-[#c0dfc0] shadow-sm"
                 },
@@ -435,25 +418,14 @@
                     )
                 ),
 
-                // Filtros
+                // Filtros (sem campo de estado)
                 React.createElement('div', { className: "bg-white/70 backdrop-blur-sm rounded-2xl md:rounded-3xl border border-neutral-200 p-4 md:p-6 mb-4 md:mb-8 shadow-sm" },
-                    React.createElement('div', { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4" },
-                        React.createElement('select', {
-                            value: estado,
-                            onChange: function(e) {
-                                setEstado(e.target.value);
-                                if (e.target.value) {
-                                    alert('💡 Dica: Use o campo "Cidade" para filtrar por localização.');
-                                }
-                            },
-                            className: "px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-neutral-200 focus:border-[#FFB347] focus:ring-2 focus:ring-[#FFD966]/30 outline-none transition-all bg-white text-sm md:text-base"
-                        }, estadoOptions),
-
+                    React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4" },
                         React.createElement('input', {
                             type: "text",
                             value: cidade,
                             onChange: function(e) { setCidade(e.target.value); },
-                            placeholder: "🌆 Cidade",
+                            placeholder: "Cidade",
                             className: "px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-neutral-200 focus:border-[#FFB347] focus:ring-2 focus:ring-[#FFD966]/30 outline-none transition-all text-sm md:text-base"
                         }),
 
@@ -467,7 +439,7 @@
                             type: "text",
                             value: buscaTexto,
                             onChange: function(e) { setBuscaTexto(e.target.value); },
-                            placeholder: "🔍 Buscar...",
+                            placeholder: "Nome ou especialidade",
                             className: "px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-neutral-200 focus:border-[#FFB347] focus:ring-2 focus:ring-[#FFD966]/30 outline-none transition-all text-sm md:text-base"
                         })
                     )
