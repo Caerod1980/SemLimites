@@ -118,7 +118,6 @@ function DashboardPrestador({ usuario, onSair }) {
     }
   };
 
-  // NOVA FUNÇÃO: Excluir perfil permanentemente
   const handleExcluirPerfilPermanente = async () => {
     // Primeira confirmação
     const confirmacao1 = window.confirm(
@@ -206,6 +205,58 @@ function DashboardPrestador({ usuario, onSair }) {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* BOTÃO DE EXCLUSÃO NO TOPO - VISÍVEL IMEDIATAMENTE */}
+      <div className="mb-8">
+        <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-2xl p-6 border border-red-200">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="bg-red-100 rounded-full p-3">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-red-800 mb-1">Zona de Perigo</h3>
+                <p className="text-sm text-red-600 max-w-xl">
+                  Ações abaixo são irreversíveis. A exclusão permanente remove todos os seus dados, 
+                  serviços, avaliações e histórico do Sem Limites.
+                </p>
+              </div>
+            </div>
+            
+            <button
+              onClick={handleExcluirPerfilPermanente}
+              disabled={salvando}
+              className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition disabled:opacity-50 shadow-lg hover:shadow-xl min-w-[200px]"
+            >
+              {salvando ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Excluindo...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  <span>Excluir Perfil Permanentemente</span>
+                </>
+              )}
+            </button>
+          </div>
+          
+          <div className="mt-4 flex items-center gap-2 text-xs text-red-500 bg-red-100/50 p-3 rounded-xl">
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>
+              Esta ação é PERMANENTE e IRREVERSÍVEL. Você precisará criar uma nova conta se desejar 
+              utilizar o Sem Limites novamente.
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* Cabeçalho */}
       <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-3xl p-8 text-white mb-8 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32"></div>
@@ -674,58 +725,6 @@ function DashboardPrestador({ usuario, onSair }) {
               </div>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* BOTÃO DE EXCLUSÃO PERMANENTE - VISÍVEL NO FINAL DA PÁGINA */}
-      <div className="mt-8 pt-6 border-t border-slate-200">
-        <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-2xl p-6 border border-red-200">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="bg-red-100 rounded-full p-3">
-                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-red-800 mb-1">Zona de Perigo</h3>
-                <p className="text-sm text-red-600 max-w-xl">
-                  Ações abaixo são irreversíveis. A exclusão permanente remove todos os seus dados, 
-                  serviços, avaliações e histórico do Sem Limites.
-                </p>
-              </div>
-            </div>
-            
-            <button
-              onClick={handleExcluirPerfilPermanente}
-              disabled={salvando}
-              className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition disabled:opacity-50 shadow-lg hover:shadow-xl min-w-[200px]"
-            >
-              {salvando ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Excluindo...</span>
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  <span>Excluir Perfil Permanentemente</span>
-                </>
-              )}
-            </button>
-          </div>
-          
-          <div className="mt-4 flex items-center gap-2 text-xs text-red-500 bg-red-100/50 p-3 rounded-xl">
-            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>
-              Esta ação é PERMANENTE e IRREVERSÍVEL. Você precisará criar uma nova conta se desejar 
-              utilizar o Sem Limites novamente.
-            </span>
-          </div>
         </div>
       </div>
     </div>
