@@ -120,7 +120,9 @@
 
         var API_URL = 'https://semlimites-api-rodrigo-b5ckghhkbxdqd7a8.canadacentral-01.azurewebsites.net/api';
         var BASE_PATH = '/SemLimites';
-        var SITE_URL = 'https://semlimites.com.br'; // URL do site
+        
+        // CORREÇÃO: Usar a origem atual do site para construir o link de compartilhamento
+        var SITE_URL = window.location.origin; // Pega "https://caerod1980.github.io" automaticamente
 
         // URL do logotipo (usando raw=true para garantir a imagem direta)
         var LOGO_URL = 'https://github.com/Caerod1980/Imagens-Sem-Limites/blob/1e9c9ecb02affcaf8cd684466da02d235671a1cb/logo%20oficial%20transparente.png?raw=true';
@@ -275,7 +277,7 @@
             );
         }
 
-        // ========== CARD DE PRESTADOR (SEM INICIAIS) ==========
+        // ========== CARD DE PRESTADOR (SEM AVATAR) ==========
         function CardPrestador(props) {
             var prestador = props.prestador;
             var onVerPerfil = props.onVerPerfil;
@@ -296,9 +298,8 @@
             return React.createElement('div', {
                 className: "bg-white/90 backdrop-blur-sm rounded-2xl md:rounded-3xl border border-neutral-200 p-4 md:p-6 hover:shadow-xl transition-all duration-300 hover:border-[#FFD966]/50 group"
             },
-                React.createElement('div', { className: "flex flex-col xs:flex-row items-start gap-3 md:gap-4" },
-                    // Avatar removido - apenas informações textuais
-                    React.createElement('div', { className: "flex-1 w-full xs:w-auto" },
+                React.createElement('div', { className: "flex flex-col" },
+                    React.createElement('div', { className: "flex-1 w-full" },
                         React.createElement('h3', { className: "font-logo text-base md:text-lg font-semibold text-neutral-800 group-hover:text-[#3d7a3d] transition-colors break-words" },
                             p.nome
                         ),
@@ -484,7 +485,7 @@
             );
         }
 
-        // ========== COMPONENTE DE CRIAÇÃO DE SERVIÇO (DO INDEX20) ==========
+        // ========== COMPONENTE DE CRIAÇÃO DE SERVIÇO ==========
         function NovoServico(props) {
             var onSucesso = props.onSucesso;
             var onCancelar = props.onCancelar;
@@ -705,7 +706,7 @@
             );
         }
 
-        // ========== COMPONENTE DE LISTAGEM DE SERVIÇOS (DO INDEX20) ==========
+        // ========== COMPONENTE DE LISTAGEM DE SERVIÇOS ==========
         function MeusServicos() {
             var [servicos, setServicos] = useState([]);
             var [loading, setLoading] = useState(true);
@@ -973,7 +974,7 @@
             );
         }
 
-        // ========== COMPONENTE DE AVALIAÇÕES (DO INDEX20) ==========
+        // ========== COMPONENTE DE AVALIAÇÕES ==========
         function MinhasAvaliacoes() {
             var [avaliacoes, setAvaliacoes] = useState([]);
             var [loading, setLoading] = useState(true);
@@ -1048,7 +1049,7 @@
             );
         }
 
-        // ========== COMPONENTE DE PERFIL (EDIÇÃO) (DO INDEX20) ==========
+        // ========== COMPONENTE DE PERFIL (EDIÇÃO) ==========
         function EditarPerfil(props) {
             var prestador = props.prestador;
             var onSalvo = props.onSalvo;
@@ -1481,7 +1482,7 @@
             );
         }
 
-        // ========== COMPONENTE DE SERVIÇOS DO PRESTADOR (DO INDEX20) ==========
+        // ========== COMPONENTE DE SERVIÇOS DO PRESTADOR ==========
         function ServicosPrestador(props) {
             var prestadorId = props.prestadorId;
             var [servicos, setServicos] = useState([]);
@@ -1581,7 +1582,7 @@
             return React.createElement('div', { className: "space-y-3" }, servicosElements);
         }
 
-        // ========== PÁGINA DE AVALIAÇÃO (DO INDEX20) ==========
+        // ========== PÁGINA DE AVALIAÇÃO ==========
         function AvaliarServico() {
             var [loading, setLoading] = useState(true);
             var [erro, setErro] = useState('');
@@ -1916,7 +1917,7 @@
             );
         }
 
-        // ========== TELA DE LOGIN (DO INDEX20) ==========
+        // ========== TELA DE LOGIN ==========
         function Login(props) {
             var onLoginSuccess = props.onLoginSuccess;
             var onVoltar = props.onVoltar;
@@ -2065,7 +2066,7 @@
             );
         }
 
-        // ========== TELA DE CADASTRO (DO INDEX20) ==========
+        // ========== TELA DE CADASTRO ==========
         function CadastroPrestador(props) {
             var onCadastroSucesso = props.onCadastroSucesso;
             var onVoltar = props.onVoltar;
@@ -2465,7 +2466,7 @@
             );
         }
 
-        // ========== DASHBOARD DO PRESTADOR (DO INDEX20) ==========
+        // ========== DASHBOARD DO PRESTADOR ==========
         function DashboardPrestador(props) {
             var usuario = props.usuario;
             var onSair = props.onSair;
@@ -2756,7 +2757,7 @@
             );
         }
 
-        // ========== TELA DE PERFIL PÚBLICO COM BOTÃO COMPARTILHAR (DO INDEX20) ==========
+        // ========== TELA DE PERFIL PÚBLICO COM BOTÃO COMPARTILHAR CORRIGIDO ==========
         function TelaPerfil(props) {
             var prestador = props.prestador;
             var onVoltar = props.onVoltar;
@@ -2800,6 +2801,9 @@
             function handleCompartilhar() {
                 var p = dadosCompletos || prestador;
                 
+                // CORREÇÃO: Construir a URL completa do perfil
+                var perfilUrl = SITE_URL + BASE_PATH + "/perfil/" + p._id;
+                
                 // Construir mensagem para compartilhamento
                 var mensagem = "👤 *" + p.nome + "*\n\n";
                 mensagem += "📌 Categoria: " + (p.categoria || 'Não informada') + "\n";
@@ -2827,14 +2831,14 @@
                 
                 mensagem += "⭐ Avaliação: " + (p.estrelas || 0).toFixed(1) + " (" + (p.avaliacoes || 0) + " avaliações)\n\n";
                 mensagem += "Para saber mais sobre os serviços realizados, avaliações e contato, acesse o link abaixo:\n";
-                mensagem += SITE_URL + BASE_PATH + "/perfil/" + p._id;
+                mensagem += perfilUrl;
                 
                 // Usar Web Share API se disponível
                 if (navigator.share) {
                     navigator.share({
                         title: 'Perfil de ' + p.nome,
                         text: mensagem,
-                        url: SITE_URL + BASE_PATH + "/perfil/" + p._id,
+                        url: perfilUrl,
                     })
                     .then(function() { setCompartilhado(true); })
                     .catch(function(error) { console.log('Erro ao compartilhar:', error); });
@@ -3024,7 +3028,7 @@
                             )
                         ),
 
-                        // Seção de contato (será exibida normalmente)
+                        // Seção de contato
                         React.createElement('div', { className: "bg-slate-50 rounded-xl md:rounded-2xl p-4 md:p-6" },
                             React.createElement('h2', { className: "text-base md:text-xl font-semibold mb-4" }, "Contato"),
                             React.createElement('div', { className: "space-y-3" },
