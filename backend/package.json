@@ -6,7 +6,8 @@
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
     "corrigir-usuario": "node src/scripts/corrigirUsuario.js",
-    "corrigir-login": "node src/scripts/corrigirLogin.js"
+    "corrigir-login": "node src/scripts/corrigirLogin.js",
+    "criar-users": "node src/scripts/criarUsuariosFaltantes.js"
   },
   "dependencies": {
     "multer": "^1.4.5-lts.1",
