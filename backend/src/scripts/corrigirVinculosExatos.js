@@ -104,7 +104,7 @@ async function corrigir() {
     }
   }
 
-  // ===== RESUMO =====
+  // ===== RESUMO ALTERAÇÕES =====
   console.log('\n' + '='.repeat(50));
   console.log('📊 RESUMO DAS ALTERAÇÕES:');
   console.log(`   ✅ Vínculos inválidos removidos: ${alteracoes.removidos}`);
