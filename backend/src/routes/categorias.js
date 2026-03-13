@@ -4,7 +4,7 @@ import Categoria from '../models/Categoria.js';
 
 const router = express.Router();
 
-// Buscar categorias principais (nível 1)
+// ========== BUSCAR CATEGORIAS PRINCIPAIS (NÍVEL 1) ==========
 router.get('/principais', async (req, res) => {
   try {
     const categorias = await Categoria.find({ nivel: 1, ativa: true })
@@ -15,21 +15,28 @@ router.get('/principais', async (req, res) => {
   }
 });
 
-// Buscar serviços por categoria principal
+// ========== BUSCAR SERVIÇOS POR CATEGORIA PRINCIPAL (NÍVEL 2) ==========
 router.get('/:categoriaId/servicos', async (req, res) => {
   try {
+    const { categoriaId } = req.params;
+    
+    console.log(`🔍 Buscando serviços para categoria: ${categoriaId}`);
+    
     const servicos = await Categoria.find({ 
-      categoriaPai: req.params.categoriaId,
-      nivel: 3,
+      categoriaPai: categoriaId,
+      nivel: 2,  // ✅ CORRIGIDO
       ativa: true 
     }).sort({ nome: 1 });
+    
+    console.log(`✅ Encontrados ${servicos.length} serviços`);
     res.json(servicos);
   } catch (error) {
+    console.error('❌ Erro ao buscar serviços:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Buscar todas as categorias em árvore
+// ========== BUSCAR TODAS AS CATEGORIAS EM ÁRVORE ==========
 router.get('/arvore', async (req, res) => {
   try {
     const categorias = await Categoria.find({ ativa: true }).lean();
