@@ -1,3 +1,4 @@
+// models/User.js - ATUALIZADO
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
@@ -21,6 +22,11 @@ const userSchema = new mongoose.Schema({
     ref: 'Prestador',
     default: null
   },
+  
+  // NOVOS CAMPOS PARA RECUPERAÇÃO DE SENHA
+  resetPasswordToken: String,
+  resetPasswordExpires: Date,
+  
   createdAt: { 
     type: Date, 
     default: Date.now 
@@ -29,6 +35,7 @@ const userSchema = new mongoose.Schema({
 
 // Índices
 userSchema.index({ email: 1 });
+userSchema.index({ resetPasswordToken: 1 });
 
 const User = mongoose.model('User', userSchema);
 
