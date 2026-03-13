@@ -1,9 +1,8 @@
-
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import crypto from 'crypto'; // NOVO: para gerar tokens
-import nodemailer from 'nodemailer'; // NOVO: para enviar emails
+import crypto from 'crypto';
+import nodemailer from 'nodemailer';
 import User from '../models/User.js';
 import Prestador from '../models/Prestador.js';
 
@@ -13,8 +12,8 @@ const router = express.Router();
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.GMAIL_USER, // Seu email do Gmail
-    pass: process.env.GMAIL_APP_PASSWORD // Senha de aplicativo
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD
   }
 });
 
@@ -24,10 +23,8 @@ function validarCPF(cpf) {
   
   if (cpf.length !== 11) return false;
   
-  // Verificar se todos os dígitos são iguais
   if (/^(\d)\1+$/.test(cpf)) return false;
   
-  // Validação do primeiro dígito
   let soma = 0;
   for (let i = 0; i < 9; i++) {
     soma += parseInt(cpf.charAt(i)) * (10 - i);
@@ -36,7 +33,6 @@ function validarCPF(cpf) {
   if (resto === 10 || resto === 11) resto = 0;
   if (resto !== parseInt(cpf.charAt(9))) return false;
   
-  // Validação do segundo dígito
   soma = 0;
   for (let i = 0; i < 10; i++) {
     soma += parseInt(cpf.charAt(i)) * (11 - i);
@@ -50,7 +46,10 @@ function validarCPF(cpf) {
 
 // ========== FUNÇÃO PARA ENVIAR EMAIL DE RECUPERAÇÃO ==========
 async function enviarEmailResetSenha(email, nome, token) {
+  // CORREÇÃO: Adicionado /SemLimites no caminho
   const resetLink = `${process.env.FRONTEND_URL}/SemLimites/resetar-senha/${token}`;
+  
+  console.log('🔗 Link de reset gerado:', resetLink); // LOG PARA DEBUG
   
   const mailOptions = {
     from: '"SemLimites" <' + process.env.GMAIL_USER + '>',
@@ -216,32 +215,26 @@ router.post('/register', async (req, res) => {
       dataVerificacaoCNPJ
     } = req.body;
     
-    // Validações básicas
     if (!email || !senha || !tipo) {
       return res.status(400).json({ error: 'E-mail, senha e tipo são obrigatórios' });
     }
 
-    // Verificar se já existe usuário com este e-mail
     const existe = await User.findOne({ email });
     if (existe) {
       return res.status(400).json({ error: 'E-mail já cadastrado' });
     }
 
-    // Criptografar senha
     const senhaHash = await bcrypt.hash(senha, 10);
 
     let prestadorId = null;
     
-    // Se for prestador, criar o registro
     if (tipo === 'prestador') {
-      // Validar campos obrigatórios do prestador
       if (!nome || !categoria || !cidade) {
         return res.status(400).json({ 
           error: 'Nome, categoria e cidade são obrigatórios para prestador' 
         });
       }
 
-      // Validação específica por tipo de pessoa
       if (tipoPessoa === 'fisica') {
         if (!cpf) {
           return res.status(400).json({ error: 'CPF é obrigatório para pessoa física' });
@@ -251,8 +244,6 @@ router.post('/register', async (req, res) => {
         if (!validarCPF(cpfLimpo)) {
           return res.status(400).json({ error: 'CPF inválido' });
         }
-        
-        // NOTA: Não verificamos unicidade do CPF
       } else if (tipoPessoa === 'juridica') {
         if (!cnpj) {
           return res.status(400).json({ error: 'CNPJ é obrigatório para pessoa jurídica' });
@@ -262,11 +253,8 @@ router.post('/register', async (req, res) => {
         if (cnpjLimpo.length !== 14) {
           return res.status(400).json({ error: 'CNPJ inválido' });
         }
-        
-        // NOTA: Não verificamos unicidade do CNPJ
       }
 
-      // Criar o prestador com todos os campos
       const prestadorData = {
         nome,
         slug: nome.toLowerCase().replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9-]/g, ''),
@@ -283,7 +271,6 @@ router.post('/register', async (req, res) => {
         dataVerificacaoCNPJ: dataVerificacaoCNPJ || null
       };
 
-      // Adicionar campos específicos
       if (tipoPessoa === 'fisica') {
         prestadorData.cpf = cpf.replace(/[^\d]/g, '');
         prestadorData.cnpj = null;
@@ -298,7 +285,6 @@ router.post('/register', async (req, res) => {
       console.log(`✅ Prestador ${tipoPessoa} criado:`, prestadorId);
     }
 
-    // Criar usuário
     const user = await User.create({
       email,
       senha: senhaHash,
@@ -345,7 +331,6 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'E-mail, senha e tipo são obrigatórios' });
     }
 
-    // Buscar usuário
     const user = await User.findOne({ email, tipo });
     
     if (!user) {
@@ -353,14 +338,12 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Usuário não encontrado' });
     }
 
-    // Verificar senha
     const senhaValida = await bcrypt.compare(senha, user.senha);
     if (!senhaValida) {
       console.log('❌ Senha incorreta para:', email);
       return res.status(401).json({ error: 'Senha incorreta' });
     }
 
-    // Gerar JWT
     const token = jwt.sign(
       { 
         userId: user._id, 
@@ -371,7 +354,6 @@ router.post('/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    // Buscar dados do prestador se for o caso
     let prestadorData = null;
     if (user.tipo === 'prestador' && user.prestadorId) {
       prestadorData = await Prestador.findById(user.prestadorId);
@@ -429,7 +411,7 @@ router.get('/me', async (req, res) => {
   }
 });
 
-// ========== NOVAS ROTAS - ESQUECI A SENHA ==========
+// ========== ROTAS DE RECUPERAÇÃO DE SENHA ==========
 
 /**
  * @route   POST /api/auth/esqueci-senha
@@ -446,10 +428,8 @@ router.post('/esqueci-senha', async (req, res) => {
 
     console.log('🔑 Solicitação de recuperação para:', email);
 
-    // Buscar usuário (apenas prestadores por enquanto)
     const user = await User.findOne({ email, tipo: 'prestador' });
     
-    // Por segurança, sempre retornamos a mesma mensagem
     if (!user) {
       console.log('❌ Usuário não encontrado (mas não informamos)');
       return res.json({ 
@@ -457,7 +437,6 @@ router.post('/esqueci-senha', async (req, res) => {
       });
     }
 
-    // Buscar dados do prestador para ter o nome
     let nome = 'Prestador';
     if (user.prestadorId) {
       const prestador = await Prestador.findById(user.prestadorId);
@@ -466,23 +445,19 @@ router.post('/esqueci-senha', async (req, res) => {
       }
     }
 
-    // Gerar token aleatório
     const token = crypto.randomBytes(32).toString('hex');
     
-    // Salvar token no banco (expira em 1 hora)
     user.resetPasswordToken = token;
-    user.resetPasswordExpires = Date.now() + 3600000; // 1 hora
+    user.resetPasswordExpires = Date.now() + 3600000;
     await user.save();
 
     console.log(`🔑 Token gerado para ${email}: ${token.substring(0, 10)}...`);
 
-    // Enviar email
     try {
       await enviarEmailResetSenha(user.email, nome, token);
       console.log(`✅ Email de recuperação enviado para: ${email}`);
     } catch (emailError) {
       console.error('❌ Erro ao enviar email:', emailError);
-      // Se o email falhar, ainda assim não informamos o usuário
     }
 
     res.json({ 
@@ -554,7 +529,6 @@ router.post('/resetar-senha', async (req, res) => {
       return res.status(400).json({ error: 'Link inválido ou expirado' });
     }
 
-    // Criptografar nova senha
     const senhaHash = await bcrypt.hash(novaSenha, 10);
     user.senha = senhaHash;
     user.resetPasswordToken = undefined;
