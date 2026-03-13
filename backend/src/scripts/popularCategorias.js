@@ -5,26 +5,36 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const categorias = [
-  // Nível 1 - Categorias Principais
-  { nome: "Construção e reformas", nivel: 1, ordem: 1 },
-  { nome: "Manutenção e reparos", nivel: 1, ordem: 2 },
-  { nome: "Limpeza", nivel: 1, ordem: 3 },
-  { nome: "Serviços domésticos", nivel: 1, ordem: 4 },
-  { nome: "Beleza e estética", nivel: 1, ordem: 5 },
-  { nome: "Saúde e bem-estar", nivel: 1, ordem: 6 },
-  { nome: "Educação", nivel: 1, ordem: 7 },
-  { nome: "Tecnologia", nivel: 1, ordem: 8 },
-  { nome: "Marketing e design", nivel: 1, ordem: 9 },
-  { nome: "Eventos", nivel: 1, ordem: 10 },
-  { nome: "Transporte", nivel: 1, ordem: 11 },
-  { nome: "Automotivo", nivel: 1, ordem: 12 },
-  { nome: "Pets", nivel: 1, ordem: 13 },
-  { nome: "Serviços profissionais", nivel: 1, ordem: 14 },
-  { nome: "Jardinagem", nivel: 1, ordem: 15 }
+// Função para gerar slug de forma confiável
+function gerarSlug(texto) {
+  return texto
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+// Categorias principais (nível 1)
+const categoriasPrincipais = [
+  { nome: "Construção e reformas", ordem: 1 },
+  { nome: "Manutenção e reparos", ordem: 2 },
+  { nome: "Limpeza", ordem: 3 },
+  { nome: "Serviços domésticos", ordem: 4 },
+  { nome: "Beleza e estética", ordem: 5 },
+  { nome: "Saúde e bem-estar", ordem: 6 },
+  { nome: "Educação", ordem: 7 },
+  { nome: "Tecnologia", ordem: 8 },
+  { nome: "Marketing e design", ordem: 9 },
+  { nome: "Eventos", ordem: 10 },
+  { nome: "Transporte", ordem: 11 },
+  { nome: "Automotivo", ordem: 12 },
+  { nome: "Pets", ordem: 13 },
+  { nome: "Serviços profissionais", ordem: 14 },
+  { nome: "Jardinagem", ordem: 15 }
 ];
 
-// Mapeamento de serviços por categoria
+// Serviços por categoria (nível 2)
 const servicosPorCategoria = {
   "Construção e reformas": [
     "Pedreiro", "Servente de obras", "Mestre de obras", "Carpinteiro", "Marceneiro",
@@ -138,47 +148,94 @@ const servicosPorCategoria = {
 
 async function popularCategorias() {
   try {
+    // Verificar se a URI do MongoDB está definida
+    if (!process.env.MONGODB_URI) {
+      throw new Error('❌ MONGODB_URI não definida no arquivo .env');
+    }
+
+    console.log('🔌 Conectando ao MongoDB...');
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('✅ Conectado ao MongoDB');
 
-    // Limpar categorias existentes (opcional)
+    // Limpar categorias existentes
+    console.log('🗑️ Removendo categorias antigas...');
     await Categoria.deleteMany({});
-    console.log('🗑️ Categorias antigas removidas');
+    console.log('✅ Categorias antigas removidas');
 
-    // Inserir categorias nível 1
+    // Criar categorias principais (nível 1)
+    console.log('\n📌 Criando categorias principais (nível 1)...');
     const categoriasNivel1 = {};
-    for (const cat of categorias) {
+
+    for (const cat of categoriasPrincipais) {
+      const slug = gerarSlug(cat.nome);
+      
       const novaCat = await Categoria.create({
         nome: cat.nome,
-        slug: cat.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-'),
+        slug: slug,
         nivel: 1,
-        ordem: cat.ordem
+        ordem: cat.ordem,
+        ativa: true
       });
+
       categoriasNivel1[cat.nome] = novaCat._id;
-      console.log(`✅ Categoria nível 1: ${cat.nome}`);
+      console.log(`  ✅ ${cat.nome} (ID: ${novaCat._id})`);
     }
 
-    // Inserir serviços como categorias nível 3
+    // Criar serviços (nível 2)
+    console.log('\n📌 Criando serviços (nível 2)...');
+    let totalServicos = 0;
+
     for (const [catNome, servicos] of Object.entries(servicosPorCategoria)) {
       const catPaiId = categoriasNivel1[catNome];
-      
+
+      if (!catPaiId) {
+        console.warn(`  ⚠️ Categoria pai não encontrada: ${catNome} - pulando...`);
+        continue;
+      }
+
+      console.log(`\n  📂 ${catNome}:`);
+
       for (const servico of servicos) {
+        const slug = gerarSlug(servico);
+        
         await Categoria.create({
           nome: servico,
-          slug: servico.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-'),
-          nivel: 3,
-          categoriaPai: catPaiId
+          slug: slug,
+          nivel: 2,
+          categoriaPai: catPaiId,
+          ordem: 0,
+          ativa: true
         });
-        console.log(`  ✅ Serviço: ${servico}`);
+
+        totalServicos++;
+        console.log(`    ✅ ${servico}`);
       }
     }
 
-    console.log('🎉 Todas as categorias inseridas com sucesso!');
-    process.exit(0);
+    // Estatísticas finais
+    console.log('\n' + '='.repeat(50));
+    console.log('🎉 POPULAÇÃO CONCLUÍDA COM SUCESSO!');
+    console.log('='.repeat(50));
+    console.log(`📊 Total de categorias principais: ${categoriasPrincipais.length}`);
+    console.log(`📊 Total de serviços: ${totalServicos}`);
+    console.log(`📊 Total de registros: ${categoriasPrincipais.length + totalServicos}`);
+
+    // Mostrar primeiros registros como exemplo
+    const exemplo = await Categoria.find({ nivel: 1 }).limit(3);
+    console.log('\n📋 Exemplo de categorias criadas:');
+    exemplo.forEach(c => {
+      console.log(`   - ${c.nome} (nível ${c.nivel})`);
+    });
+
   } catch (error) {
-    console.error('❌ Erro:', error);
-    process.exit(1);
+    console.error('\n❌ ERRO DETALHADO:');
+    console.error('   Mensagem:', error.message);
+    console.error('   Stack:', error.stack);
+  } finally {
+    await mongoose.disconnect();
+    console.log('\n🔌 Conexão com MongoDB encerrada');
   }
 }
 
+// Executar
 popularCategorias();
