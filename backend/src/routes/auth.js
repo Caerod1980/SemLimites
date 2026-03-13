@@ -50,7 +50,7 @@ function validarCPF(cpf) {
 
 // ========== FUNÇÃO PARA ENVIAR EMAIL DE RECUPERAÇÃO ==========
 async function enviarEmailResetSenha(email, nome, token) {
-  const resetLink = `${process.env.FRONTEND_URL}/resetar-senha/${token}`;
+  const resetLink = `${process.env.FRONTEND_URL}/SemLimites/resetar-senha/${token}`;
   
   const mailOptions = {
     from: '"SemLimites" <' + process.env.GMAIL_USER + '>',
