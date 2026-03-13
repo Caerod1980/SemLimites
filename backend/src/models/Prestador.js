@@ -36,6 +36,10 @@ const prestadorSchema = new mongoose.Schema({
   sobre: String,
   tags: [String],
   
+  // >>> NOVOS CAMPOS <<<
+  experiencia: { type: String, default: '' }, // Experiência profissional
+  especialidades: { type: [String], default: [] }, // Especialidades do prestador
+  
   // Contato
   whatsapp: String,
   telefone: String,
@@ -71,6 +75,10 @@ const prestadorSchema = new mongoose.Schema({
 prestadorSchema.index({ cidade: 1, categoria: 1 });
 prestadorSchema.index({ estrelas: -1, avaliacoes: -1 });
 prestadorSchema.index({ verificado: 1 });
+
+// Índices para novos campos
+prestadorSchema.index({ experiencia: -1 });
+prestadorSchema.index({ especialidades: 1 });
 
 // Middleware para criar slug
 prestadorSchema.pre('save', function(next) {
