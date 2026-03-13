@@ -199,10 +199,10 @@ router.post('/register', async (req, res) => {
       email, 
       senha, 
       tipo,
-      tipoPessoa, // 'fisica' ou 'juridica'
+      tipoPessoa,
       nome,
-      cpf, // para pessoa física
-      responsavel, // para pessoa jurídica
+      cpf,
+      responsavel,
       cnpj,
       categoria,
       cidade,
@@ -251,7 +251,7 @@ router.post('/register', async (req, res) => {
           return res.status(400).json({ error: 'CPF inválido' });
         }
         
-        // NOTA: Não verificamos unicidade do CPF para permitir múltiplos perfis
+        // NOTA: Não verificamos unicidade do CPF
       } else if (tipoPessoa === 'juridica') {
         if (!cnpj) {
           return res.status(400).json({ error: 'CNPJ é obrigatório para pessoa jurídica' });
@@ -262,7 +262,7 @@ router.post('/register', async (req, res) => {
           return res.status(400).json({ error: 'CNPJ inválido' });
         }
         
-        // NOTA: Não verificamos unicidade do CNPJ para permitir múltiplos perfis
+        // NOTA: Não verificamos unicidade do CNPJ
       }
 
       // Criar o prestador com todos os campos
@@ -270,7 +270,7 @@ router.post('/register', async (req, res) => {
         nome,
         slug: nome.toLowerCase().replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9-]/g, ''),
         email,
-        tipoPessoa: tipoPessoa || 'juridica', // Se não vier, assume jurídica (compatibilidade)
+        tipoPessoa: tipoPessoa || 'juridica',
         categoria,
         cidade,
         descricao: descricao || `Profissional de ${categoria} em ${cidade}`,
@@ -285,10 +285,10 @@ router.post('/register', async (req, res) => {
       // Adicionar campos específicos
       if (tipoPessoa === 'fisica') {
         prestadorData.cpf = cpf.replace(/[^\d]/g, '');
-        prestadorData.cnpj = null; // Garantir que não tenha CNPJ
+        prestadorData.cnpj = null;
       } else {
         prestadorData.cnpj = cnpj ? cnpj.replace(/[^\d]/g, '') : null;
-        prestadorData.responsavel = responsavel || null; // Nome do responsável pela PJ
+        prestadorData.responsavel = responsavel || null;
       }
 
       const prestador = await Prestador.create(prestadorData);
