@@ -6,19 +6,49 @@ import Prestador from '../models/Prestador.js';
 
 const router = express.Router();
 
+// Função para validar CPF (matemática)
+function validarCPF(cpf) {
+  cpf = cpf.replace(/[^\d]/g, '');
+  
+  if (cpf.length !== 11) return false;
+  
+  // Verificar se todos os dígitos são iguais
+  if (/^(\d)\1+$/.test(cpf)) return false;
+  
+  // Validação do primeiro dígito
+  let soma = 0;
+  for (let i = 0; i < 9; i++) {
+    soma += parseInt(cpf.charAt(i)) * (10 - i);
+  }
+  let resto = (soma * 10) % 11;
+  if (resto === 10 || resto === 11) resto = 0;
+  if (resto !== parseInt(cpf.charAt(9))) return false;
+  
+  // Validação do segundo dígito
+  soma = 0;
+  for (let i = 0; i < 10; i++) {
+    soma += parseInt(cpf.charAt(i)) * (11 - i);
+  }
+  resto = (soma * 10) % 11;
+  if (resto === 10 || resto === 11) resto = 0;
+  if (resto !== parseInt(cpf.charAt(10))) return false;
+  
+  return true;
+}
+
 // ========== REGISTRO ==========
 router.post('/register', async (req, res) => {
   try {
-    // Log para debug (opcional)
     console.log('📥 Dados recebidos no registro:', req.body);
     
-    // Extrair TODOS os dados enviados pelo frontend
     const { 
       email, 
       senha, 
-      tipo, 
+      tipo,
+      tipoPessoa, // NOVO: 'fisica' ou 'juridica'
       nome,
-      slug,
+      cpf, // NOVO
+      responsavel, // NOVO
       cnpj,
       categoria,
       cidade,
@@ -47,7 +77,7 @@ router.post('/register', async (req, res) => {
 
     let prestadorId = null;
     
-    // Se for prestador, criar o registro com TODOS os dados
+    // Se for prestador, criar o registro
     if (tipo === 'prestador') {
       // Validar campos obrigatórios do prestador
       if (!nome || !categoria || !cidade) {
@@ -56,12 +86,37 @@ router.post('/register', async (req, res) => {
         });
       }
 
+      // Validação específica por tipo de pessoa
+      if (tipoPessoa === 'fisica') {
+        if (!cpf) {
+          return res.status(400).json({ error: 'CPF é obrigatório para pessoa física' });
+        }
+        
+        const cpfLimpo = cpf.replace(/[^\d]/g, '');
+        if (!validarCPF(cpfLimpo)) {
+          return res.status(400).json({ error: 'CPF inválido' });
+        }
+        
+        // NOTA: Não verificamos unicidade do CPF para permitir múltiplos perfis
+      } else if (tipoPessoa === 'juridica') {
+        if (!cnpj) {
+          return res.status(400).json({ error: 'CNPJ é obrigatório para pessoa jurídica' });
+        }
+        
+        const cnpjLimpo = cnpj.replace(/[^\d]/g, '');
+        if (cnpjLimpo.length !== 14) {
+          return res.status(400).json({ error: 'CNPJ inválido' });
+        }
+        
+        // NOTA: Não verificamos unicidade do CNPJ para permitir múltiplos perfis
+      }
+
       // Criar o prestador com todos os campos
-      const prestador = await Prestador.create({
+      const prestadorData = {
         nome,
-        slug: slug || nome.toLowerCase().replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9-]/g, ''),
+        slug: nome.toLowerCase().replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9-]/g, ''),
         email,
-        cnpj: cnpj || null,
+        tipoPessoa: tipoPessoa || 'juridica', // Se não vier, assume jurídica (compatibilidade)
         categoria,
         cidade,
         descricao: descricao || `Profissional de ${categoria} em ${cidade}`,
@@ -71,10 +126,21 @@ router.post('/register', async (req, res) => {
         verificado: verificado || false,
         dadosCNPJ: dadosCNPJ || null,
         dataVerificacaoCNPJ: dataVerificacaoCNPJ || null
-      });
+      };
+
+      // Adicionar campos específicos
+      if (tipoPessoa === 'fisica') {
+        prestadorData.cpf = cpf.replace(/[^\d]/g, '');
+        prestadorData.cnpj = null; // Garantir que não tenha CNPJ
+      } else {
+        prestadorData.cnpj = cnpj ? cnpj.replace(/[^\d]/g, '') : null;
+        prestadorData.responsavel = responsavel || null; // Nome do responsável pela PJ
+      }
+
+      const prestador = await Prestador.create(prestadorData);
       
       prestadorId = prestador._id;
-      console.log('✅ Prestador criado:', prestadorId);
+      console.log(`✅ Prestador ${tipoPessoa} criado:`, prestadorId);
     }
 
     // Criar usuário
@@ -92,7 +158,8 @@ router.post('/register', async (req, res) => {
       user: { 
         id: user._id, 
         email: user.email, 
-        tipo: user.tipo 
+        tipo: user.tipo,
+        tipoPessoa: tipoPessoa
       },
       prestadorId
     });
@@ -100,7 +167,6 @@ router.post('/register', async (req, res) => {
   } catch (error) {
     console.error('❌ Erro detalhado no registro:', error);
     
-    // Tratamento específico para erros de validação do Mongoose
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({ 
