@@ -14,8 +14,25 @@ const prestadorSchema = new mongoose.Schema({
   slug: { type: String, required: true, unique: true },
   foto: String,
   
-  // CNPJ e verificação
-  cnpj: { type: String, unique: true, sparse: true },
+  // ===== NOVOS CAMPOS PARA CPF =====
+  tipoPessoa: { 
+    type: String, 
+    enum: ['fisica', 'juridica'], 
+    default: 'juridica' // Para compatibilidade com dados existentes
+  },
+  cpf: { 
+    type: String, 
+    sparse: true, // Permite múltiplos null, não exige unicidade
+    // unique removido para permitir múltiplos perfis com mesmo CPF
+  },
+  responsavel: { type: String }, // Para PJ - nome do responsável
+  
+  // CNPJ e verificação (agora opcional e sem unique)
+  cnpj: { 
+    type: String, 
+    sparse: true,
+    // unique: true removido para permitir múltiplos perfis com mesmo CNPJ
+  },
   verificado: { type: Boolean, default: false },
   dataVerificacaoCNPJ: Date,
   dadosCNPJ: {
@@ -36,9 +53,9 @@ const prestadorSchema = new mongoose.Schema({
   sobre: String,
   tags: [String],
   
-  // >>> NOVOS CAMPOS <<<
-  experiencia: { type: String, default: '' }, // Experiência profissional
-  especialidades: { type: [String], default: [] }, // Especialidades do prestador
+  // Campos já existentes
+  experiencia: { type: String, default: '' },
+  especialidades: { type: [String], default: [] },
   
   // Contato
   whatsapp: String,
@@ -75,10 +92,10 @@ const prestadorSchema = new mongoose.Schema({
 prestadorSchema.index({ cidade: 1, categoria: 1 });
 prestadorSchema.index({ estrelas: -1, avaliacoes: -1 });
 prestadorSchema.index({ verificado: 1 });
-
-// Índices para novos campos
 prestadorSchema.index({ experiencia: -1 });
 prestadorSchema.index({ especialidades: 1 });
+prestadorSchema.index({ tipoPessoa: 1 }); // Novo índice
+prestadorSchema.index({ cpf: 1 }); // Novo índice
 
 // Middleware para criar slug
 prestadorSchema.pre('save', function(next) {
