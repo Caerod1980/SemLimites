@@ -14,24 +14,22 @@ const prestadorSchema = new mongoose.Schema({
   slug: { type: String, required: true, unique: true },
   foto: String,
   
-  // ===== NOVOS CAMPOS PARA CPF =====
+  // ===== CAMPOS PARA CPF/CNPJ =====
   tipoPessoa: { 
     type: String, 
     enum: ['fisica', 'juridica'], 
-    default: 'juridica' // Para compatibilidade com dados existentes
+    default: 'juridica'
   },
   cpf: { 
     type: String, 
-    sparse: true, // Permite múltiplos null, não exige unicidade
-    // unique removido para permitir múltiplos perfis com mesmo CPF
+    sparse: true
   },
-  responsavel: { type: String }, // Para PJ - nome do responsável
+  responsavel: { type: String },
   
-  // CNPJ e verificação (agora opcional e sem unique)
+  // CNPJ e verificação
   cnpj: { 
     type: String, 
-    sparse: true,
-    // unique: true removido para permitir múltiplos perfis com mesmo CNPJ
+    sparse: true
   },
   verificado: { type: Boolean, default: false },
   dataVerificacaoCNPJ: Date,
@@ -45,8 +43,19 @@ const prestadorSchema = new mongoose.Schema({
     telefone: String
   },
   
-  // Dados profissionais
-  categoria: { type: String, required: true },
+  // ===== NOVOS CAMPOS PARA CATEGORIAS HIERÁRQUICAS =====
+  categoriaPrincipal: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Categoria',
+    required: false // Temporariamente opcional para migração
+  },
+  servicos: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Categoria'
+  }], // Múltiplos serviços específicos (nível 3)
+  
+  // ===== CAMPOS PROFISSIONAIS (MANTIDOS PARA COMPATIBILIDADE) =====
+  categoria: { type: String }, // Mantido para compatibilidade com dados existentes
   cidade: { type: String, required: true },
   regioes: [String],
   descricao: { type: String, required: true },
@@ -55,7 +64,7 @@ const prestadorSchema = new mongoose.Schema({
   
   // Campos já existentes
   experiencia: { type: String, default: '' },
-  especialidades: { type: [String], default: [] },
+  especialidades: { type: [String], default: [] }, // Mantido para compatibilidade
   
   // Contato
   whatsapp: String,
@@ -88,16 +97,28 @@ const prestadorSchema = new mongoose.Schema({
   
 }, { timestamps: true });
 
-// Índices
-prestadorSchema.index({ cidade: 1, categoria: 1 });
+// ===== ÍNDICES ATUALIZADOS =====
+prestadorSchema.index({ cidade: 1, categoriaPrincipal: 1 });
+prestadorSchema.index({ cidade: 1, categoria: 1 }); // Mantido para compatibilidade
 prestadorSchema.index({ estrelas: -1, avaliacoes: -1 });
 prestadorSchema.index({ verificado: 1 });
 prestadorSchema.index({ experiencia: -1 });
 prestadorSchema.index({ especialidades: 1 });
-prestadorSchema.index({ tipoPessoa: 1 }); // Novo índice
-prestadorSchema.index({ cpf: 1 }); // Novo índice
+prestadorSchema.index({ tipoPessoa: 1 });
+prestadorSchema.index({ cpf: 1 });
+prestadorSchema.index({ cnpj: 1 });
 
-// Middleware para criar slug
+// Índices para busca por serviços
+prestadorSchema.index({ servicos: 1 });
+
+// Índice composto para busca avançada
+prestadorSchema.index({ 
+  categoriaPrincipal: 1, 
+  cidade: 1, 
+  estrelas: -1 
+});
+
+// ===== MIDDLEWARE PARA CRIAR SLUG =====
 prestadorSchema.pre('save', function(next) {
   if (this.isModified('nome') || !this.slug) {
     this.slug = this.nome
@@ -109,6 +130,108 @@ prestadorSchema.pre('save', function(next) {
   }
   next();
 });
+
+// ===== MÉTODOS DE INSTÂNCIA =====
+
+/**
+ * Buscar detalhes completos da categoria principal
+ */
+prestadorSchema.methods.getCategoriaPrincipal = async function() {
+  if (!this.categoriaPrincipal) return null;
+  
+  const Categoria = mongoose.model('Categoria');
+  return await Categoria.findById(this.categoriaPrincipal);
+};
+
+/**
+ * Buscar detalhes completos dos serviços
+ */
+prestadorSchema.methods.getServicosDetalhados = async function() {
+  if (!this.servicos || this.servicos.length === 0) return [];
+  
+  const Categoria = mongoose.model('Categoria');
+  return await Categoria.find({ _id: { $in: this.servicos } });
+};
+
+/**
+ * Verificar se prestador oferece um serviço específico
+ * @param {string} servicoId - ID do serviço
+ */
+prestadorSchema.methods.ofereceServico = function(servicoId) {
+  return this.servicos && this.servicos.some(
+    s => s.toString() === servicoId.toString()
+  );
+};
+
+// ===== MÉTODOS ESTÁTICOS =====
+
+/**
+ * Buscar prestadores por serviço específico
+ * @param {string} servicoId - ID do serviço
+ * @param {Object} filtros - Filtros adicionais (cidade, etc)
+ */
+prestadorSchema.statics.buscarPorServico = async function(servicoId, filtros = {}) {
+  const query = { servicos: servicoId, ...filtros };
+  return await this.find(query)
+    .sort({ estrelas: -1, avaliacoes: -1 })
+    .limit(20);
+};
+
+/**
+ * Buscar prestadores por categoria principal
+ * @param {string} categoriaId - ID da categoria principal
+ * @param {Object} filtros - Filtros adicionais
+ */
+prestadorSchema.statics.buscarPorCategoria = async function(categoriaId, filtros = {}) {
+  const query = { categoriaPrincipal: categoriaId, ...filtros };
+  return await this.find(query)
+    .sort({ estrelas: -1, avaliacoes: -1 });
+};
+
+/**
+ * Busca avançada combinando múltiplos critérios
+ * @param {Object} params - Parâmetros de busca
+ */
+prestadorSchema.statics.buscaAvancada = async function(params) {
+  const {
+    servicoId,
+    categoriaId,
+    cidade,
+    texto,
+    page = 1,
+    limit = 12
+  } = params;
+
+  let query = {};
+
+  if (servicoId) {
+    query.servicos = servicoId;
+  } else if (categoriaId) {
+    query.categoriaPrincipal = categoriaId;
+  }
+
+  if (cidade) {
+    query.cidade = new RegExp(cidade, 'i');
+  }
+
+  if (texto) {
+    query.$text = { $search: texto };
+  }
+
+  const prestadores = await this.find(query)
+    .sort({ estrelas: -1, avaliacoes: -1 })
+    .limit(parseInt(limit))
+    .skip((parseInt(page) - 1) * parseInt(limit));
+
+  const total = await this.countDocuments(query);
+
+  return {
+    prestadores,
+    total,
+    page: parseInt(page),
+    totalPages: Math.ceil(total / parseInt(limit))
+  };
+};
 
 const Prestador = mongoose.model('Prestador', prestadorSchema);
 
