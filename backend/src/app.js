@@ -14,28 +14,26 @@ const app = express();
 // Conectar ao MongoDB
 connectDB();
 
-// CORS - VERSÃO SEGURA CORRIGIDA
+// CORS - VERSÃO CORRIGIDA (sem window)
 const allowedOrigins = [
   'https://caerod1980.github.io',
   'http://localhost:3000',
-  'http://127.0.0.1:3000',
-  'https://semlimites.com', // se tiver domínio próprio
-  window?.location?.origin // permite a origem atual dinamicamente
-].filter(Boolean);
+  'http://127.0.0.1:3000'
+];
 
 app.use(cors({
   origin: function(origin, callback) {
     // Permitir requisições sem origem (Postman, etc)
     if (!origin) return callback(null, true);
     
-    // Verificar se a origem está na lista OU se é uma origem do GitHub Pages
+    // Verificar se a origem está na lista
     if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('github.io')) {
       callback(null, true);
     } else {
       console.log('❌ Origem bloqueada:', origin);
-      // Não bloqueia, apenas loga o erro (para teste)
-      callback(null, true); // ✅ Permite mesmo assim para teste
-      // callback(new Error('Não permitido por CORS')); // ❌ Versão bloqueante
+      // Por enquanto, vamos permitir para teste
+      callback(null, true);
+      // callback(new Error('Não permitido por CORS')); // Descomentar para bloquear
     }
   },
   credentials: true,
