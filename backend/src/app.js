@@ -14,7 +14,7 @@ const app = express();
 // Conectar ao MongoDB
 connectDB();
 
-// CORS - VERSÃO CORRIGIDA (sem window)
+// CORS - VERSÃO CORRIGIDA E FUNCIONAL (sem window)
 const allowedOrigins = [
   'https://caerod1980.github.io',
   'http://localhost:3000',
