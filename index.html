@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>SemLimites · Conectando você a profissionais de confiança</title>
 
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS via CDN (apenas desenvolvimento) -->
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Fonte Inter e Varela Round -->
@@ -86,7 +86,6 @@
             max-width: 100vw;
         }
         
-        /* Estilo para o placeholder de avatar vazio */
         .avatar-placeholder {
             background: linear-gradient(135deg, #e0efe0 0%, #fff1cf 100%);
         }
@@ -118,9 +117,11 @@
             "Jardineiro", "Marceneiro", "Vidraceiro"
         ];
 
-        var API_URL = 'https://semlimites-api-rodrigo-b5ckghhkbxdqd7a8.canadacentral-01.azurewebsites.net/api';
-        var BASE_PATH = '/SemLimites';
+        // CORREÇÃO CORS: Usar proxy CORS gratuito
+        var API_URL_BASE = 'https://semlimites-api-rodrigo-b5ckghhkbxdqd7a8.canadacentral-01.azurewebsites.net/api';
+        var API_URL = 'https://corsproxy.io/?' + encodeURIComponent(API_URL_BASE);
         
+        var BASE_PATH = '/SemLimites';
         var SITE_URL = window.location.origin;
         var LOGO_URL = 'https://github.com/Caerod1980/Imagens-Sem-Limites/blob/1e9c9ecb02affcaf8cd684466da02d235671a1cb/logo%20oficial%20transparente.png?raw=true';
 
@@ -328,12 +329,18 @@
 
             useEffect(function() {
                 fetch(API_URL + '/categorias/principais')
-                    .then(function(response) { return response.json(); })
+                    .then(function(response) { 
+                        if (!response.ok) {
+                            throw new Error('Erro ao carregar categorias');
+                        }
+                        return response.json(); 
+                    })
                     .then(function(data) {
                         setCategorias(data);
                     })
                     .catch(function(err) {
                         console.error('Erro ao carregar categorias:', err);
+                        setErro('Não foi possível carregar as categorias. Tente novamente mais tarde.');
                     });
             }, []);
 
@@ -373,7 +380,7 @@
                     })
                     .catch(function(error) {
                         console.error('❌ Erro na busca:', error);
-                        setErro(error.message);
+                        setErro('Erro ao conectar com o servidor. Verifique sua conexão e tente novamente.');
                         setLoading(false);
                     });
             }
