@@ -204,7 +204,8 @@ router.post('/register', async (req, res) => {
       cpf,
       responsavel,
       cnpj,
-      categoria,
+      categoriaPrincipal, // NOVO
+      servicos, // NOVO
       cidade,
       descricao,
       whatsapp,
@@ -215,26 +216,39 @@ router.post('/register', async (req, res) => {
       dataVerificacaoCNPJ
     } = req.body;
     
+    // Validações básicas
     if (!email || !senha || !tipo) {
       return res.status(400).json({ error: 'E-mail, senha e tipo são obrigatórios' });
     }
 
+    // Verificar se já existe usuário com este e-mail
     const existe = await User.findOne({ email });
     if (existe) {
       return res.status(400).json({ error: 'E-mail já cadastrado' });
     }
 
+    // Criptografar senha
     const senhaHash = await bcrypt.hash(senha, 10);
 
     let prestadorId = null;
     
+    // Se for prestador, criar o registro
     if (tipo === 'prestador') {
-      if (!nome || !categoria || !cidade) {
+      // Validar campos obrigatórios do prestador
+      if (!nome || !cidade) {
         return res.status(400).json({ 
-          error: 'Nome, categoria e cidade são obrigatórios para prestador' 
+          error: 'Nome e cidade são obrigatórios para prestador' 
         });
       }
 
+      // Validar categoria (nova ou antiga)
+      if (!categoriaPrincipal && !req.body.categoria) {
+        return res.status(400).json({ 
+          error: 'Categoria é obrigatória para prestador' 
+        });
+      }
+
+      // Validação específica por tipo de pessoa
       if (tipoPessoa === 'fisica') {
         if (!cpf) {
           return res.status(400).json({ error: 'CPF é obrigatório para pessoa física' });
@@ -244,6 +258,7 @@ router.post('/register', async (req, res) => {
         if (!validarCPF(cpfLimpo)) {
           return res.status(400).json({ error: 'CPF inválido' });
         }
+        
       } else if (tipoPessoa === 'juridica') {
         if (!cnpj) {
           return res.status(400).json({ error: 'CNPJ é obrigatório para pessoa jurídica' });
@@ -255,22 +270,39 @@ router.post('/register', async (req, res) => {
         }
       }
 
+      // Criar slug
+      const slug = nome
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+
+      // Processar tags
+      const tagsArray = tags ? (Array.isArray(tags) ? tags : []) : [];
+
+      // Criar o prestador com todos os campos
       const prestadorData = {
         nome,
-        slug: nome.toLowerCase().replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9-]/g, ''),
+        slug,
         email,
         tipoPessoa: tipoPessoa || 'juridica',
-        categoria,
+        // NOVOS CAMPOS
+        categoriaPrincipal: categoriaPrincipal,
+        servicos: servicos || [],
+        // Campo antigo para compatibilidade
+        categoria: req.body.categoria || null,
         cidade,
-        descricao: descricao || `Profissional de ${categoria} em ${cidade}`,
-        whatsapp: whatsapp || null,
-        telefone: telefone || null,
-        tags: tags || [],
+        descricao: descricao || `Profissional em ${cidade}`,
+        whatsapp: whatsapp ? whatsapp.replace(/\D/g, '') : null,
+        telefone: telefone ? telefone.replace(/\D/g, '') : null,
+        tags: tagsArray,
         verificado: verificado || false,
         dadosCNPJ: dadosCNPJ || null,
         dataVerificacaoCNPJ: dataVerificacaoCNPJ || null
       };
 
+      // Adicionar campos específicos
       if (tipoPessoa === 'fisica') {
         prestadorData.cpf = cpf.replace(/[^\d]/g, '');
         prestadorData.cnpj = null;
@@ -285,6 +317,7 @@ router.post('/register', async (req, res) => {
       console.log(`✅ Prestador ${tipoPessoa} criado:`, prestadorId);
     }
 
+    // Criar usuário
     const user = await User.create({
       email,
       senha: senhaHash,
