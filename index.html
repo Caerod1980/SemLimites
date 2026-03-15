@@ -3650,11 +3650,11 @@ function DashboardPrestador(props) {
     );
 }
 
-   // ========== TELA DE PERFIL PÚBLICO - CORRIGIDA COM COMPARTILHAMENTO ==========
+  // ========== TELA DE PERFIL PÚBLICO - CORRIGIDA COM COMPARTILHAMENTO ==========
 function TelaPerfil(props) {
     var prestador = props.prestador;
+    var prestadorId = props.prestadorId; // NOVO: receber ID diretamente da URL
     var onVoltar = props.onVoltar;
-    var prestadorId = props.prestadorId; // NOVO: receber ID diretamente
     
     var [loading, setLoading] = useState(false);
     var [dadosCompletos, setDadosCompletos] = useState(null);
@@ -4087,41 +4087,41 @@ function TelaPerfil(props) {
     );
 }
 
-        // ========== FUNÇÃO DE NAVEGAÇÃO (ATUALIZADA) ==========
-        function navigate(path) {
-            var fullPath = BASE_PATH + path;
-            window.history.pushState({}, '', fullPath);
-            
-            if (path.startsWith('/avaliar/')) {
-                window.appSetModo('avaliar');
-            } else if (path === '/login') {
-                window.appSetModo('login');
-            } else if (path === '/cadastro') {
-                window.appSetModo('cadastro');
-            } else if (path === '/dashboard') {
-                window.appSetModo('dashboard');
-            } else if (path === '/perfil') {
-                window.appSetModo('perfil');
-            } else if (path === '/esqueci-senha') {
-                window.appSetModo('esqueci-senha');
-            } else if (path.startsWith('/resetar-senha/')) {
-                window.appSetModo('resetar-senha');
-            } else {
-                window.appSetModo('busca');
-            }
-        }
-
+       // ========== FUNÇÃO DE NAVEGAÇÃO (CORRIGIDA) ==========
+function navigate(path) {
+    var fullPath = BASE_PATH + path;
+    window.history.pushState({}, '', fullPath);
+    
+    if (path.startsWith('/avaliar/')) {
+        window.appSetModo('avaliar');
+    } else if (path === '/login') {
+        window.appSetModo('login');
+    } else if (path === '/cadastro') {
+        window.appSetModo('cadastro');
+    } else if (path === '/dashboard') {
+        window.appSetModo('dashboard');
+    } else if (path.startsWith('/perfil/')) {  // CORRIGIDO: verificar se começa com /perfil/
+        window.appSetModo('perfil');
+    } else if (path === '/esqueci-senha') {
+        window.appSetModo('esqueci-senha');
+    } else if (path.startsWith('/resetar-senha/')) {
+        window.appSetModo('resetar-senha');
+    } else {
+        window.appSetModo('busca');
+    }
+}
         // ========== APP PRINCIPAL (CORRIGIDO) ==========
 function App() {
     var [modo, setModo] = useState('busca');
     var [usuario, setUsuario] = useState(null);
     var [prestadorSelecionado, setPrestadorSelecionado] = useState(null);
-    var [prestadorId, setPrestadorId] = useState(null); // NOVO: para quando vier por compartilhamento
+    var [prestadorId, setPrestadorId] = useState(null); // NOVO: para ID da URL
 
     window.appSetModo = setModo;
 
     useEffect(function() {
         var path = window.location.pathname.replace(BASE_PATH, '') || '/';
+        console.log('📍 Path atual:', path);
         
         if (path.startsWith('/avaliar/')) {
             setModo('avaliar');
@@ -4131,11 +4131,10 @@ function App() {
             setModo('cadastro');
         } else if (path === '/dashboard') {
             setModo('dashboard');
-        } else if (path.startsWith('/perfil/')) {
-            // NOVO: Extrair ID do perfil da URL
-            var id = path.split('/')[2];
+        } else if (path.startsWith('/perfil/')) { // CORRIGIDO: capturar ID
+            var id = path.split('/')[2]; // Pega o ID após /perfil/
+            console.log('📌 ID do perfil da URL:', id);
             if (id) {
-                console.log('📌 Carregando perfil compartilhado ID:', id);
                 setPrestadorId(id);
                 setPrestadorSelecionado(null); // Limpar prestador da busca
                 setModo('perfil');
@@ -4150,6 +4149,7 @@ function App() {
             setModo('busca');
         }
         
+        // Carregar usuário se logado
         var token = localStorage.getItem('token');
         if (token) {
             fetch(API_URL + '/auth/me', {
@@ -4172,8 +4172,8 @@ function App() {
     function handleVerPerfil(prestador) {
         console.log('👤 App recebeu prestador para ver perfil:', prestador.nome);
         setPrestadorSelecionado(prestador);
-        setPrestadorId(null); // Limpar ID quando vem da busca
-        navigate('/perfil/' + prestador._id); // Usar path parameter
+        setPrestadorId(null);
+        navigate('/perfil/' + prestador._id); // Agora funcionará
     }
 
     function handleLoginSuccess() {
@@ -4200,7 +4200,7 @@ function App() {
     if (modo === 'busca') {
         content = React.createElement(TelaBusca, { onVerPerfil: handleVerPerfil });
     } else if (modo === 'perfil') {
-        // NOVO: Passar tanto prestador (da busca) quanto prestadorId (do compartilhamento)
+        // CORRIGIDO: passar tanto prestador (da busca) quanto prestadorId (da URL)
         content = React.createElement(TelaPerfil, { 
             prestador: prestadorSelecionado, 
             prestadorId: prestadorId,
