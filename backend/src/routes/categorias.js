@@ -15,6 +15,28 @@ router.get('/principais', async (req, res) => {
   }
 });
 
+// ========== BUSCAR CATEGORIA POR ID (NOVA ROTA) ==========
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    console.log(`🔍 Buscando categoria por ID: ${id}`);
+    
+    const categoria = await Categoria.findById(id);
+    
+    if (!categoria) {
+      console.log(`❌ Categoria não encontrada: ${id}`);
+      return res.status(404).json({ error: 'Categoria não encontrada' });
+    }
+    
+    console.log(`✅ Categoria encontrada: ${categoria.nome} (nível ${categoria.nivel})`);
+    res.json(categoria);
+  } catch (error) {
+    console.error('❌ Erro ao buscar categoria por ID:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ========== BUSCAR SERVIÇOS POR CATEGORIA PRINCIPAL (NÍVEL 2) ==========
 router.get('/:categoriaId/servicos', async (req, res) => {
   try {
@@ -24,7 +46,7 @@ router.get('/:categoriaId/servicos', async (req, res) => {
     
     const servicos = await Categoria.find({ 
       categoriaPai: categoriaId,
-      nivel: 2,  // ✅ CORRIGIDO
+      nivel: 2,
       ativa: true 
     }).sort({ nome: 1 });
     
@@ -53,6 +75,7 @@ router.get('/arvore', async (req, res) => {
     
     res.json(arvore);
   } catch (error) {
+    console.error('❌ Erro ao buscar árvore de categorias:', error);
     res.status(500).json({ error: error.message });
   }
 });
