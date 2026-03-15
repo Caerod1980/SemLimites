@@ -1066,439 +1066,546 @@ function TelaBusca(props) {
             );
         }
 
-        // ========== COMPONENTE DE PERFIL (EDIÇÃO) ==========
-        function EditarPerfil(props) {
-            var prestador = props.prestador;
-            var onSalvo = props.onSalvo;
-            
-            var [formData, setFormData] = useState({
-                nome: prestador.nome || '',
-                descricao: prestador.descricao || '',
-                experiencia: prestador.experiencia || '',
-                whatsapp: prestador.whatsapp || '',
-                telefone: prestador.telefone || '',
-                cidade: prestador.cidade || '',
-                estado: prestador.estado || 'SP',
-                categoria: prestador.categoria || '',
-                especialidades: prestador.especialidades ? prestador.especialidades.join(', ') : '',
-                certificacoes: prestador.certificacoes ? prestador.certificacoes.join(', ') : '',
-                regioesAtendimento: prestador.regioesAtendimento ? prestador.regioesAtendimento.join(', ') : '',
-                tags: prestador.tags ? prestador.tags.join(', ') : ''
+        // ========== COMPONENTE DE PERFIL (EDIÇÃO) - CORRIGIDO COM CATEGORIAS HIERÁRQUICAS ==========
+function EditarPerfil(props) {
+    var prestador = props.prestador;
+    var onSalvo = props.onSalvo;
+    
+    // Estados para categorias
+    var [categorias, setCategorias] = useState([]);
+    var [servicosDisponiveis, setServicosDisponiveis] = useState([]);
+    var [carregandoCategorias, setCarregandoCategorias] = useState(true);
+    
+    var [formData, setFormData] = useState({
+        nome: prestador.nome || '',
+        descricao: prestador.descricao || '',
+        experiencia: prestador.experiencia || '',
+        whatsapp: prestador.whatsapp || '',
+        telefone: prestador.telefone || '',
+        cidade: prestador.cidade || '',
+        estado: prestador.estado || 'SP',
+        // Campos de categoria
+        categoriaPrincipal: prestador.categoriaPrincipal?._id || prestador.categoriaPrincipal || '',
+        servicos: [],
+        // Campos antigos mantidos para compatibilidade
+        especialidades: prestador.especialidades ? prestador.especialidades.join(', ') : '',
+        certificacoes: prestador.certificacoes ? prestador.certificacoes.join(', ') : '',
+        tags: prestador.tags ? prestador.tags.join(', ') : ''
+    });
+
+    // Processar serviços iniciais (podem vir como objetos ou strings)
+    useEffect(function() {
+        if (prestador.servicos && prestador.servicos.length > 0) {
+            var servicosIds = prestador.servicos.map(function(s) {
+                return s._id || s;
             });
-            
-            var [fotoPerfil, setFotoPerfil] = useState(null);
-            var [fotoPreview, setFotoPreview] = useState(prestador.fotoPerfilUrl || null);
-            var [uploading, setUploading] = useState(false);
-            var [loading, setLoading] = useState(false);
-            var [erro, setErro] = useState('');
+            setFormData(function(prev) {
+                return { ...prev, servicos: servicosIds };
+            });
+        }
+    }, [prestador]);
+    
+    var [fotoPerfil, setFotoPerfil] = useState(null);
+    var [fotoPreview, setFotoPreview] = useState(prestador.fotoPerfilUrl || null);
+    var [uploading, setUploading] = useState(false);
+    var [loading, setLoading] = useState(false);
+    var [erro, setErro] = useState('');
 
-            function handleChange(e) {
-                var name = e.target.name;
-                var value = e.target.value;
-                setFormData({ ...formData, [name]: value });
-            }
+    // Carregar categorias principais
+    useEffect(function() {
+        setCarregandoCategorias(true);
+        fetch(API_URL + '/categorias/principais')
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                setCategorias(data);
+                setCarregandoCategorias(false);
+            })
+            .catch(function(err) {
+                console.error('Erro ao carregar categorias:', err);
+                setCarregandoCategorias(false);
+            });
+    }, []);
 
-            function handleFotoChange(e) {
-                var file = e.target.files[0];
-                if (file) {
-                    setFotoPerfil(file);
-                    var reader = new FileReader();
-                    reader.onloadend = function() {
-                        setFotoPreview(reader.result);
-                    };
-                    reader.readAsDataURL(file);
+    // Carregar serviços quando selecionar categoria
+    useEffect(function() {
+        if (formData.categoriaPrincipal) {
+            fetch(API_URL + '/categorias/' + formData.categoriaPrincipal + '/servicos')
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    setServicosDisponiveis(data);
+                })
+                .catch(function(err) {
+                    console.error('Erro ao carregar serviços:', err);
+                });
+        } else {
+            setServicosDisponiveis([]);
+        }
+    }, [formData.categoriaPrincipal]);
+
+    function handleChange(e) {
+        var name = e.target.name;
+        var value = e.target.value;
+        setFormData({ ...formData, [name]: value });
+    }
+
+    function handleCategoriaChange(e) {
+        var categoriaId = e.target.value;
+        setFormData({ 
+            ...formData, 
+            categoriaPrincipal: categoriaId,
+            servicos: [] // Limpar serviços selecionados ao mudar categoria
+        });
+    }
+
+    function handleServicoToggle(servicoId) {
+        var novosServicos = [...formData.servicos];
+        var index = novosServicos.indexOf(servicoId);
+        
+        if (index === -1) {
+            novosServicos.push(servicoId);
+        } else {
+            novosServicos.splice(index, 1);
+        }
+        
+        setFormData({ ...formData, servicos: novosServicos });
+    }
+
+    function handleFotoChange(e) {
+        var file = e.target.files[0];
+        if (file) {
+            setFotoPerfil(file);
+            var reader = new FileReader();
+            reader.onloadend = function() {
+                setFotoPreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function handleUploadFoto() {
+        if (!fotoPerfil) return Promise.resolve();
+
+        setUploading(true);
+        var formDataObj = new FormData();
+        formDataObj.append('foto', fotoPerfil);
+
+        return fetch(API_URL + '/prestadores/foto', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            body: formDataObj
+        })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.error) {
+                    throw new Error(data.error);
                 }
+                setFotoPerfil(null);
+            })
+            .catch(function(error) {
+                setErro(error.message);
+                throw error;
+            })
+            .finally(function() {
+                setUploading(false);
+            });
+    }
+
+    function handleRemoverFoto() {
+        if (!window.confirm('Remover foto de perfil?')) return;
+
+        setLoading(true);
+        setErro('');
+
+        fetch(API_URL + '/prestadores/foto', {
+            method: 'DELETE',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
             }
+        })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                setFotoPreview(null);
+                setFotoPerfil(null);
+                alert('✅ Foto removida!');
+                setLoading(false);
+            })
+            .catch(function(error) {
+                setErro(error.message);
+                setLoading(false);
+            });
+    }
 
-            function handleUploadFoto() {
-                if (!fotoPerfil) return Promise.resolve();
+    function handleSubmit(e) {
+        e.preventDefault();
+        setLoading(true);
+        setErro('');
 
-                setUploading(true);
-                var formDataObj = new FormData();
-                formDataObj.append('foto', fotoPerfil);
+        // Processar arrays
+        var especialidadesArray = formData.especialidades
+            .split(',')
+            .map(function(item) { return item.trim(); })
+            .filter(function(item) { return item; });
 
-                return fetch(API_URL + '/prestadores/foto', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('token')
-                    },
-                    body: formDataObj
-                })
-                    .then(function(response) { return response.json(); })
-                    .then(function(data) {
-                        if (data.error) {
-                            throw new Error(data.error);
-                        }
-                        setFotoPerfil(null);
-                    })
-                    .catch(function(error) {
-                        setErro(error.message);
-                        throw error;
-                    })
-                    .finally(function() {
-                        setUploading(false);
-                    });
-            }
+        var certificacoesArray = formData.certificacoes
+            .split(',')
+            .map(function(item) { return item.trim(); })
+            .filter(function(item) { return item; });
 
-            function handleRemoverFoto() {
-                if (!window.confirm('Remover foto de perfil?')) return;
+        var tagsArray = formData.tags
+            .split(',')
+            .map(function(item) { return item.trim(); })
+            .filter(function(item) { return item; });
 
-                setLoading(true);
-                setErro('');
+        var dadosEnvio = {
+            nome: formData.nome,
+            descricao: formData.descricao,
+            experiencia: formData.experiencia,
+            whatsapp: formData.whatsapp,
+            telefone: formData.telefone,
+            cidade: formData.cidade,
+            estado: formData.estado,
+            // NOVOS CAMPOS
+            categoriaPrincipal: formData.categoriaPrincipal,
+            servicos: formData.servicos,
+            // Campos antigos
+            especialidades: especialidadesArray,
+            certificacoes: certificacoesArray,
+            tags: tagsArray
+        };
 
-                fetch(API_URL + '/prestadores/foto', {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('token')
-                    }
-                })
-                    .then(function(response) { return response.json(); })
-                    .then(function(data) {
-                        if (data.error) {
-                            throw new Error(data.error);
-                        }
-                        setFotoPreview(null);
-                        setFotoPerfil(null);
-                        alert('✅ Foto removida!');
-                        setLoading(false);
-                    })
-                    .catch(function(error) {
-                        setErro(error.message);
-                        setLoading(false);
-                    });
-            }
+        console.log('📤 Enviando dados do perfil:', dadosEnvio);
 
-            function handleSubmit(e) {
-                e.preventDefault();
-                setLoading(true);
-                setErro('');
-
-                var especialidadesArray = formData.especialidades
-                    .split(',')
-                    .map(function(item) { return item.trim(); })
-                    .filter(function(item) { return item; });
-
-                var certificacoesArray = formData.certificacoes
-                    .split(',')
-                    .map(function(item) { return item.trim(); })
-                    .filter(function(item) { return item; });
-
-                var regioesArray = formData.regioesAtendimento
-                    .split(',')
-                    .map(function(item) { return item.trim(); })
-                    .filter(function(item) { return item; });
-
-                var tagsArray = formData.tags
-                    .split(',')
-                    .map(function(item) { return item.trim(); })
-                    .filter(function(item) { return item; });
-
-                var dadosEnvio = {
-                    nome: formData.nome,
-                    descricao: formData.descricao,
-                    experiencia: formData.experiencia,
-                    whatsapp: formData.whatsapp,
-                    telefone: formData.telefone,
-                    cidade: formData.cidade,
-                    estado: formData.estado,
-                    categoria: formData.categoria,
-                    especialidades: especialidadesArray,
-                    certificacoes: certificacoesArray,
-                    regioesAtendimento: regioesArray,
-                    tags: tagsArray
-                };
-
-                fetch(API_URL + '/prestadores/perfil', {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + localStorage.getItem('token')
-                    },
-                    body: JSON.stringify(dadosEnvio)
-                })
-                    .then(function(response) { return response.json(); })
-                    .then(function(data) {
-                        if (data.error) {
-                            throw new Error(data.error);
-                        }
-                        
-                        if (fotoPerfil) {
-                            return handleUploadFoto().then(function() {
-                                alert('✅ Perfil atualizado com sucesso!');
-                                onSalvo();
-                            });
-                        } else {
-                            alert('✅ Perfil atualizado com sucesso!');
-                            onSalvo();
-                        }
-                    })
-                    .catch(function(error) {
-                        setErro(error.message);
-                        setLoading(false);
-                    });
-            }
-
-            var erroElement = null;
-            if (erro) {
-                erroElement = React.createElement('div', { className: "mb-4 p-3 rounded-lg bg-red-50 border border-red-200" },
-                    React.createElement('p', { className: "text-sm text-red-600" }, erro)
-                );
-            }
-
-            return React.createElement('div', { className: "space-y-6" },
-                React.createElement('h2', { className: "text-xl md:text-2xl font-bold text-slate-900" }, "Editar Perfil"),
+        fetch(API_URL + '/prestadores/perfil', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            body: JSON.stringify(dadosEnvio)
+        })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
                 
-                erroElement,
+                if (fotoPerfil) {
+                    return handleUploadFoto().then(function() {
+                        alert('✅ Perfil atualizado com sucesso!');
+                        onSalvo();
+                    });
+                } else {
+                    alert('✅ Perfil atualizado com sucesso!');
+                    onSalvo();
+                }
+            })
+            .catch(function(error) {
+                setErro(error.message);
+                setLoading(false);
+            });
+    }
 
-                React.createElement('div', { className: "bg-white rounded-xl border border-slate-200 p-4 md:p-6" },
-                    React.createElement('h3', { className: "text-base md:text-lg font-semibold mb-4" }, "Foto Profissional"),
-                    React.createElement('div', { className: "flex flex-col sm:flex-row items-center gap-4 md:gap-6" },
-                        React.createElement('div', { className: "flex-shrink-0" },
-                            fotoPreview ?
-                                React.createElement('img', {
-                                    src: fotoPreview,
-                                    className: "w-20 h-20 md:w-24 md:h-24 rounded-2xl object-cover border-4 border-indigo-100"
-                                }) :
-                                React.createElement('div', {
-                                    className: "w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center text-indigo-400 border-4 border-indigo-100"
-                                },
-                                    React.createElement('svg', { className: "w-8 h-8 md:w-10 md:h-10", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" })
-                                    )
-                                )
-                        ),
-                        React.createElement('div', { className: "flex-1 space-y-3" },
-                            React.createElement('div', { className: "flex flex-col sm:flex-row gap-2" },
-                                React.createElement('label', { className: "cursor-pointer" },
-                                    React.createElement('input', {
-                                        type: "file",
-                                        accept: "image/*",
-                                        onChange: handleFotoChange,
-                                        className: "hidden"
-                                    }),
-                                    React.createElement('span', { className: "px-3 md:px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs md:text-sm hover:bg-indigo-700 cursor-pointer inline-block w-full sm:w-auto text-center" },
-                                        "Escolher foto"
-                                    )
-                                ),
-                                fotoPreview && React.createElement('button', {
-                                    onClick: handleRemoverFoto,
-                                    disabled: loading,
-                                    className: "px-3 md:px-4 py-2 border border-red-200 text-red-600 rounded-xl text-xs md:text-sm hover:bg-red-50 disabled:opacity-50 w-full sm:w-auto"
-                                }, "Remover")
-                            ),
-                            React.createElement('p', { className: "text-[10px] md:text-xs text-slate-500" },
-                                "Formatos: JPG, PNG, GIF (max. 5MB)"
+    var erroElement = null;
+    if (erro) {
+        erroElement = React.createElement('div', { className: "mb-4 p-3 rounded-lg bg-red-50 border border-red-200" },
+            React.createElement('p', { className: "text-sm text-red-600" }, erro)
+        );
+    }
+
+    return React.createElement('div', { className: "space-y-6" },
+        React.createElement('h2', { className: "text-xl md:text-2xl font-bold text-slate-900" }, "Editar Perfil"),
+        
+        erroElement,
+
+        // ===== FOTO =====
+        React.createElement('div', { className: "bg-white rounded-xl border border-slate-200 p-4 md:p-6" },
+            React.createElement('h3', { className: "text-base md:text-lg font-semibold mb-4" }, "Foto Profissional"),
+            React.createElement('div', { className: "flex flex-col sm:flex-row items-center gap-4 md:gap-6" },
+                React.createElement('div', { className: "flex-shrink-0" },
+                    fotoPreview ?
+                        React.createElement('img', {
+                            src: fotoPreview,
+                            className: "w-20 h-20 md:w-24 md:h-24 rounded-2xl object-cover border-4 border-indigo-100"
+                        }) :
+                        React.createElement('div', {
+                            className: "w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center text-indigo-400 border-4 border-indigo-100"
+                        },
+                            React.createElement('svg', { className: "w-8 h-8 md:w-10 md:h-10", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" })
                             )
                         )
-                    )
                 ),
-
-                React.createElement('form', { onSubmit: handleSubmit, className: "space-y-6" },
-                    React.createElement('div', { className: "bg-white rounded-xl border border-slate-200 p-4 md:p-6" },
-                        React.createElement('h3', { className: "text-base md:text-lg font-semibold mb-4" }, "Dados Básicos"),
-                        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Nome *"),
-                                React.createElement('input', {
-                                    type: "text",
-                                    name: "nome",
-                                    value: formData.nome,
-                                    onChange: handleChange,
-                                    required: true,
-                                    className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 text-sm"
-                                })
-                            ),
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Categoria *"),
-                                React.createElement('select', {
-                                    name: "categoria",
-                                    value: formData.categoria,
-                                    onChange: handleChange,
-                                    required: true,
-                                    className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 text-sm"
-                                },
-                                    React.createElement('option', { value: "" }, "Selecione"),
-                                    CATEGORIAS.map(function(c) { 
-                                        return React.createElement('option', { key: c, value: c }, c); 
-                                    })
-                                )
+                React.createElement('div', { className: "flex-1 space-y-3" },
+                    React.createElement('div', { className: "flex flex-col sm:flex-row gap-2" },
+                        React.createElement('label', { className: "cursor-pointer" },
+                            React.createElement('input', {
+                                type: "file",
+                                accept: "image/*",
+                                onChange: handleFotoChange,
+                                className: "hidden"
+                            }),
+                            React.createElement('span', { className: "px-3 md:px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs md:text-sm hover:bg-indigo-700 cursor-pointer inline-block w-full sm:w-auto text-center" },
+                                "Escolher foto"
                             )
+                        ),
+                        fotoPreview && React.createElement('button', {
+                            onClick: handleRemoverFoto,
+                            disabled: loading,
+                            className: "px-3 md:px-4 py-2 border border-red-200 text-red-600 rounded-xl text-xs md:text-sm hover:bg-red-50 disabled:opacity-50 w-full sm:w-auto"
+                        }, "Remover")
+                    ),
+                    React.createElement('p', { className: "text-[10px] md:text-xs text-slate-500" },
+                        "Formatos: JPG, PNG, GIF (max. 5MB)"
+                    )
+                )
+            )
+        ),
+
+        React.createElement('form', { onSubmit: handleSubmit, className: "space-y-6" },
+            // ===== DADOS BÁSICOS =====
+            React.createElement('div', { className: "bg-white rounded-xl border border-slate-200 p-4 md:p-6" },
+                React.createElement('h3', { className: "text-base md:text-lg font-semibold mb-4" }, "Dados Básicos"),
+                React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Nome *"),
+                        React.createElement('input', {
+                            type: "text",
+                            name: "nome",
+                            value: formData.nome,
+                            onChange: handleChange,
+                            required: true,
+                            className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 text-sm"
+                        })
+                    )
+                )
+            ),
+
+            // ===== CATEGORIA PRINCIPAL (NOVO) =====
+            React.createElement('div', { className: "bg-white rounded-xl border border-slate-200 p-4 md:p-6" },
+                React.createElement('h3', { className: "text-base md:text-lg font-semibold mb-4" }, "Categoria Principal"),
+                React.createElement('div', { className: "space-y-4" },
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Categoria *"),
+                        React.createElement('select', {
+                            value: formData.categoriaPrincipal,
+                            onChange: handleCategoriaChange,
+                            required: true,
+                            disabled: carregandoCategorias,
+                            className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 text-sm bg-white"
+                        },
+                            React.createElement('option', { value: "" }, 
+                                carregandoCategorias ? "Carregando categorias..." : "Selecione uma categoria"
+                            ),
+                            categorias.map(function(cat) {
+                                return React.createElement('option', { 
+                                    key: cat._id, 
+                                    value: cat._id 
+                                }, cat.nome);
+                            })
                         )
                     ),
 
-                    React.createElement('div', { className: "bg-white rounded-xl border border-slate-200 p-4 md:p-6" },
-                        React.createElement('h3', { className: "text-base md:text-lg font-semibold mb-4" }, "Localização"),
-                        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Cidade *"),
-                                React.createElement('input', {
-                                    type: "text",
-                                    name: "cidade",
-                                    value: formData.cidade,
-                                    onChange: handleChange,
-                                    required: true,
-                                    className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 text-sm",
-                                    placeholder: "Ex: São Paulo"
-                                })
-                            ),
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Estado *"),
-                                React.createElement('select', {
-                                    name: "estado",
-                                    value: formData.estado,
-                                    onChange: handleChange,
-                                    required: true,
-                                    className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 text-sm"
-                                },
-                                    ESTADOS.map(function(uf) { 
-                                        return React.createElement('option', { key: uf, value: uf }, uf); 
-                                    })
-                                )
+                    // ===== SERVIÇOS (NOVO - MÚLTIPLA ESCOLHA) =====
+                    formData.categoriaPrincipal && React.createElement('div', null,
+                        React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-2" }, 
+                            "Serviços Prestados *",
+                            React.createElement('span', { className: "text-[10px] text-slate-500 ml-2" }, 
+                                "(selecione um ou mais serviços)"
                             )
-                        )
-                    ),
-
-                    React.createElement('div', { className: "bg-white rounded-xl border border-slate-200 p-4 md:p-6" },
-                        React.createElement('h3', { className: "text-base md:text-lg font-semibold mb-4" }, "Contato"),
-                        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "WhatsApp *"),
-                                React.createElement('input', {
-                                    type: "text",
-                                    name: "whatsapp",
-                                    value: formData.whatsapp,
-                                    onChange: handleChange,
-                                    required: true,
-                                    className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 text-sm",
-                                    placeholder: "(11) 99999-9999"
+                        ),
+                        React.createElement('div', { className: "border border-slate-200 rounded-xl p-3 max-h-60 overflow-y-auto" },
+                            servicosDisponiveis.length === 0 ?
+                                React.createElement('p', { className: "text-xs text-slate-500 text-center py-4" }, 
+                                    "Nenhum serviço disponível para esta categoria"
+                                ) :
+                                servicosDisponiveis.map(function(servico) {
+                                    var isSelected = formData.servicos.includes(servico._id);
+                                    return React.createElement('div', {
+                                        key: servico._id,
+                                        onClick: function() { handleServicoToggle(servico._id); },
+                                        className: "flex items-center gap-2 p-2 hover:bg-slate-50 rounded-lg cursor-pointer border-b border-slate-100 last:border-0"
+                                    },
+                                        React.createElement('input', {
+                                            type: "checkbox",
+                                            checked: isSelected,
+                                            onChange: function() {},
+                                            className: "w-4 h-4 text-indigo-600 rounded"
+                                        }),
+                                        React.createElement('span', { className: "text-sm" }, servico.nome)
+                                    );
                                 })
-                            ),
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Telefone"),
-                                React.createElement('input', {
-                                    type: "text",
-                                    name: "telefone",
-                                    value: formData.telefone,
-                                    onChange: handleChange,
-                                    className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 text-sm",
-                                    placeholder: "(11) 3232-1234"
-                                })
-                            )
-                        )
-                    ),
-
-                    React.createElement('div', { className: "bg-white rounded-xl border border-slate-200 p-4 md:p-6" },
-                        React.createElement('h3', { className: "text-base md:text-lg font-semibold mb-4" }, "Perfil Profissional"),
-                        
-                        React.createElement('div', { className: "space-y-4" },
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Descrição *"),
-                                React.createElement('textarea', {
-                                    name: "descricao",
-                                    value: formData.descricao,
-                                    onChange: handleChange,
-                                    required: true,
-                                    rows: 4,
-                                    className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 text-sm",
-                                    placeholder: "Descreva seus serviços, experiência, etc..."
-                                })
-                            ),
-
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Experiência"),
-                                React.createElement('textarea', {
-                                    name: "experiencia",
-                                    value: formData.experiencia,
-                                    onChange: handleChange,
-                                    rows: 3,
-                                    className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 text-sm",
-                                    placeholder: "Ex: 10 anos de experiência, especialista em..."
-                                })
-                            ),
-
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, 
-                                    "Especialidades",
-                                    React.createElement('span', { className: "text-[10px] md:text-xs text-slate-500 ml-2" }, 
-                                        "(separadas por vírgula)"
-                                    )
-                                ),
-                                React.createElement('input', {
-                                    type: "text",
-                                    name: "especialidades",
-                                    value: formData.especialidades,
-                                    onChange: handleChange,
-                                    className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 text-sm",
-                                    placeholder: "Ex: Hidráulica, Elétrica, Pintura"
-                                })
-                            ),
-
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, 
-                                    "Certificações",
-                                    React.createElement('span', { className: "text-[10px] md:text-xs text-slate-500 ml-2" }, 
-                                        "(separadas por vírgula)"
-                                    )
-                                ),
-                                React.createElement('input', {
-                                    type: "text",
-                                    name: "certificacoes",
-                                    value: formData.certificacoes,
-                                    onChange: handleChange,
-                                    className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 text-sm",
-                                    placeholder: "Ex: NR10, NR35, CREA"
-                                })
-                            ),
-
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, 
-                                    "Regiões de Atendimento",
-                                    React.createElement('span', { className: "text-[10px] md:text-xs text-slate-500 ml-2" }, 
-                                        "(bairros/cidades que atende)"
-                                    )
-                                ),
-                                React.createElement('input', {
-                                    type: "text",
-                                    name: "regioesAtendimento",
-                                    value: formData.regioesAtendimento,
-                                    onChange: handleChange,
-                                    className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 text-sm",
-                                    placeholder: "Ex: Centro, Zona Sul, Tatuapé"
-                                })
-                            ),
-
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, 
-                                    "Tags",
-                                    React.createElement('span', { className: "text-[10px] md:text-xs text-slate-500 ml-2" }, 
-                                        "(palavras-chave para busca)"
-                                    )
-                                ),
-                                React.createElement('input', {
-                                    type: "text",
-                                    name: "tags",
-                                    value: formData.tags,
-                                    onChange: handleChange,
-                                    className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 text-sm",
-                                    placeholder: "Ex: Emergência, Residencial, Comercial"
-                                })
-                            )
-                        )
-                    ),
-
-                    React.createElement('div', { className: "flex gap-3 pt-4" },
-                        React.createElement('button', {
-                            type: "submit",
-                            disabled: loading || uploading,
-                            className: "flex-1 px-4 md:px-6 py-2.5 md:py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-xl hover:shadow-lg disabled:opacity-50 text-sm md:text-base"
-                        }, 
-                            (loading || uploading) ? 'Salvando...' : 'Salvar alterações'
+                        ),
+                        formData.servicos.length > 0 && React.createElement('p', { className: "text-xs text-indigo-600 mt-2" },
+                            formData.servicos.length + " serviço(s) selecionado(s)"
                         )
                     )
                 )
-            );
-        }
+            ),
 
+            // ===== LOCALIZAÇÃO =====
+            React.createElement('div', { className: "bg-white rounded-xl border border-slate-200 p-4 md:p-6" },
+                React.createElement('h3', { className: "text-base md:text-lg font-semibold mb-4" }, "Localização"),
+                React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Cidade *"),
+                        React.createElement('input', {
+                            type: "text",
+                            name: "cidade",
+                            value: formData.cidade,
+                            onChange: handleChange,
+                            required: true,
+                            className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 text-sm",
+                            placeholder: "Ex: São Paulo"
+                        })
+                    ),
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Estado *"),
+                        React.createElement('select', {
+                            name: "estado",
+                            value: formData.estado,
+                            onChange: handleChange,
+                            required: true,
+                            className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 text-sm bg-white"
+                        },
+                            ESTADOS.map(function(uf) { 
+                                return React.createElement('option', { key: uf, value: uf }, uf); 
+                            })
+                        )
+                    )
+                )
+            ),
+
+            // ===== CONTATO =====
+            React.createElement('div', { className: "bg-white rounded-xl border border-slate-200 p-4 md:p-6" },
+                React.createElement('h3', { className: "text-base md:text-lg font-semibold mb-4" }, "Contato"),
+                React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "WhatsApp *"),
+                        React.createElement('input', {
+                            type: "text",
+                            name: "whatsapp",
+                            value: formData.whatsapp,
+                            onChange: handleChange,
+                            required: true,
+                            className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 text-sm",
+                            placeholder: "(11) 99999-9999"
+                        })
+                    ),
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Telefone"),
+                        React.createElement('input', {
+                            type: "text",
+                            name: "telefone",
+                            value: formData.telefone,
+                            onChange: handleChange,
+                            className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 text-sm",
+                            placeholder: "(11) 3232-1234"
+                        })
+                    )
+                )
+            ),
+
+            // ===== PERFIL PROFISSIONAL =====
+            React.createElement('div', { className: "bg-white rounded-xl border border-slate-200 p-4 md:p-6" },
+                React.createElement('h3', { className: "text-base md:text-lg font-semibold mb-4" }, "Perfil Profissional"),
+                
+                React.createElement('div', { className: "space-y-4" },
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Descrição *"),
+                        React.createElement('textarea', {
+                            name: "descricao",
+                            value: formData.descricao,
+                            onChange: handleChange,
+                            required: true,
+                            rows: 4,
+                            className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 text-sm",
+                            placeholder: "Descreva seus serviços, experiência, etc..."
+                        })
+                    ),
+
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Experiência"),
+                        React.createElement('textarea', {
+                            name: "experiencia",
+                            value: formData.experiencia,
+                            onChange: handleChange,
+                            rows: 3,
+                            className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 text-sm",
+                            placeholder: "Ex: 10 anos de experiência, especialista em..."
+                        })
+                    ),
+
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, 
+                            "Especialidades",
+                            React.createElement('span', { className: "text-[10px] md:text-xs text-slate-500 ml-2" }, 
+                                "(separadas por vírgula)"
+                            )
+                        ),
+                        React.createElement('input', {
+                            type: "text",
+                            name: "especialidades",
+                            value: formData.especialidades,
+                            onChange: handleChange,
+                            className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 text-sm",
+                            placeholder: "Ex: Hidráulica, Elétrica, Pintura"
+                        })
+                    ),
+
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, 
+                            "Certificações",
+                            React.createElement('span', { className: "text-[10px] md:text-xs text-slate-500 ml-2" }, 
+                                "(separadas por vírgula)"
+                            )
+                        ),
+                        React.createElement('input', {
+                            type: "text",
+                            name: "certificacoes",
+                            value: formData.certificacoes,
+                            onChange: handleChange,
+                            className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 text-sm",
+                            placeholder: "Ex: NR10, NR35, CREA"
+                        })
+                    ),
+
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, 
+                            "Tags",
+                            React.createElement('span', { className: "text-[10px] md:text-xs text-slate-500 ml-2" }, 
+                                "(palavras-chave para busca)"
+                            )
+                        ),
+                        React.createElement('input', {
+                            type: "text",
+                            name: "tags",
+                            value: formData.tags,
+                            onChange: handleChange,
+                            className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 text-sm",
+                            placeholder: "Ex: Emergência, Residencial, Comercial"
+                        })
+                    )
+                )
+            ),
+
+            // ===== BOTÃO SALVAR =====
+            React.createElement('div', { className: "flex gap-3 pt-4" },
+                React.createElement('button', {
+                    type: "submit",
+                    disabled: loading || uploading,
+                    className: "flex-1 px-4 md:px-6 py-2.5 md:py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-xl hover:shadow-lg disabled:opacity-50 text-sm md:text-base"
+                }, 
+                    (loading || uploading) ? 'Salvando...' : 'Salvar alterações'
+                )
+            )
+        )
+    );
+}
         // ========== COMPONENTE DE SERVIÇOS DO PRESTADOR ==========
         function ServicosPrestador(props) {
             var prestadorId = props.prestadorId;
