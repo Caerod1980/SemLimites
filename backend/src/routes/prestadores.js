@@ -170,7 +170,10 @@ router.get('/perfil', autenticar, async (req, res) => {
       return res.status(404).json({ error: 'Prestador não vinculado ao usuário' });
     }
 
-    const prestador = await Prestador.findById(user.prestadorId);
+    // POPULATE ADICIONADO AQUI
+    const prestador = await Prestador.findById(user.prestadorId)
+      .populate('categoriaPrincipal', 'nome slug')
+      .populate('servicos', 'nome slug');
     
     if (!prestador) {
       return res.status(404).json({ error: 'Prestador não encontrado' });
@@ -198,9 +201,9 @@ router.put('/perfil', autenticar, async (req, res) => {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
-    if (!req.body.nome || !req.body.categoria || !req.body.cidade || !req.body.estado || !req.body.whatsapp) {
+    if (!req.body.nome || !req.body.cidade || !req.body.estado || !req.body.whatsapp) {
       return res.status(400).json({ 
-        error: 'Nome, categoria, cidade, estado e WhatsApp são obrigatórios' 
+        error: 'Nome, cidade, estado e WhatsApp são obrigatórios' 
       });
     }
 
@@ -214,12 +217,6 @@ router.put('/perfil', autenticar, async (req, res) => {
       ? (Array.isArray(req.body.certificacoes) 
           ? req.body.certificacoes 
           : req.body.certificacoes.split(',').map(c => c.trim()).filter(c => c))
-      : [];
-
-    const regioesAtendimento = req.body.regioesAtendimento 
-      ? (Array.isArray(req.body.regioesAtendimento) 
-          ? req.body.regioesAtendimento 
-          : req.body.regioesAtendimento.split(',').map(r => r.trim()).filter(r => r))
       : [];
 
     const tags = req.body.tags 
@@ -236,12 +233,14 @@ router.put('/perfil', autenticar, async (req, res) => {
       experiencia: req.body.experiencia || '',
       especialidades: especialidades,
       certificacoes: certificacoes,
-      regioesAtendimento: regioesAtendimento,
       whatsapp: req.body.whatsapp.replace(/\D/g, ''),
       telefone: req.body.telefone ? req.body.telefone.replace(/\D/g, '') : '',
       cidade: req.body.cidade,
       estado: req.body.estado,
       categoria: req.body.categoria,
+      // NOVOS CAMPOS
+      categoriaPrincipal: req.body.categoriaPrincipal || prestadorAtual.categoriaPrincipal,
+      servicos: req.body.servicos || prestadorAtual.servicos,
       tags: tags,
       
       ...(req.body.cpf && { cpf: req.body.cpf.replace(/\D/g, '') }),
@@ -321,7 +320,10 @@ router.delete('/perfil', autenticar, async (req, res) => {
 // ========== BUSCAR PRESTADOR POR SLUG ==========
 router.get('/:slug', async (req, res) => {
   try {
-    const prestador = await Prestador.findOne({ slug: req.params.slug });
+    // POPULATE ADICIONADO AQUI
+    const prestador = await Prestador.findOne({ slug: req.params.slug })
+      .populate('categoriaPrincipal', 'nome slug')
+      .populate('servicos', 'nome slug');
     
     if (!prestador) {
       return res.status(404).json({ error: 'Prestador não encontrado' });
@@ -334,14 +336,23 @@ router.get('/:slug', async (req, res) => {
   }
 });
 
-// ========== BUSCAR PRESTADOR POR ID ==========
+// ========== BUSCAR PRESTADOR POR ID (CORRIGIDO COM POPULATE) ==========
 router.get('/id/:id', async (req, res) => {
   try {
-    const prestador = await Prestador.findById(req.params.id);
+    console.log(`🔍 Buscando prestador por ID: ${req.params.id}`);
+    
+    // POPULATE ADICIONADO AQUI - ESTA É A CORREÇÃO PRINCIPAL
+    const prestador = await Prestador.findById(req.params.id)
+      .populate('categoriaPrincipal', 'nome slug') // Popula a categoria principal com nome e slug
+      .populate('servicos', 'nome slug'); // Popula os serviços com nome e slug
     
     if (!prestador) {
       return res.status(404).json({ error: 'Prestador não encontrado' });
     }
+
+    console.log(`✅ Prestador encontrado: ${prestador.nome}`);
+    console.log(`📦 Categoria Principal:`, prestador.categoriaPrincipal);
+    console.log(`📦 Serviços (${prestador.servicos?.length || 0}):`, prestador.servicos);
 
     res.json(prestador);
   } catch (error) {
@@ -374,12 +385,6 @@ router.post('/', async (req, res) => {
           : req.body.certificacoes.split(',').map(c => c.trim()).filter(c => c))
       : [];
 
-    const regioesAtendimento = req.body.regioesAtendimento 
-      ? (Array.isArray(req.body.regioesAtendimento) 
-          ? req.body.regioesAtendimento 
-          : req.body.regioesAtendimento.split(',').map(r => r.trim()).filter(r => r))
-      : [];
-
     const tags = req.body.tags 
       ? (Array.isArray(req.body.tags) 
           ? req.body.tags 
@@ -401,7 +406,6 @@ router.post('/', async (req, res) => {
       especialidades: especialidades,
       certificacoes: certificacoes,
       experiencia: req.body.experiencia || '',
-      regioesAtendimento: regioesAtendimento,
       tags: tags,
       estrelas: 0,
       avaliacoes: 0,
