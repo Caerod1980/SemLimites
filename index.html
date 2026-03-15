@@ -3650,10 +3650,10 @@ function DashboardPrestador(props) {
     );
 }
 
-  // ========== TELA DE PERFIL PÚBLICO - CORRIGIDA COM COMPARTILHAMENTO ==========
+  // ========== TELA DE PERFIL PÚBLICO - CORRIGIDA COM VERIFICAÇÕES DE SEGURANÇA ==========
 function TelaPerfil(props) {
     var prestador = props.prestador;
-    var prestadorId = props.prestadorId; // NOVO: receber ID diretamente da URL
+    var prestadorId = props.prestadorId;
     var onVoltar = props.onVoltar;
     
     var [loading, setLoading] = useState(false);
@@ -3664,7 +3664,6 @@ function TelaPerfil(props) {
     var [compartilhado, setCompartilhado] = useState(false);
 
     useEffect(function() {
-        // Se recebeu prestador por props (da busca) ou ID diretamente (do compartilhamento)
         var idParaBuscar = prestador?._id || prestadorId;
         
         if (idParaBuscar) {
@@ -3678,7 +3677,6 @@ function TelaPerfil(props) {
         setLoading(true);
         setErro('');
         
-        // Busca o prestador pelo ID
         fetch(API_URL + '/prestadores/id/' + id)
             .then(function(response) { 
                 if (!response.ok) {
@@ -3690,7 +3688,7 @@ function TelaPerfil(props) {
                 console.log('📥 Dados completos do prestador:', data);
                 setDadosCompletos(data);
                 
-                // Depois busca detalhes da categoria principal se for apenas ID
+                // Buscar categoria principal se for apenas ID
                 if (data.categoriaPrincipal && typeof data.categoriaPrincipal === 'string') {
                     fetch(API_URL + '/categorias/' + data.categoriaPrincipal)
                         .then(function(res) { return res.json(); })
@@ -3704,7 +3702,7 @@ function TelaPerfil(props) {
                     setCategoriaPrincipalDetalhada(data.categoriaPrincipal);
                 }
                 
-                // Depois busca detalhes de cada serviço
+                // Buscar detalhes dos serviços
                 if (data.servicos && data.servicos.length > 0) {
                     var servicosParaBuscar = data.servicos.map(function(s) {
                         return typeof s === 'string' ? s : s._id || s;
@@ -3739,9 +3737,10 @@ function TelaPerfil(props) {
 
     function handleCompartilhar() {
         var p = dadosCompletos || prestador;
+        if (!p) return;
+        
         var catNome = categoriaPrincipalDetalhada?.nome || p.categoriaPrincipal?.nome || p.categoria || 'Categoria não informada';
         
-        // CORREÇÃO: Link usando path parameter (formato correto)
         var perfilUrl = SITE_URL + BASE_PATH + "/perfil/" + p._id;
         
         var servicosTexto = '';
@@ -3752,14 +3751,12 @@ function TelaPerfil(props) {
             servicosTexto = "🛠️ Serviços: " + nomesServicos + "\n\n";
         }
         
-        // Título no início
         var mensagem = "🔷 *Sem Limites - Prestadores de Serviço* 🔷\n\n";
         mensagem += "👤 *" + p.nome + "*\n\n";
         mensagem += "📌 Categoria: " + catNome + "\n";
         mensagem += "📍 Localização: " + (p.cidade || '') + (p.estado ? ' - ' + p.estado : '') + "\n\n";
         
         if (p.descricao) {
-            // Limitar descrição para não ficar muito longa no compartilhamento
             var descricaoCurta = p.descricao.length > 100 
                 ? p.descricao.substring(0, 100) + '...' 
                 : p.descricao;
@@ -3783,7 +3780,6 @@ function TelaPerfil(props) {
             })
             .catch(function(error) { 
                 console.log('Erro ao compartilhar:', error);
-                // Fallback para clipboard se o share falhar
                 navigator.clipboard.writeText(mensagem).then(function() {
                     setCompartilhado(true);
                     setTimeout(function() { setCompartilhado(false); }, 3000);
@@ -3803,6 +3799,7 @@ function TelaPerfil(props) {
         }
     }
 
+    // VERIFICAÇÕES DE CARREGAMENTO E ERRO (executadas antes de qualquer renderização que acesse dados)
     if (!prestador && !prestadorId) {
         return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8 text-center" },
             React.createElement('p', { className: "text-red-600" }, "Prestador não encontrado"),
@@ -3852,7 +3849,18 @@ function TelaPerfil(props) {
         );
     }
 
+    // SÓ ACESSA AS PROPRIEDADES DEPOIS DE VERIFICAR QUE OS DADOS EXISTEM
     var p = dadosCompletos || prestador;
+    if (!p) {
+        return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8 text-center" },
+            React.createElement('p', { className: "text-red-600" }, "Dados do prestador não disponíveis"),
+            React.createElement('button', {
+                onClick: onVoltar,
+                className: "mt-4 px-4 md:px-6 py-2 bg-gradient-to-r from-[#f0f7f0] to-[#fff8e7] text-[#3d7a3d] rounded-xl text-sm md:text-base font-medium border border-[#c0dfc0] hover:shadow-md transition"
+            }, "Voltar")
+        );
+    }
+
     var categoriaNome = categoriaPrincipalDetalhada?.nome || p.categoriaPrincipal?.nome || p.categoria || 'Categoria não informada';
     
     var estadoDoPrestador = '';
@@ -3917,7 +3925,6 @@ function TelaPerfil(props) {
             // Conteúdo principal
             React.createElement('div', { className: "p-4 md:p-8 space-y-6 bg-gradient-to-b from-[#fcf8f3] to-white" },
                 
-                // DESCRIÇÃO - CORRIGIDA COM QUEBRA DE LINHA
                 p.descricao && React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 md:p-6 border border-[#c0dfc0]" },
                     React.createElement('h2', { className: "text-base md:text-xl font-semibold mb-3 text-[#3d7a3d] flex items-center gap-2" },
                         React.createElement('svg', { className: "w-5 h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -3930,7 +3937,6 @@ function TelaPerfil(props) {
                     }, p.descricao)
                 ),
 
-                // CATEGORIA PRINCIPAL E SERVIÇOS
                 React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 md:p-6 border border-[#FFE3A0]" },
                     React.createElement('h2', { className: "text-base md:text-xl font-semibold mb-3 text-[#F09030] flex items-center gap-2" },
                         React.createElement('svg', { className: "w-5 h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -3939,7 +3945,6 @@ function TelaPerfil(props) {
                         "Categoria e Serviços"
                     ),
                     
-                    // Categoria Principal
                     React.createElement('div', { className: "mb-4" },
                         React.createElement('span', { className: "text-xs text-[#F09030] block mb-1" }, "Categoria Principal"),
                         React.createElement('span', { className: "text-sm md:text-base font-medium text-[#b86b1f]" }, 
@@ -3947,7 +3952,6 @@ function TelaPerfil(props) {
                         )
                     ),
                     
-                    // Serviços
                     servicosDetalhados.length > 0 && 
                     React.createElement('div', null,
                         React.createElement('span', { className: "text-xs text-[#F09030] block mb-2" }, "Serviços Prestados"),
@@ -3962,7 +3966,6 @@ function TelaPerfil(props) {
                     )
                 ),
 
-                // EXPERIÊNCIA
                 (p.experiencia && p.experiencia !== '' && p.experiencia !== 'Ex: 10 anos de experiência, especialista em...') && 
                 React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 md:p-6 border border-[#c0dfc0]" },
                     React.createElement('h2', { className: "text-base md:text-xl font-semibold mb-3 text-[#3d7a3d] flex items-center gap-2" },
@@ -3976,7 +3979,6 @@ function TelaPerfil(props) {
                     }, p.experiencia)
                 ),
 
-                // ESPECIALIDADES
                 (p.especialidades && Array.isArray(p.especialidades) && p.especialidades.length > 0) && 
                 React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 md:p-6 border border-[#c0dfc0]" },
                     React.createElement('h2', { className: "text-base md:text-xl font-semibold mb-3 text-[#3d7a3d] flex items-center gap-2" },
@@ -3995,7 +3997,6 @@ function TelaPerfil(props) {
                     )
                 ),
 
-                // CERTIFICAÇÕES
                 (p.certificacoes && Array.isArray(p.certificacoes) && p.certificacoes.length > 0) && 
                 React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 md:p-6 border border-[#FFE3A0]" },
                     React.createElement('h2', { className: "text-base md:text-xl font-semibold mb-3 text-[#F09030] flex items-center gap-2" },
@@ -4014,7 +4015,6 @@ function TelaPerfil(props) {
                     )
                 ),
 
-                // TAGS
                 (p.tags && Array.isArray(p.tags) && p.tags.length > 0) && 
                 React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 md:p-6 border border-[#c0dfc0]" },
                     React.createElement('h2', { className: "text-base md:text-xl font-semibold mb-3 text-[#3d7a3d] flex items-center gap-2" },
@@ -4033,7 +4033,6 @@ function TelaPerfil(props) {
                     )
                 ),
 
-                // CONTATO
                 React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl md:rounded-2xl p-4 md:p-6 border border-[#c0dfc0]" },
                     React.createElement('h2', { className: "text-base md:text-xl font-semibold mb-4 text-[#3d7a3d] flex items-center gap-2" },
                         React.createElement('svg', { className: "w-5 h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -4067,7 +4066,6 @@ function TelaPerfil(props) {
                     )
                 ),
 
-                // SERVIÇOS REALIZADOS
                 p.avaliacoes > 0 && React.createElement('div', { className: "mt-8 pt-6 border-t border-[#c0dfc0]" },
                     React.createElement('h2', { className: "text-base md:text-xl font-semibold mb-4 flex items-center gap-2 text-[#3d7a3d]" },
                         React.createElement('svg', { className: "w-5 h-5 md:w-6 md:h-6 text-[#FFB347]", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -4086,7 +4084,6 @@ function TelaPerfil(props) {
         )
     );
 }
-
        // ========== FUNÇÃO DE NAVEGAÇÃO (CORRIGIDA) ==========
 function navigate(path) {
     var fullPath = BASE_PATH + path;
