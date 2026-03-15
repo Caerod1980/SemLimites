@@ -3577,7 +3577,7 @@ function DashboardPrestador(props) {
     );
 }
 
-      // ========== TELA DE PERFIL PÚBLICO - CORRIGIDA COM FALLBACK ==========
+     // ========== TELA DE PERFIL PÚBLICO - CORRIGIDA COM QUEBRA DE LINHA NA DESCRIÇÃO ==========
 function TelaPerfil(props) {
     var prestador = props.prestador;
     var onVoltar = props.onVoltar;
@@ -3819,7 +3819,7 @@ function TelaPerfil(props) {
             // Conteúdo principal
             React.createElement('div', { className: "p-4 md:p-8 space-y-6 bg-gradient-to-b from-[#fcf8f3] to-white" },
                 
-                // DESCRIÇÃO
+                // DESCRIÇÃO - CORRIGIDA COM QUEBRA DE LINHA
                 p.descricao && React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 md:p-6 border border-[#c0dfc0]" },
                     React.createElement('h2', { className: "text-base md:text-xl font-semibold mb-3 text-[#3d7a3d] flex items-center gap-2" },
                         React.createElement('svg', { className: "w-5 h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -3827,10 +3827,12 @@ function TelaPerfil(props) {
                         ),
                         "Sobre"
                     ),
-                    React.createElement('p', { className: "text-sm md:text-base text-slate-700 leading-relaxed" }, p.descricao)
+                    React.createElement('p', { 
+                        className: "text-sm md:text-base text-slate-700 leading-relaxed whitespace-pre-wrap break-words overflow-wrap-break-word" 
+                    }, p.descricao)
                 ),
 
-                // CATEGORIA PRINCIPAL E SERVIÇOS (CORRIGIDO)
+                // CATEGORIA PRINCIPAL E SERVIÇOS
                 React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 md:p-6 border border-[#FFE3A0]" },
                     React.createElement('h2', { className: "text-base md:text-xl font-semibold mb-3 text-[#F09030] flex items-center gap-2" },
                         React.createElement('svg', { className: "w-5 h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -3847,7 +3849,7 @@ function TelaPerfil(props) {
                         )
                     ),
                     
-                    // Serviços (AGORA MOSTRANDO OS NOMES CORRETOS)
+                    // Serviços
                     servicosDetalhados.length > 0 && 
                     React.createElement('div', null,
                         React.createElement('span', { className: "text-xs text-[#F09030] block mb-2" }, "Serviços Prestados"),
@@ -3871,7 +3873,9 @@ function TelaPerfil(props) {
                         ),
                         "Experiência"
                     ),
-                    React.createElement('p', { className: "text-sm md:text-base text-slate-700" }, p.experiencia)
+                    React.createElement('p', { 
+                        className: "text-sm md:text-base text-slate-700 whitespace-pre-wrap break-words overflow-wrap-break-word" 
+                    }, p.experiencia)
                 ),
 
                 // ESPECIALIDADES
