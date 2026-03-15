@@ -277,12 +277,47 @@
             );
         }
 
-       // ========== CARD DE PRESTADOR (SEM AVATAR) - CORRIGIDO COM CATEGORIA PRINCIPAL ==========
+      // ========== CARD DE PRESTADOR (SEM AVATAR) - CORRIGIDO COM BUSCA DE CATEGORIA ==========
 function CardPrestador(props) {
     var prestador = props.prestador;
     var onVerPerfil = props.onVerPerfil;
 
     var p = prestador;
+    var [categoriaNome, setCategoriaNome] = useState('');
+
+    useEffect(function() {
+        // Função para buscar o nome da categoria se for apenas ID
+        async function buscarNomeCategoria() {
+            // Se já veio como objeto com nome
+            if (p.categoriaPrincipal && typeof p.categoriaPrincipal === 'object' && p.categoriaPrincipal.nome) {
+                setCategoriaNome(p.categoriaPrincipal.nome);
+            } 
+            // Se veio como string (ID)
+            else if (p.categoriaPrincipal && typeof p.categoriaPrincipal === 'string') {
+                try {
+                    const response = await fetch(API_URL + '/categorias/' + p.categoriaPrincipal);
+                    if (response.ok) {
+                        const data = await response.json();
+                        setCategoriaNome(data.nome);
+                    } else {
+                        // Fallback para o campo antigo
+                        setCategoriaNome(p.categoria || 'Profissional');
+                    }
+                } catch (error) {
+                    console.error('Erro ao buscar categoria:', error);
+                    setCategoriaNome(p.categoria || 'Profissional');
+                }
+            } 
+            // Fallback para campo antigo
+            else if (p.categoria) {
+                setCategoriaNome(p.categoria);
+            } else {
+                setCategoriaNome('Profissional');
+            }
+        }
+
+        buscarNomeCategoria();
+    }, [p.categoriaPrincipal, p.categoria]);
 
     var estadoDoPrestador = '';
     if (p.localizacao && p.localizacao.estado) {
@@ -294,20 +329,6 @@ function CardPrestador(props) {
         localizacao = localizacao + (localizacao ? ' - ' : '') + estadoDoPrestador;
     }
     if (!localizacao) localizacao = 'Localização não informada';
-
-    // Obter o nome da categoria principal (pode vir como objeto ou string)
-    var categoriaNome = '';
-    if (p.categoriaPrincipal && typeof p.categoriaPrincipal === 'object' && p.categoriaPrincipal.nome) {
-        categoriaNome = p.categoriaPrincipal.nome;
-    } else if (p.categoriaPrincipal && typeof p.categoriaPrincipal === 'string') {
-        // Se for string, pode ser o ID ou o nome - usamos como fallback
-        categoriaNome = p.categoriaPrincipal;
-    } else if (p.categoria) {
-        // Fallback para o campo antigo
-        categoriaNome = p.categoria;
-    } else {
-        categoriaNome = 'Profissional';
-    }
 
     return React.createElement('div', {
         className: "bg-white/90 backdrop-blur-sm rounded-2xl md:rounded-3xl border border-neutral-200 p-4 md:p-6 hover:shadow-xl transition-all duration-300 hover:border-[#FFD966]/50 group h-full flex flex-col"
