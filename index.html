@@ -277,52 +277,53 @@
             );
         }
 
-        // ========== CARD DE PRESTADOR (SEM AVATAR) ==========
-        function CardPrestador(props) {
-            var prestador = props.prestador;
-            var onVerPerfil = props.onVerPerfil;
+       // ========== CARD DE PRESTADOR (SEM AVATAR) - CORRIGIDO COM BOTÃO ALINHADO ==========
+function CardPrestador(props) {
+    var prestador = props.prestador;
+    var onVerPerfil = props.onVerPerfil;
 
-            var p = prestador;
+    var p = prestador;
 
-            var estadoDoPrestador = '';
-            if (p.localizacao && p.localizacao.estado) {
-                estadoDoPrestador = p.localizacao.estado;
-            }
+    var estadoDoPrestador = '';
+    if (p.localizacao && p.localizacao.estado) {
+        estadoDoPrestador = p.localizacao.estado;
+    }
 
-            var localizacao = p.cidade || '';
-            if (estadoDoPrestador) {
-                localizacao = localizacao + (localizacao ? ' - ' : '') + estadoDoPrestador;
-            }
-            if (!localizacao) localizacao = 'Localização não informada';
+    var localizacao = p.cidade || '';
+    if (estadoDoPrestador) {
+        localizacao = localizacao + (localizacao ? ' - ' : '') + estadoDoPrestador;
+    }
+    if (!localizacao) localizacao = 'Localização não informada';
 
-            return React.createElement('div', {
-                className: "bg-white/90 backdrop-blur-sm rounded-2xl md:rounded-3xl border border-neutral-200 p-4 md:p-6 hover:shadow-xl transition-all duration-300 hover:border-[#FFD966]/50 group"
-            },
-                React.createElement('div', { className: "flex flex-col" },
-                    React.createElement('div', { className: "flex-1 w-full" },
-                        React.createElement('h3', { className: "font-logo text-base md:text-lg font-semibold text-neutral-800 group-hover:text-[#3d7a3d] transition-colors break-words" },
-                            p.nome
-                        ),
-                        React.createElement('p', { className: "text-xs md:text-sm text-neutral-500 mt-0.5 break-words" },
-                            (p.categoria || 'Profissional') + ' • ' + localizacao
-                        ),
-                        React.createElement('div', { className: "flex items-center gap-2 mt-2 flex-wrap" },
-                            React.createElement(Stars, { value: p.estrelas || 0, size: window.innerWidth < 640 ? "sm" : "md" }),
-                            React.createElement('span', { className: "text-xs text-neutral-400" },
-                                '(' + (p.avaliacoes || 0) + ')'
-                            )
-                        ),
-                        React.createElement('p', { className: "mt-2 md:mt-3 text-xs md:text-sm text-neutral-600 line-clamp-2 break-words" },
-                            p.descricao || 'Sem descrição'
-                        ),
-                        React.createElement('button', {
-                            onClick: function() { onVerPerfil(p); },
-                            className: "mt-3 md:mt-4 px-3 md:px-4 py-1.5 md:py-2 rounded-xl bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white text-xs md:text-sm font-medium hover:shadow-md transition-all transform hover:-translate-y-0.5 w-full xs:w-auto"
-                        }, "Ver perfil →")
+    return React.createElement('div', {
+        className: "bg-white/90 backdrop-blur-sm rounded-2xl md:rounded-3xl border border-neutral-200 p-4 md:p-6 hover:shadow-xl transition-all duration-300 hover:border-[#FFD966]/50 group h-full flex flex-col"
+    },
+        React.createElement('div', { className: "flex flex-col h-full" },
+            React.createElement('div', { className: "flex-1 w-full" },
+                React.createElement('h3', { className: "font-logo text-base md:text-lg font-semibold text-neutral-800 group-hover:text-[#3d7a3d] transition-colors break-words" },
+                    p.nome
+                ),
+                React.createElement('p', { className: "text-xs md:text-sm text-neutral-500 mt-0.5 break-words" },
+                    (p.categoria || 'Profissional') + ' • ' + localizacao
+                ),
+                React.createElement('div', { className: "flex items-center gap-2 mt-2 flex-wrap" },
+                    React.createElement(Stars, { value: p.estrelas || 0, size: window.innerWidth < 640 ? "sm" : "md" }),
+                    React.createElement('span', { className: "text-xs text-neutral-400" },
+                        '(' + (p.avaliacoes || 0) + ')'
                     )
+                ),
+                React.createElement('p', { className: "mt-2 md:mt-3 text-xs md:text-sm text-neutral-600 line-clamp-2 break-words" },
+                    p.descricao || 'Sem descrição'
                 )
-            );
-        }
+            ),
+            // Botão sempre no final do card
+            React.createElement('button', {
+                onClick: function() { onVerPerfil(p); },
+                className: "mt-3 md:mt-4 px-3 md:px-4 py-1.5 md:py-2 rounded-xl bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white text-xs md:text-sm font-medium hover:shadow-md transition-all transform hover:-translate-y-0.5 w-full xs:w-auto"
+            }, "Ver perfil →")
+        )
+    );
+}
 
        // ========== TELA DE BUSCA COM FILTROS DE CATEGORIA ==========
 function TelaBusca(props) {
