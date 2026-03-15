@@ -78,7 +78,7 @@ router.get('/busca', async (req, res) => {
     const { 
       cidade, 
       estado,
-      categoria,      // ID da categoria principal (mantido para compatibilidade)
+      categoria,      // Mantido para compatibilidade
       categoriaPrincipal, // NOVO: ID da categoria principal
       servico,        // NOVO: ID do serviço específico
       q, 
@@ -100,18 +100,21 @@ router.get('/busca', async (req, res) => {
       query.estado = estado;
     }
 
-    // FILTRO POR CATEGORIA PRINCIPAL (NOVO - PRIORITÁRIO)
+    // FILTRO POR CATEGORIA PRINCIPAL (NOVO)
     if (categoriaPrincipal) {
       query.categoriaPrincipal = categoriaPrincipal;
+      console.log(`🔍 Filtrando por categoriaPrincipal: ${categoriaPrincipal}`);
     } 
-    // Fallback para o campo antigo (mantido para compatibilidade)
+    // Fallback para o campo antigo (caso ainda use)
     else if (categoria) {
       query.categoria = categoria;
+      console.log(`🔍 Filtrando por categoria (antiga): ${categoria}`);
     }
 
     // FILTRO POR SERVIÇO ESPECÍFICO (NOVO)
     if (servico) {
       query.servicos = servico;
+      console.log(`🔍 Filtrando por servico: ${servico}`);
     }
 
     // Filtro por texto (nome, descrição, etc)
@@ -124,6 +127,8 @@ router.get('/busca', async (req, res) => {
     if (apenasVerificados === 'true') {
       query.verificado = true;
     }
+
+    console.log('📦 Query de busca:', JSON.stringify(query, null, 2));
 
     let sort = {};
     if (q && q.trim() !== '' && query.$text) {
@@ -168,6 +173,15 @@ router.get('/busca', async (req, res) => {
       page: parseInt(page),
       limit: parseInt(limit)
     });
+
+    // Log para debug dos resultados
+    if (prestadores.length > 0) {
+      console.log('📋 Primeiro prestador:', {
+        nome: prestadores[0].nome,
+        categoriaPrincipal: prestadores[0].categoriaPrincipal,
+        servicos: prestadores[0].servicos?.map(s => s.nome || s)
+      });
+    }
 
     res.json({
       prestadores,
@@ -372,10 +386,10 @@ router.get('/id/:id', async (req, res) => {
   try {
     console.log(`🔍 Buscando prestador por ID: ${req.params.id}`);
     
-    // POPULATE ADICIONADO AQUI - ESTA É A CORREÇÃO PRINCIPAL
+    // POPULATE ADICIONADO AQUI
     const prestador = await Prestador.findById(req.params.id)
-      .populate('categoriaPrincipal', 'nome slug') // Popula a categoria principal com nome e slug
-      .populate('servicos', 'nome slug'); // Popula os serviços com nome e slug
+      .populate('categoriaPrincipal', 'nome slug')
+      .populate('servicos', 'nome slug');
     
     if (!prestador) {
       return res.status(404).json({ error: 'Prestador não encontrado' });
@@ -480,7 +494,6 @@ router.post('/verificar-cnpj', async (req, res) => {
     const resultado = await consultarCNPJ(cnpj);
     
     if (resultado.valido) {
-      // Não atualizamos mais o prestador aqui, só retornamos os dados
       res.json({
         valido: true,
         situacao: resultado.situacao,
@@ -499,5 +512,4 @@ router.post('/verificar-cnpj', async (req, res) => {
   }
 });
 
-// Exportação correta para ES Modules
 export default router;
