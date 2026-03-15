@@ -277,7 +277,7 @@
             );
         }
 
-       // ========== CARD DE PRESTADOR (SEM AVATAR) - CORRIGIDO COM BOTÃO ALINHADO ==========
+       // ========== CARD DE PRESTADOR (SEM AVATAR) - CORRIGIDO COM CATEGORIA PRINCIPAL ==========
 function CardPrestador(props) {
     var prestador = props.prestador;
     var onVerPerfil = props.onVerPerfil;
@@ -295,6 +295,20 @@ function CardPrestador(props) {
     }
     if (!localizacao) localizacao = 'Localização não informada';
 
+    // Obter o nome da categoria principal (pode vir como objeto ou string)
+    var categoriaNome = '';
+    if (p.categoriaPrincipal && typeof p.categoriaPrincipal === 'object' && p.categoriaPrincipal.nome) {
+        categoriaNome = p.categoriaPrincipal.nome;
+    } else if (p.categoriaPrincipal && typeof p.categoriaPrincipal === 'string') {
+        // Se for string, pode ser o ID ou o nome - usamos como fallback
+        categoriaNome = p.categoriaPrincipal;
+    } else if (p.categoria) {
+        // Fallback para o campo antigo
+        categoriaNome = p.categoria;
+    } else {
+        categoriaNome = 'Profissional';
+    }
+
     return React.createElement('div', {
         className: "bg-white/90 backdrop-blur-sm rounded-2xl md:rounded-3xl border border-neutral-200 p-4 md:p-6 hover:shadow-xl transition-all duration-300 hover:border-[#FFD966]/50 group h-full flex flex-col"
     },
@@ -304,7 +318,7 @@ function CardPrestador(props) {
                     p.nome
                 ),
                 React.createElement('p', { className: "text-xs md:text-sm text-neutral-500 mt-0.5 break-words" },
-                    (p.categoria || 'Profissional') + ' • ' + localizacao
+                    categoriaNome + ' • ' + localizacao
                 ),
                 React.createElement('div', { className: "flex items-center gap-2 mt-2 flex-wrap" },
                     React.createElement(Stars, { value: p.estrelas || 0, size: window.innerWidth < 640 ? "sm" : "md" }),
@@ -324,7 +338,6 @@ function CardPrestador(props) {
         )
     );
 }
-
        // ========== TELA DE BUSCA COM FILTROS DE CATEGORIA ==========
 function TelaBusca(props) {
     var onVerPerfil = props.onVerPerfil;
