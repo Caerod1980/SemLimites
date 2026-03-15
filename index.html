@@ -3470,15 +3470,32 @@ function DashboardPrestador(props) {
     );
 }
 
-        // ========== TELA DE PERFIL PÚBLICO ==========
+       // ========== TELA DE PERFIL PÚBLICO - CORRIGIDA ==========
 function TelaPerfil(props) {
     var prestador = props.prestador;
     var onVoltar = props.onVoltar;
     
     var [loading, setLoading] = useState(false);
     var [dadosCompletos, setDadosCompletos] = useState(null);
+    var [categoriasMap, setCategoriasMap] = useState({}); // Mapa para armazenar nomes das categorias
     var [erro, setErro] = useState('');
     var [compartilhado, setCompartilhado] = useState(false);
+
+    // Carregar todas as categorias para ter os nomes
+    useEffect(function() {
+        fetch(API_URL + '/categorias/principais')
+            .then(function(response) { return response.json(); })
+            .then(function(categorias) {
+                var mapa = {};
+                categorias.forEach(function(cat) {
+                    mapa[cat._id] = cat.nome;
+                });
+                setCategoriasMap(mapa);
+            })
+            .catch(function(err) {
+                console.error('Erro ao carregar categorias:', err);
+            });
+    }, []);
 
     useEffect(function() {
         if (prestador && prestador._id) {
@@ -3501,7 +3518,22 @@ function TelaPerfil(props) {
             })
             .then(function(data) {
                 console.log('📥 Dados completos do prestador:', data);
-                setDadosCompletos(data);
+                
+                // Se os serviços vieram como objetos com _id, precisamos dos nomes
+                if (data.servicos && data.servicos.length > 0) {
+                    // Se veio apenas com _id, buscar detalhes
+                    if (typeof data.servicos[0] === 'string' || data.servicos[0]._id) {
+                        buscarNomesServicos(data.servicos, function(servicosComNomes) {
+                            data.servicos = servicosComNomes;
+                            setDadosCompletos(data);
+                        });
+                    } else {
+                        setDadosCompletos(data);
+                    }
+                } else {
+                    setDadosCompletos(data);
+                }
+                
                 setLoading(false);
             })
             .catch(function(error) {
@@ -3511,13 +3543,71 @@ function TelaPerfil(props) {
             });
     }
 
+    function buscarNomesServicos(servicosIds, callback) {
+        var servicosComNomes = [];
+        var contador = 0;
+        
+        servicosIds.forEach(function(servico) {
+            var servicoId = servico._id || servico;
+            
+            fetch(API_URL + '/categorias/' + servicoId)
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    servicosComNomes.push({
+                        _id: servicoId,
+                        nome: data.nome || 'Serviço não encontrado'
+                    });
+                    contador++;
+                    if (contador === servicosIds.length) {
+                        callback(servicosComNomes);
+                    }
+                })
+                .catch(function(err) {
+                    console.error('Erro ao buscar serviço:', err);
+                    servicosComNomes.push({
+                        _id: servicoId,
+                        nome: 'Serviço não encontrado'
+                    });
+                    contador++;
+                    if (contador === servicosIds.length) {
+                        callback(servicosComNomes);
+                    }
+                });
+        });
+    }
+
+    function getCategoriaNome(categoria) {
+        if (!categoria) return 'Categoria não informada';
+        if (typeof categoria === 'string') {
+            return categoriasMap[categoria] || categoria;
+        }
+        return categoria.nome || categoria;
+    }
+
+    function getServicoNome(servico) {
+        if (!servico) return 'Serviço não informado';
+        if (typeof servico === 'string') {
+            return servico; // Se for string, já pode ser o nome ou ID
+        }
+        return servico.nome || servico._id || 'Serviço';
+    }
+
     function handleCompartilhar() {
         var p = dadosCompletos || prestador;
         
         var perfilUrl = SITE_URL + BASE_PATH + "/perfil/" + p._id;
         
+        // Processar serviços para o texto de compartilhamento
+        var servicosTexto = '';
+        if (p.servicos && p.servicos.length > 0) {
+            var nomesServicos = p.servicos.map(function(s) {
+                return s.nome || s;
+            }).join(', ');
+            servicosTexto = "🛠️ Serviços: " + nomesServicos + "\n\n";
+        }
+        
         var mensagem = "👤 *" + p.nome + "*\n\n";
-        mensagem += "📌 Categoria: " + (p.categoriaPrincipal?.nome || p.categoria || 'Não informada') + "\n";
+        mensagem += "📌 Categoria: " + getCategoriaNome(p.categoriaPrincipal || p.categoria) + "\n";
         mensagem += "📍 Localização: " + (p.cidade || '') + (p.estado ? ' - ' + p.estado : '') + "\n\n";
         
         if (p.descricao) {
@@ -3536,10 +3626,7 @@ function TelaPerfil(props) {
             mensagem += "📜 Certificações: " + p.certificacoes.join(', ') + "\n\n";
         }
         
-        if (p.servicos && p.servicos.length > 0) {
-            var nomesServicos = p.servicos.map(s => s.nome || s).join(', ');
-            mensagem += "🛠️ Serviços: " + nomesServicos + "\n\n";
-        }
+        mensagem += servicosTexto;
         
         if (p.tags && p.tags.length > 0) {
             mensagem += "🏷️ Tags: " + p.tags.join(', ') + "\n\n";
@@ -3664,7 +3751,7 @@ function TelaPerfil(props) {
                     React.createElement('div', { className: "flex-1" },
                         React.createElement('h1', { className: "text-xl md:text-3xl font-bold mb-2" }, p.nome),
                         React.createElement('p', { className: "text-sm md:text-base text-[#4a8a4a]" }, 
-                            (p.categoriaPrincipal?.nome || p.categoria || 'Categoria não informada') + 
+                            getCategoriaNome(p.categoriaPrincipal || p.categoria) + 
                             ' • ' + 
                             (p.cidade || '') + (estadoDoPrestador ? ' - ' + estadoDoPrestador : '')
                         ),
@@ -3692,7 +3779,7 @@ function TelaPerfil(props) {
                     React.createElement('p', { className: "text-sm md:text-base text-slate-700 leading-relaxed" }, p.descricao)
                 ),
 
-                // CATEGORIA PRINCIPAL E SERVIÇOS (NOVO)
+                // CATEGORIA PRINCIPAL E SERVIÇOS (CORRIGIDO)
                 (p.categoriaPrincipal || (p.servicos && p.servicos.length > 0)) && 
                 React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 md:p-6 border border-[#FFE3A0]" },
                     React.createElement('h2', { className: "text-base md:text-xl font-semibold mb-3 text-[#F09030] flex items-center gap-2" },
@@ -3701,21 +3788,35 @@ function TelaPerfil(props) {
                         ),
                         "Categoria e Serviços"
                     ),
-                    p.categoriaPrincipal && React.createElement('div', { className: "mb-3" },
+                    
+                    // Categoria Principal
+                    React.createElement('div', { className: "mb-4" },
                         React.createElement('span', { className: "text-xs text-[#F09030] block mb-1" }, "Categoria Principal"),
                         React.createElement('span', { className: "text-sm md:text-base font-medium text-[#b86b1f]" }, 
-                            p.categoriaPrincipal.nome || p.categoriaPrincipal || p.categoria || 'Categoria não informada'
+                            getCategoriaNome(p.categoriaPrincipal || p.categoria)
                         )
                     ),
+                    
+                    // Serviços (CORRIGIDO - Mostrando nomes em vez de IDs)
                     p.servicos && Array.isArray(p.servicos) && p.servicos.length > 0 && 
                     React.createElement('div', null,
                         React.createElement('span', { className: "text-xs text-[#F09030] block mb-2" }, "Serviços Prestados"),
                         React.createElement('div', { className: "flex flex-wrap gap-2" },
                             p.servicos.map(function(servico, index) {
+                                // Extrair o nome do serviço corretamente
+                                var nomeServico = '';
+                                if (typeof servico === 'string') {
+                                    nomeServico = servico; // Pode ser ID ou nome
+                                } else if (servico.nome) {
+                                    nomeServico = servico.nome;
+                                } else if (servico._id) {
+                                    nomeServico = servico._id; // Fallback
+                                }
+                                
                                 return React.createElement('span', { 
                                     key: index, 
                                     className: "px-3 py-1.5 bg-[#FFF1CF] text-[#F09030] rounded-lg text-xs md:text-sm font-medium border border-[#FFE3A0]" 
-                                }, servico.nome || servico);
+                                }, nomeServico);
                             })
                         )
                     )
