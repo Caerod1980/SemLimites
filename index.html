@@ -359,7 +359,7 @@ function CardPrestador(props) {
         )
     );
 }
-       // ========== TELA DE BUSCA COM FILTROS DE CATEGORIA ==========
+     // ========== TELA DE BUSCA COM FILTROS DE CATEGORIA - CORRIGIDA ==========
 function TelaBusca(props) {
     var onVerPerfil = props.onVerPerfil;
 
@@ -371,6 +371,7 @@ function TelaBusca(props) {
     var [loading, setLoading] = useState(false);
     var [erro, setErro] = useState("");
     var [categorias, setCategorias] = useState([]);
+    var [servicosDaCategoria, setServicosDaCategoria] = useState([]);
 
     // Carregar categorias principais
     useEffect(function() {
@@ -384,6 +385,22 @@ function TelaBusca(props) {
             });
     }, []);
 
+    // Carregar serviços quando selecionar categoria
+    useEffect(function() {
+        if (categoriaBusca) {
+            fetch(API_URL + '/categorias/' + categoriaBusca + '/servicos')
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    setServicosDaCategoria(data);
+                })
+                .catch(function(err) {
+                    console.error('Erro ao carregar serviços:', err);
+                });
+        } else {
+            setServicosDaCategoria([]);
+        }
+    }, [categoriaBusca]);
+
     function buscar() {
         setLoading(true);
         setErro("");
@@ -392,8 +409,14 @@ function TelaBusca(props) {
         var params = [];
 
         if (cidade) params.push('cidade=' + encodeURIComponent(cidade));
-        if (categoriaBusca) params.push('categoria=' + encodeURIComponent(categoriaBusca));
-        if (servicoBusca) params.push('q=' + encodeURIComponent(servicoBusca));
+        
+        // NOVO: Usar categoriaPrincipal em vez de categoria
+        if (categoriaBusca) params.push('categoriaPrincipal=' + encodeURIComponent(categoriaBusca));
+        
+        // NOVO: Filtrar por serviço específico
+        if (servicoBusca) params.push('servico=' + encodeURIComponent(servicoBusca));
+        
+        // Busca por texto
         if (buscaTexto) params.push('q=' + encodeURIComponent(buscaTexto));
 
         params.push('limit=12');
@@ -469,6 +492,7 @@ function TelaBusca(props) {
         // Filtros
         React.createElement('div', { className: "bg-white/70 backdrop-blur-sm rounded-2xl md:rounded-3xl border border-neutral-200 p-4 md:p-6 mb-4 md:mb-8 shadow-sm" },
             React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4" },
+                // Filtro de cidade
                 React.createElement('input', {
                     type: "text",
                     value: cidade,
@@ -477,9 +501,13 @@ function TelaBusca(props) {
                     className: "px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-neutral-200 focus:border-[#FFB347] focus:ring-2 focus:ring-[#FFD966]/30 outline-none transition-all text-sm md:text-base"
                 }),
 
+                // Filtro de categoria principal
                 React.createElement('select', {
                     value: categoriaBusca,
-                    onChange: function(e) { setCategoriaBusca(e.target.value); },
+                    onChange: function(e) { 
+                        setCategoriaBusca(e.target.value);
+                        setServicoBusca(''); // Limpar serviço ao mudar categoria
+                    },
                     className: "px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-neutral-200 focus:border-[#FFB347] focus:ring-2 focus:ring-[#FFD966]/30 outline-none transition-all bg-white text-sm md:text-base"
                 },
                     React.createElement('option', { value: "" }, "Todas as categorias"),
@@ -488,14 +516,23 @@ function TelaBusca(props) {
                     })
                 ),
 
-                React.createElement('input', {
-                    type: "text",
+                // Filtro de serviço específico (só aparece se uma categoria estiver selecionada)
+                React.createElement('select', {
                     value: servicoBusca,
                     onChange: function(e) { setServicoBusca(e.target.value); },
-                    placeholder: "Serviço específico (ex: Instalador de ar)",
-                    className: "px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-neutral-200 focus:border-[#FFB347] focus:ring-2 focus:ring-[#FFD966]/30 outline-none transition-all text-sm md:text-base"
-                }),
+                    disabled: !categoriaBusca,
+                    className: "px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-neutral-200 focus:border-[#FFB347] focus:ring-2 focus:ring-[#FFD966]/30 outline-none transition-all bg-white text-sm md:text-base " + 
+                        (!categoriaBusca ? 'opacity-50 cursor-not-allowed' : '')
+                },
+                    React.createElement('option', { value: "" }, 
+                        categoriaBusca ? "Todos os serviços" : "Selecione uma categoria primeiro"
+                    ),
+                    servicosDaCategoria.map(function(s) {
+                        return React.createElement('option', { key: s._id, value: s._id }, s.nome);
+                    })
+                ),
 
+                // Busca por texto
                 React.createElement('input', {
                     type: "text",
                     value: buscaTexto,
@@ -536,7 +573,8 @@ function TelaBusca(props) {
                 })
         )
     );
-}
+} 
+
         // ========== COMPONENTE DE CRIAÇÃO DE SERVIÇO ==========
         function NovoServico(props) {
             var onSucesso = props.onSucesso;
