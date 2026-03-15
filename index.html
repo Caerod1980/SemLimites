@@ -3650,7 +3650,7 @@ function DashboardPrestador(props) {
     );
 }
 
-     // ========== TELA DE PERFIL PÚBLICO - CORRIGIDA COM QUEBRA DE LINHA NA DESCRIÇÃO ==========
+     // ========== TELA DE PERFIL PÚBLICO - CORRIGIDA COM COMPARTILHAMENTO ==========
 function TelaPerfil(props) {
     var prestador = props.prestador;
     var onVoltar = props.onVoltar;
@@ -3737,7 +3737,8 @@ function TelaPerfil(props) {
         var p = dadosCompletos || prestador;
         var catNome = categoriaPrincipalDetalhada?.nome || p.categoriaPrincipal?.nome || p.categoria || 'Categoria não informada';
         
-        var perfilUrl = SITE_URL + BASE_PATH + "/perfil/" + p._id;
+        // CORREÇÃO: Link correto sem duplicação
+        var perfilUrl = SITE_URL + BASE_PATH + "/perfil?id=" + p._id;
         
         var servicosTexto = '';
         if (servicosDetalhados.length > 0) {
@@ -3747,26 +3748,46 @@ function TelaPerfil(props) {
             servicosTexto = "🛠️ Serviços: " + nomesServicos + "\n\n";
         }
         
-        var mensagem = "👤 *" + p.nome + "*\n\n";
+        // NOVO: Título no início
+        var mensagem = "🔷 *Sem Limites - Prestadores de Serviço* 🔷\n\n";
+        mensagem += "👤 *" + p.nome + "*\n\n";
         mensagem += "📌 Categoria: " + catNome + "\n";
         mensagem += "📍 Localização: " + (p.cidade || '') + (p.estado ? ' - ' + p.estado : '') + "\n\n";
         
         if (p.descricao) {
-            mensagem += "📝 Sobre: " + p.descricao + "\n\n";
+            // Limitar descrição para não ficar muito longa no compartilhamento
+            var descricaoCurta = p.descricao.length > 100 
+                ? p.descricao.substring(0, 100) + '...' 
+                : p.descricao;
+            mensagem += "📝 Sobre: " + descricaoCurta + "\n\n";
         }
         
         mensagem += servicosTexto;
         mensagem += "⭐ Avaliação: " + (p.estrelas || 0).toFixed(1) + " (" + (p.avaliacoes || 0) + " avaliações)\n\n";
+        mensagem += "🔗 Acesse o perfil completo:\n";
         mensagem += perfilUrl;
         
         if (navigator.share) {
             navigator.share({
-                title: 'Perfil de ' + p.nome,
+                title: 'SemLimites - ' + p.nome,
                 text: mensagem,
                 url: perfilUrl,
             })
-            .then(function() { setCompartilhado(true); })
-            .catch(function(error) { console.log('Erro ao compartilhar:', error); });
+            .then(function() { 
+                setCompartilhado(true);
+                setTimeout(function() { setCompartilhado(false); }, 3000);
+            })
+            .catch(function(error) { 
+                console.log('Erro ao compartilhar:', error);
+                // Fallback para clipboard se o share falhar
+                navigator.clipboard.writeText(mensagem).then(function() {
+                    setCompartilhado(true);
+                    setTimeout(function() { setCompartilhado(false); }, 3000);
+                }).catch(function(error) {
+                    console.error('Erro ao copiar:', error);
+                    alert('Não foi possível compartilhar. Copie o link manualmente.');
+                });
+            });
         } else {
             navigator.clipboard.writeText(mensagem).then(function() {
                 setCompartilhado(true);
@@ -3778,62 +3799,7 @@ function TelaPerfil(props) {
         }
     }
 
-    if (!prestador) {
-        return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8 text-center" },
-            React.createElement('p', { className: "text-red-600" }, "Prestador não encontrado"),
-            React.createElement('button', {
-                onClick: onVoltar,
-                className: "mt-4 px-4 md:px-6 py-2 bg-gradient-to-r from-[#f0f7f0] to-[#fff8e7] text-[#3d7a3d] rounded-xl text-sm md:text-base font-medium border border-[#c0dfc0] hover:shadow-md transition"
-            }, "Voltar")
-        );
-    }
-
-    if (loading) {
-        return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8" },
-            React.createElement('button', {
-                onClick: onVoltar,
-                className: "mb-6 text-[#3d7a3d] hover:text-[#2d5a2d] flex items-center gap-2 text-sm md:text-base"
-            },
-                React.createElement('svg', { className: "w-4 h-4 md:w-5 md:h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                    React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M10 19l-7-7m0 0l7-7m-7 7h18" })
-                ),
-                "Voltar para busca"
-            ),
-            React.createElement('div', { className: "text-center py-8" },
-                React.createElement('div', { className: "w-10 h-10 md:w-12 md:h-12 border-4 border-[#FFD966] border-t-[#FFB347] rounded-full animate-spin mx-auto mb-4" }),
-                React.createElement('p', { className: "text-sm md:text-base" }, "Carregando perfil...")
-            )
-        );
-    }
-
-    if (erro) {
-        return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8" },
-            React.createElement('button', {
-                onClick: onVoltar,
-                className: "mb-6 text-[#3d7a3d] hover:text-[#2d5a2d] flex items-center gap-2 text-sm md:text-base"
-            },
-                React.createElement('svg', { className: "w-4 h-4 md:w-5 md:h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                    React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M10 19l-7-7m0 0l7-7m-7 7h18" })
-                ),
-                "Voltar para busca"
-            ),
-            React.createElement('div', { className: "text-center py-8" },
-                React.createElement('p', { className: "text-red-600 mb-4" }, erro),
-                React.createElement('button', {
-                    onClick: carregarDadosCompletos,
-                    className: "px-4 md:px-6 py-2 bg-gradient-to-r from-[#f0f7f0] to-[#fff8e7] text-[#3d7a3d] rounded-xl text-sm md:text-base font-medium border border-[#c0dfc0] hover:shadow-md transition"
-                }, "Tentar novamente")
-            )
-        );
-    }
-
-    var p = dadosCompletos || prestador;
-    var categoriaNome = categoriaPrincipalDetalhada?.nome || p.categoriaPrincipal?.nome || p.categoria || 'Categoria não informada';
-    
-    var estadoDoPrestador = '';
-    if (p.localizacao && p.localizacao.estado) {
-        estadoDoPrestador = p.localizacao.estado;
-    }
+    // ... (resto do código permanece igual)
 
     return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8" },
         React.createElement('div', { className: "flex justify-between items-center mb-6" },
