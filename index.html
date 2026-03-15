@@ -3650,10 +3650,11 @@ function DashboardPrestador(props) {
     );
 }
 
-    // ========== TELA DE PERFIL PÚBLICO - CORRIGIDA COM COMPARTILHAMENTO ==========
+   // ========== TELA DE PERFIL PÚBLICO - CORRIGIDA COM COMPARTILHAMENTO ==========
 function TelaPerfil(props) {
     var prestador = props.prestador;
     var onVoltar = props.onVoltar;
+    var prestadorId = props.prestadorId; // NOVO: receber ID diretamente
     
     var [loading, setLoading] = useState(false);
     var [dadosCompletos, setDadosCompletos] = useState(null);
@@ -3663,19 +3664,22 @@ function TelaPerfil(props) {
     var [compartilhado, setCompartilhado] = useState(false);
 
     useEffect(function() {
-        if (prestador && prestador._id) {
-            carregarDadosCompletos();
+        // Se recebeu prestador por props (da busca) ou ID diretamente (do compartilhamento)
+        var idParaBuscar = prestador?._id || prestadorId;
+        
+        if (idParaBuscar) {
+            carregarDadosCompletos(idParaBuscar);
         } else {
             setErro('Prestador não encontrado');
         }
-    }, [prestador]);
+    }, [prestador, prestadorId]);
 
-    function carregarDadosCompletos() {
+    function carregarDadosCompletos(id) {
         setLoading(true);
         setErro('');
         
-        // Primeiro busca o prestador
-        fetch(API_URL + '/prestadores/id/' + prestador._id)
+        // Busca o prestador pelo ID
+        fetch(API_URL + '/prestadores/id/' + id)
             .then(function(response) { 
                 if (!response.ok) {
                     throw new Error('Erro ao carregar perfil');
@@ -3737,8 +3741,8 @@ function TelaPerfil(props) {
         var p = dadosCompletos || prestador;
         var catNome = categoriaPrincipalDetalhada?.nome || p.categoriaPrincipal?.nome || p.categoria || 'Categoria não informada';
         
-        // CORREÇÃO: Link correto sem duplicação - usando query param em vez de path
-        var perfilUrl = SITE_URL + BASE_PATH + "/perfil?id=" + p._id;
+        // CORREÇÃO: Link usando path parameter (formato correto)
+        var perfilUrl = SITE_URL + BASE_PATH + "/perfil/" + p._id;
         
         var servicosTexto = '';
         if (servicosDetalhados.length > 0) {
@@ -3799,7 +3803,7 @@ function TelaPerfil(props) {
         }
     }
 
-    if (!prestador) {
+    if (!prestador && !prestadorId) {
         return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8 text-center" },
             React.createElement('p', { className: "text-red-600" }, "Prestador não encontrado"),
             React.createElement('button', {
@@ -3841,7 +3845,7 @@ function TelaPerfil(props) {
             React.createElement('div', { className: "text-center py-8" },
                 React.createElement('p', { className: "text-red-600 mb-4" }, erro),
                 React.createElement('button', {
-                    onClick: carregarDadosCompletos,
+                    onClick: function() { carregarDadosCompletos(prestador?._id || prestadorId); },
                     className: "px-4 md:px-6 py-2 bg-gradient-to-r from-[#f0f7f0] to-[#fff8e7] text-[#3d7a3d] rounded-xl text-sm md:text-base font-medium border border-[#c0dfc0] hover:shadow-md transition"
                 }, "Tentar novamente")
             )
@@ -4107,107 +4111,125 @@ function TelaPerfil(props) {
             }
         }
 
-        // ========== APP PRINCIPAL ==========
-        function App() {
-            var [modo, setModo] = useState('busca');
-            var [usuario, setUsuario] = useState(null);
-            var [prestadorSelecionado, setPrestadorSelecionado] = useState(null);
+        // ========== APP PRINCIPAL (CORRIGIDO) ==========
+function App() {
+    var [modo, setModo] = useState('busca');
+    var [usuario, setUsuario] = useState(null);
+    var [prestadorSelecionado, setPrestadorSelecionado] = useState(null);
+    var [prestadorId, setPrestadorId] = useState(null); // NOVO: para quando vier por compartilhamento
 
-            window.appSetModo = setModo;
+    window.appSetModo = setModo;
 
-            useEffect(function() {
-                var path = window.location.pathname.replace(BASE_PATH, '') || '/';
-                
-                if (path.startsWith('/avaliar/')) {
-                    setModo('avaliar');
-                } else if (path === '/login') {
-                    setModo('login');
-                } else if (path === '/cadastro') {
-                    setModo('cadastro');
-                } else if (path === '/dashboard') {
-                    setModo('dashboard');
-                } else if (path === '/perfil') {
-                    setModo('perfil');
-                } else if (path === '/esqueci-senha') {
-                    setModo('esqueci-senha');
-                } else if (path.startsWith('/resetar-senha/')) {
-                    setModo('resetar-senha');
-                } else {
-                    setModo('busca');
-                }
-                
-                var token = localStorage.getItem('token');
-                if (token) {
-                    fetch(API_URL + '/auth/me', {
-                        headers: { 'Authorization': 'Bearer ' + token }
-                    })
-                        .then(function(response) { return response.json(); })
-                        .then(function(data) {
-                            if (!data.error) setUsuario(data);
-                        })
-                        .catch(function(error) { console.error(error); });
-                }
-            }, []);
-
-            function voltarParaBusca() {
-                navigate('/');
+    useEffect(function() {
+        var path = window.location.pathname.replace(BASE_PATH, '') || '/';
+        
+        if (path.startsWith('/avaliar/')) {
+            setModo('avaliar');
+        } else if (path === '/login') {
+            setModo('login');
+        } else if (path === '/cadastro') {
+            setModo('cadastro');
+        } else if (path === '/dashboard') {
+            setModo('dashboard');
+        } else if (path.startsWith('/perfil/')) {
+            // NOVO: Extrair ID do perfil da URL
+            var id = path.split('/')[2];
+            if (id) {
+                console.log('📌 Carregando perfil compartilhado ID:', id);
+                setPrestadorId(id);
+                setPrestadorSelecionado(null); // Limpar prestador da busca
+                setModo('perfil');
+            } else {
+                setModo('busca');
             }
-
-            function handleVerPerfil(prestador) {
-                console.log('👤 App recebeu prestador para ver perfil:', prestador.nome);
-                setPrestadorSelecionado(prestador); 
-                navigate('/perfil'); 
-            }
-
-            function handleLoginSuccess() {
-                navigate('/dashboard');
-            }
-
-            function handleCadastroSucesso() {
-                navigate('/');
-            }
-
-            function handleSair() {
-                localStorage.removeItem('token'); 
-                setUsuario(null); 
-                navigate('/');
-            }
-
-            var header = modo !== 'avaliar' ? React.createElement(Header, {
-                usuario: usuario,
-                onVoltar: voltarParaBusca,
-                onNavigate: navigate
-            }) : null;
-
-            var content = null;
-            if (modo === 'busca') {
-                content = React.createElement(TelaBusca, { onVerPerfil: handleVerPerfil });
-            } else if (modo === 'perfil') {
-                content = React.createElement(TelaPerfil, { prestador: prestadorSelecionado, onVoltar: voltarParaBusca });
-            } else if (modo === 'login') {
-                content = React.createElement(Login, { onLoginSuccess: handleLoginSuccess, onVoltar: voltarParaBusca });
-            } else if (modo === 'cadastro') {
-                content = React.createElement(CadastroPrestador, { onCadastroSucesso: handleCadastroSucesso, onVoltar: voltarParaBusca });
-            } else if (modo === 'dashboard') {
-                content = React.createElement(DashboardPrestador, { usuario: usuario, onSair: handleSair });
-            } else if (modo === 'avaliar') {
-                content = React.createElement(AvaliarServico);
-            } else if (modo === 'esqueci-senha') {
-                content = React.createElement(EsqueciSenha, { 
-                    onVoltar: voltarParaBusca 
-                });
-            } else if (modo === 'resetar-senha') {
-                content = React.createElement(ResetarSenha, { 
-                    onVoltar: voltarParaBusca,
-                    onSucesso: function() { navigate('/login'); }
-                });
-            }
-
-            return React.createElement('div', { className: "min-h-screen bg-gradient-to-b from-[#fcf8f3] to-white overflow-guard" },
-                header,
-                React.createElement('main', null, content)
-            );
+        } else if (path === '/esqueci-senha') {
+            setModo('esqueci-senha');
+        } else if (path.startsWith('/resetar-senha/')) {
+            setModo('resetar-senha');
+        } else {
+            setModo('busca');
         }
+        
+        var token = localStorage.getItem('token');
+        if (token) {
+            fetch(API_URL + '/auth/me', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            })
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    if (!data.error) setUsuario(data);
+                })
+                .catch(function(error) { console.error(error); });
+        }
+    }, []);
+
+    function voltarParaBusca() {
+        navigate('/');
+        setPrestadorId(null);
+        setPrestadorSelecionado(null);
+    }
+
+    function handleVerPerfil(prestador) {
+        console.log('👤 App recebeu prestador para ver perfil:', prestador.nome);
+        setPrestadorSelecionado(prestador);
+        setPrestadorId(null); // Limpar ID quando vem da busca
+        navigate('/perfil/' + prestador._id); // Usar path parameter
+    }
+
+    function handleLoginSuccess() {
+        navigate('/dashboard');
+    }
+
+    function handleCadastroSucesso() {
+        navigate('/');
+    }
+
+    function handleSair() {
+        localStorage.removeItem('token'); 
+        setUsuario(null); 
+        navigate('/');
+    }
+
+    var header = modo !== 'avaliar' ? React.createElement(Header, {
+        usuario: usuario,
+        onVoltar: voltarParaBusca,
+        onNavigate: navigate
+    }) : null;
+
+    var content = null;
+    if (modo === 'busca') {
+        content = React.createElement(TelaBusca, { onVerPerfil: handleVerPerfil });
+    } else if (modo === 'perfil') {
+        // NOVO: Passar tanto prestador (da busca) quanto prestadorId (do compartilhamento)
+        content = React.createElement(TelaPerfil, { 
+            prestador: prestadorSelecionado, 
+            prestadorId: prestadorId,
+            onVoltar: voltarParaBusca 
+        });
+    } else if (modo === 'login') {
+        content = React.createElement(Login, { onLoginSuccess: handleLoginSuccess, onVoltar: voltarParaBusca });
+    } else if (modo === 'cadastro') {
+        content = React.createElement(CadastroPrestador, { onCadastroSucesso: handleCadastroSucesso, onVoltar: voltarParaBusca });
+    } else if (modo === 'dashboard') {
+        content = React.createElement(DashboardPrestador, { usuario: usuario, onSair: handleSair });
+    } else if (modo === 'avaliar') {
+        content = React.createElement(AvaliarServico);
+    } else if (modo === 'esqueci-senha') {
+        content = React.createElement(EsqueciSenha, { 
+            onVoltar: voltarParaBusca 
+        });
+    } else if (modo === 'resetar-senha') {
+        content = React.createElement(ResetarSenha, { 
+            onVoltar: voltarParaBusca,
+            onSucesso: function() { navigate('/login'); }
+        });
+    }
+
+    return React.createElement('div', { className: "min-h-screen bg-gradient-to-b from-[#fcf8f3] to-white overflow-guard" },
+        header,
+        React.createElement('main', null, content)
+    );
+}
 
         ReactDOM.render(React.createElement(App), document.getElementById('root'));
     </script>
