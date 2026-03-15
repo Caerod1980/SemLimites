@@ -15,6 +15,8 @@ async function garantirIndices() {
     await Prestador.collection.createIndex({ cidade: 1, estado: 1 });
     await Prestador.collection.createIndex({ estado: 1 });
     await Prestador.collection.createIndex({ categoria: 1 });
+    await Prestador.collection.createIndex({ categoriaPrincipal: 1 }); // NOVO ÍNDICE
+    await Prestador.collection.createIndex({ servicos: 1 }); // NOVO ÍNDICE
     await Prestador.collection.createIndex({ estrelas: -1, avaliacoes: -1 });
     await Prestador.collection.createIndex({ avaliacoes: -1 });
     
@@ -70,13 +72,15 @@ const autenticar = async (req, res, next) => {
   }
 };
 
-// ========== BUSCAR PRESTADORES COM FILTROS ==========
+// ========== BUSCAR PRESTADORES COM FILTROS (CORRIGIDO) ==========
 router.get('/busca', async (req, res) => {
   try {
     const { 
       cidade, 
       estado,
-      categoria, 
+      categoria,      // ID da categoria principal (mantido para compatibilidade)
+      categoriaPrincipal, // NOVO: ID da categoria principal
+      servico,        // NOVO: ID do serviço específico
       q, 
       apenasVerificados,
       ordenacao = 'reputacao',
@@ -86,14 +90,39 @@ router.get('/busca', async (req, res) => {
 
     let query = {};
 
-    if (cidade) query.cidade = cidade;
-    if (estado) query.estado = estado;
-    if (categoria) query.categoria = categoria;
-    if (apenasVerificados === 'true') query.verificado = true;
+    // Filtro por cidade (case insensitive)
+    if (cidade) {
+      query.cidade = new RegExp(cidade, 'i');
+    }
+    
+    // Filtro por estado
+    if (estado) {
+      query.estado = estado;
+    }
 
+    // FILTRO POR CATEGORIA PRINCIPAL (NOVO - PRIORITÁRIO)
+    if (categoriaPrincipal) {
+      query.categoriaPrincipal = categoriaPrincipal;
+    } 
+    // Fallback para o campo antigo (mantido para compatibilidade)
+    else if (categoria) {
+      query.categoria = categoria;
+    }
+
+    // FILTRO POR SERVIÇO ESPECÍFICO (NOVO)
+    if (servico) {
+      query.servicos = servico;
+    }
+
+    // Filtro por texto (nome, descrição, etc)
     if (q && q.trim() !== '') {
       const termoBusca = q.trim();
       query.$text = { $search: termoBusca };
+    }
+
+    // Filtro por verificado
+    if (apenasVerificados === 'true') {
+      query.verificado = true;
     }
 
     let sort = {};
@@ -119,6 +148,8 @@ router.get('/busca', async (req, res) => {
     }
 
     let prestadoresQuery = Prestador.find(query)
+      .populate('categoriaPrincipal', 'nome slug') // Popula a categoria principal
+      .populate('servicos', 'nome slug') // Popula os serviços
       .limit(parseInt(limit))
       .skip((parseInt(page) - 1) * parseInt(limit));
 
