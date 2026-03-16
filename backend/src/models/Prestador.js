@@ -54,6 +54,12 @@ const prestadorSchema = new mongoose.Schema({
     ref: 'Categoria'
   }], // Múltiplos serviços específicos (nível 3)
   
+  // ===== NOVO CAMPO PARA CURTIDAS =====
+  totalCurtidas: {
+    type: Number,
+    default: 0
+  },
+  
   // ===== CAMPOS PROFISSIONAIS (MANTIDOS PARA COMPATIBILIDADE) =====
   categoria: { type: String }, // Mantido para compatibilidade com dados existentes
   cidade: { type: String, required: true },
@@ -118,6 +124,9 @@ prestadorSchema.index({
   estrelas: -1 
 });
 
+// ===== ÍNDICE PARA CURTIDAS =====
+prestadorSchema.index({ totalCurtidas: -1 });
+
 // ===== MIDDLEWARE PARA CRIAR SLUG =====
 prestadorSchema.pre('save', function(next) {
   if (this.isModified('nome') || !this.slug) {
@@ -173,7 +182,7 @@ prestadorSchema.methods.ofereceServico = function(servicoId) {
 prestadorSchema.statics.buscarPorServico = async function(servicoId, filtros = {}) {
   const query = { servicos: servicoId, ...filtros };
   return await this.find(query)
-    .sort({ estrelas: -1, avaliacoes: -1 })
+    .sort({ estrelas: -1, avaliacoes: -1, totalCurtidas: -1 })
     .limit(20);
 };
 
@@ -185,7 +194,7 @@ prestadorSchema.statics.buscarPorServico = async function(servicoId, filtros = {
 prestadorSchema.statics.buscarPorCategoria = async function(categoriaId, filtros = {}) {
   const query = { categoriaPrincipal: categoriaId, ...filtros };
   return await this.find(query)
-    .sort({ estrelas: -1, avaliacoes: -1 });
+    .sort({ estrelas: -1, avaliacoes: -1, totalCurtidas: -1 });
 };
 
 /**
@@ -219,7 +228,7 @@ prestadorSchema.statics.buscaAvancada = async function(params) {
   }
 
   const prestadores = await this.find(query)
-    .sort({ estrelas: -1, avaliacoes: -1 })
+    .sort({ estrelas: -1, avaliacoes: -1, totalCurtidas: -1 })
     .limit(parseInt(limit))
     .skip((parseInt(page) - 1) * parseInt(limit));
 
