@@ -286,6 +286,24 @@ export const favoritosAPI = {
   totalCurtidas: (prestadorId) => request(`/favoritos/prestador/${prestadorId}/total`)
 };
 
+// ========== API DE USUÁRIOS (NOVO) ==========
+export const usuariosAPI = {
+  /**
+   * Excluir perfil do usuário logado (cliente)
+   * Remove todos os favoritos e o usuário do banco de dados
+   * @returns {Promise} Confirmação de exclusão
+   */
+  excluirPerfil: () => request('/usuarios/perfil', {
+    method: 'DELETE'
+  }),
+
+  /**
+   * Buscar dados do usuário logado
+   * @returns {Promise} Dados do usuário (sem senha)
+   */
+  getMe: () => request('/usuarios/me')
+};
+
 // ========== UTILITÁRIOS ==========
 /**
  * Testar conexão com a API
