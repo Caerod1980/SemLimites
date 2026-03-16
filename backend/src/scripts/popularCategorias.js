@@ -5,14 +5,29 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Função para gerar slug de forma confiável
-function gerarSlug(texto) {
-  return texto
+// Função para gerar slug único incluindo a categoria pai
+function gerarSlugUnico(texto, categoriaPai = null) {
+  let slug = texto
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
+  
+  // Se tiver categoria pai, adicionar prefixo para evitar duplicatas
+  if (categoriaPai) {
+    const prefixo = categoriaPai
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+      .substring(0, 20);
+    
+    slug = `${prefixo}-${slug}`;
+  }
+  
+  return slug;
 }
 
 // Categorias principais com suas contagens
@@ -324,7 +339,7 @@ async function popularCategorias() {
     const categoriasNivel1 = {};
 
     for (const cat of categoriasPrincipais) {
-      const slug = gerarSlug(cat.nome);
+      const slug = gerarSlugUnico(cat.nome);
       
       const novaCat = await Categoria.create({
         nome: cat.nome,
@@ -334,7 +349,11 @@ async function popularCategorias() {
         ativa: true
       });
 
-      categoriasNivel1[cat.nome] = novaCat._id;
+      categoriasNivel1[cat.nome] = {
+        id: novaCat._id,
+        slug: slug,
+        nome: cat.nome
+      };
       console.log(`  ✅ ${cat.nome.padEnd(30)} (ID: ${novaCat._id}) - ${cat.total} serviços`);
     }
 
@@ -344,9 +363,9 @@ async function popularCategorias() {
     let contagemPorCategoria = {};
 
     for (const [catNome, servicos] of Object.entries(servicosPorCategoria)) {
-      const catPaiId = categoriasNivel1[catNome];
+      const catPai = categoriasNivel1[catNome];
 
-      if (!catPaiId) {
+      if (!catPai) {
         console.warn(`  ⚠️ Categoria pai não encontrada: ${catNome} - pulando...`);
         continue;
       }
@@ -355,24 +374,29 @@ async function popularCategorias() {
       let contador = 0;
 
       for (const servico of servicos) {
-        const slug = gerarSlug(servico);
+        // Gerar slug único incluindo o nome da categoria pai
+        const slug = gerarSlugUnico(servico, catPai.nome);
         
-        await Categoria.create({
-          nome: servico,
-          slug: slug,
-          nivel: 2,
-          categoriaPai: catPaiId,
-          ordem: contador,
-          ativa: true
-        });
+        try {
+          await Categoria.create({
+            nome: servico,
+            slug: slug,
+            nivel: 2,
+            categoriaPai: catPai.id,
+            ordem: contador,
+            ativa: true
+          });
 
-        contador++;
-        totalServicos++;
-        
-        if (contador <= 5) {
-          console.log(`    ✅ ${servico}`);
-        } else if (contador === 6) {
-          console.log(`    ... e mais ${servicos.length - 5} serviços`);
+          contador++;
+          totalServicos++;
+          
+          if (contador <= 5) {
+            console.log(`    ✅ ${servico} (${slug})`);
+          } else if (contador === 6) {
+            console.log(`    ... e mais ${servicos.length - 5} serviços`);
+          }
+        } catch (error) {
+          console.error(`    ❌ Erro ao criar ${servico}: ${error.message}`);
         }
       }
       
@@ -414,13 +438,13 @@ async function popularCategorias() {
     const exemplo = await Categoria.find({ nivel: 1 }).sort({ ordem: 1 }).limit(5);
     console.log('\n📋 EXEMPLO DE CATEGORIAS PRINCIPAIS:');
     exemplo.forEach(c => {
-      console.log(`   - ${c.nome} (nível ${c.nivel}, ordem ${c.ordem})`);
+      console.log(`   - ${c.nome} (slug: ${c.slug})`);
     });
 
     const exemplo2 = await Categoria.find({ nivel: 2 }).limit(5);
     console.log('\n📋 EXEMPLO DE SERVIÇOS:');
     exemplo2.forEach(c => {
-      console.log(`   - ${c.nome}`);
+      console.log(`   - ${c.nome} (slug: ${c.slug})`);
     });
 
   } catch (error) {
