@@ -3202,7 +3202,7 @@ function CadastroPrestador(props) {
     );
 }
 
-       // ========== DASHBOARD DO PRESTADOR ==========
+      // ========== DASHBOARD DO PRESTADOR ==========
 function DashboardPrestador(props) {
     var usuario = props.usuario;
     var onSair = props.onSair;
@@ -3241,31 +3241,45 @@ function DashboardPrestador(props) {
             });
     }
 
+    // ===== FUNÇÃO CORRIGIDA DE CLIENTES FIÉIS =====
     function calcularClientesFieis() {
         if (!servicos || servicos.length === 0) return 0;
         
-        var servicosAvaliados = servicos.filter(s => s.status === 'avaliado');
-        if (servicosAvaliados.length === 0) return 0;
-        
+        // Mapa para contar quantas vezes cada cliente contratou
         var clientesMap = {};
         
-        servicosAvaliados.forEach(function(servico) {
+        // Considerar TODOS os serviços (realizados ou não, mas com cliente identificado)
+        servicos.forEach(function(servico) {
+            // Criar uma chave única para o cliente (nome + whatsapp)
             var chave = servico.clienteNome + '-' + servico.clienteWhatsApp;
+            
             if (!clientesMap[chave]) {
-                clientesMap[chave] = [];
+                clientesMap[chave] = {
+                    totalServicos: 0,
+                    servicosAvaliados: 0
+                };
             }
-            clientesMap[chave].push(servico);
+            
+            // Incrementar contador de serviços
+            clientesMap[chave].totalServicos++;
+            
+            // Verificar se o serviço foi avaliado
+            if (servico.status === 'avaliado' && servico.avaliacao) {
+                clientesMap[chave].servicosAvaliados++;
+            }
         });
         
         var totalClientes = Object.keys(clientesMap).length;
         var clientesRetornaram = 0;
         
+        // Um cliente é considerado "fiel" se contratou mais de 1 vez
         for (var chave in clientesMap) {
-            if (clientesMap[chave].length > 1) {
+            if (clientesMap[chave].totalServicos > 1) {
                 clientesRetornaram++;
             }
         }
         
+        // Calcular percentual baseado no total de clientes únicos
         return totalClientes > 0 ? Math.round((clientesRetornaram / totalClientes) * 100) : 0;
     }
 
@@ -3276,7 +3290,7 @@ function DashboardPrestador(props) {
         totalServicos: servicos.length,
         aguardando: servicos.filter(s => s.status === 'aguardando').length,
         expirados: servicos.filter(s => s.status === 'expirado').length,
-        clientesFieis: calcularClientesFieis(),
+        clientesFieis: calcularClientesFieis(), // AGORA USANDO A FUNÇÃO CORRIGIDA
         tempoResposta: prestador?.tempoResposta || '30',
         mediaEstrelas: prestador?.estrelas || 0,
         totalAvaliacoes: prestador?.avaliacoes || 0,
@@ -3441,7 +3455,7 @@ function DashboardPrestador(props) {
                 )
             ),
 
-            // Curtidas (NOVO)
+            // Curtidas
             React.createElement('div', { className: "bg-white rounded-xl border border-[#c0dfc0] p-3 md:p-4 hover:shadow-md transition" },
                 React.createElement('div', { className: "flex items-center gap-2 text-red-500 mb-2" },
                     React.createElement('svg', { className: "w-4 h-4 md:w-5 md:h-5", fill: "currentColor", viewBox: "0 0 20 20" },
@@ -3455,7 +3469,7 @@ function DashboardPrestador(props) {
                 )
             ),
 
-            // Clientes Fiéis
+            // Clientes Fiéis (CORRIGIDO)
             React.createElement('div', { className: "bg-white rounded-xl border border-[#c0dfc0] p-3 md:p-4 hover:shadow-md transition" },
                 React.createElement('div', { className: "flex items-center gap-2 text-blue-500 mb-2" },
                     React.createElement('svg', { className: "w-4 h-4 md:w-5 md:h-5", fill: "currentColor", viewBox: "0 0 20 20" },
@@ -3464,7 +3478,9 @@ function DashboardPrestador(props) {
                     React.createElement('span', { className: "text-xs md:text-sm font-medium text-[#3d7a3d]" }, "Fiéis")
                 ),
                 React.createElement('div', { className: "text-lg md:text-2xl font-bold text-slate-900" }, estatisticas.clientesFieis + "%"),
-                React.createElement('div', { className: "text-[10px] md:text-xs text-[#4a8a4a] mt-1" }, "clientes que retornaram")
+                React.createElement('div', { className: "text-[10px] md:text-xs text-[#4a8a4a] mt-1" }, 
+                    estatisticas.clientesFieis === 100 ? "todos os clientes voltaram" : "clientes que retornaram"
+                )
             ),
 
             // Aguardando Avaliação
