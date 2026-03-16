@@ -79,6 +79,8 @@ export const prestadoresAPI = {
     const params = new URLSearchParams();
     if (filtros.cidade) params.append('cidade', filtros.cidade);
     if (filtros.categoria) params.append('categoria', filtros.categoria);
+    if (filtros.categoriaPrincipal) params.append('categoriaPrincipal', filtros.categoriaPrincipal);
+    if (filtros.servico) params.append('servico', filtros.servico);
     if (filtros.q) params.append('q', filtros.q);
     
     return request(`/prestadores/busca?${params}`);
@@ -90,6 +92,13 @@ export const prestadoresAPI = {
    * @returns {Promise} Dados do prestador
    */
   getBySlug: (slug) => request(`/prestadores/${slug}`),
+
+  /**
+   * Buscar prestador por ID
+   * @param {string} id - ID do prestador
+   * @returns {Promise} Dados do prestador
+   */
+  getById: (id) => request(`/prestadores/id/${id}`),
 
   /**
    * Verificar se CNPJ já está cadastrado
@@ -211,6 +220,70 @@ export const servicosAPI = {
    */
   buscarPorPrestador: (prestadorId, limit = 5) => 
     request(`/servicos/prestador/${prestadorId}?limit=${limit}`)
+};
+
+// ========== API DE CATEGORIAS ==========
+export const categoriasAPI = {
+  /**
+   * Listar categorias principais
+   * @returns {Promise} Lista de categorias
+   */
+  listarPrincipais: () => request('/categorias/principais'),
+
+  /**
+   * Buscar categoria por ID
+   * @param {string} id - ID da categoria
+   * @returns {Promise} Dados da categoria
+   */
+  getById: (id) => request(`/categorias/${id}`),
+
+  /**
+   * Listar serviços de uma categoria
+   * @param {string} categoriaId - ID da categoria
+   * @returns {Promise} Lista de serviços
+   */
+  listarServicos: (categoriaId) => request(`/categorias/${categoriaId}/servicos`)
+};
+
+// ========== API DE FAVORITOS (CURTIDAS) ==========
+export const favoritosAPI = {
+  /**
+   * Curtir um prestador
+   * @param {string} prestadorId - ID do prestador
+   * @returns {Promise} Resultado da operação
+   */
+  curtir: (prestadorId) => request(`/favoritos/${prestadorId}`, {
+    method: 'POST'
+  }),
+
+  /**
+   * Descurtir um prestador
+   * @param {string} prestadorId - ID do prestador
+   * @returns {Promise} Resultado da operação
+   */
+  descurtir: (prestadorId) => request(`/favoritos/${prestadorId}`, {
+    method: 'DELETE'
+  }),
+
+  /**
+   * Verificar se o cliente curtiu um prestador
+   * @param {string} prestadorId - ID do prestador
+   * @returns {Promise} Status da curtida
+   */
+  check: (prestadorId) => request(`/favoritos/${prestadorId}/check`),
+
+  /**
+   * Listar todos os prestadores favoritos do cliente
+   * @returns {Promise} Lista de prestadores favoritos
+   */
+  meusFavoritos: () => request('/favoritos/meus-favoritos'),
+
+  /**
+   * Obter total de curtidas de um prestador (público)
+   * @param {string} prestadorId - ID do prestador
+   * @returns {Promise} Total de curtidas
+   */
+  totalCurtidas: (prestadorId) => request(`/favoritos/prestador/${prestadorId}/total`)
 };
 
 // ========== UTILITÁRIOS ==========
