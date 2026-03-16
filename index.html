@@ -803,7 +803,7 @@ function NovoServico(props) {
     );
 }
 
-       // ========== COMPONENTE DE LISTAGEM DE SERVIÇOS ==========
+      // ========== COMPONENTE DE LISTAGEM DE SERVIÇOS ==========
 function MeusServicos() {
     var [servicos, setServicos] = useState([]);
     var [loading, setLoading] = useState(true);
@@ -963,20 +963,37 @@ function MeusServicos() {
                     };
                     var status = statusConfig[s.status] || statusConfig.aguardando;
 
-                    // CORREÇÃO DA DATA AQUI
+                    // ===== CORREÇÃO DA DATA - VERSÃO ROBUSTA =====
                     var dataRealizacao = '';
                     if (s.dataRealizacao) {
-                        // Se for string no formato YYYY-MM-DD, converter manualmente
-                        if (typeof s.dataRealizacao === 'string' && s.dataRealizacao.includes('-')) {
-                            var partes = s.dataRealizacao.split('-');
-                            if (partes.length === 3) {
-                                // Formatar como DD/MM/YYYY
-                                dataRealizacao = partes[2] + '/' + partes[1] + '/' + partes[0];
+                        try {
+                            if (typeof s.dataRealizacao === 'string') {
+                                var dataStr = s.dataRealizacao;
+                                
+                                // Se vier no formato ISO com T (ex: 2026-03-16T00:00:00.000Z)
+                                if (dataStr.includes('T')) {
+                                    dataStr = dataStr.split('T')[0];
+                                }
+                                
+                                // Agora deve ter YYYY-MM-DD
+                                if (dataStr.includes('-')) {
+                                    var partes = dataStr.split('-');
+                                    if (partes.length === 3) {
+                                        // Reorganizar para DD/MM/YYYY
+                                        dataRealizacao = partes[2] + '/' + partes[1] + '/' + partes[0];
+                                    } else {
+                                        dataRealizacao = dataStr;
+                                    }
+                                } else {
+                                    dataRealizacao = dataStr;
+                                }
                             } else {
+                                // Se não for string, tenta converter
                                 dataRealizacao = new Date(s.dataRealizacao).toLocaleDateString('pt-BR');
                             }
-                        } else {
-                            dataRealizacao = new Date(s.dataRealizacao).toLocaleDateString('pt-BR');
+                        } catch (e) {
+                            console.error('Erro ao formatar data:', e);
+                            dataRealizacao = 'Data inválida';
                         }
                     }
 
