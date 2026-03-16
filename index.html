@@ -759,7 +759,7 @@ function NovoServico(props) {
                         value: formData.titulo,
                         onChange: handleChange,
                         required: true,
-                        maxLength: 20, // ✅ LIMITE DE 20 CARACTERES ADICIONADO
+                        maxLength: 20, // ✅ LIMITE DE 20 CARACTERES
                         className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 text-sm"
                     })
                 ),
@@ -792,7 +792,7 @@ function NovoServico(props) {
                 React.createElement('button', {
                     type: "submit",
                     disabled: loading,
-                    className: "flex-1 px-4 md:px-6 py-2.5 md:py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-xl hover:shadow-lg disabled:opacity-50 transition text-sm md:text-base"
+                    className: "flex-1 px-4 md:px-6 py-2.5 md:py-3 bg-gradient-to-r from-[#3d7a3d] to-[#60a060] text-white font-semibold rounded-xl hover:shadow-lg disabled:opacity-50 transition text-sm md:text-base"
                 }, loading ? 'Cadastrando...' : 'Cadastrar Serviço'),
                 React.createElement('button', {
                     type: "button",
