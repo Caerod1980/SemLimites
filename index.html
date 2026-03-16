@@ -576,7 +576,7 @@
             );
         }
 
-       // ========== COMPONENTE DE CRIAÇÃO DE SERVIÇO ==========
+     // ========== COMPONENTE DE CRIAÇÃO DE SERVIÇO ==========
 function NovoServico(props) {
     var onSucesso = props.onSucesso;
     var onCancelar = props.onCancelar;
@@ -759,6 +759,7 @@ function NovoServico(props) {
                         value: formData.titulo,
                         onChange: handleChange,
                         required: true,
+                        maxLength: 20, // ✅ LIMITE DE 20 CARACTERES ADICIONADO
                         className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 text-sm"
                     })
                 ),
@@ -802,7 +803,6 @@ function NovoServico(props) {
         )
     );
 }
-
       // ========== COMPONENTE DE LISTAGEM DE SERVIÇOS ==========
 function MeusServicos() {
     var [servicos, setServicos] = useState([]);
