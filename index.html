@@ -2163,167 +2163,167 @@ function MeusServicos() {
         }
 
         // ========== TELA DE LOGIN ==========
-        function Login(props) {
-            var onLoginSuccess = props.onLoginSuccess;
-            var onVoltar = props.onVoltar;
-            
-            var [email, setEmail] = useState('');
-            var [senha, setSenha] = useState('');
-            var [tipo, setTipo] = useState('cliente');
-            var [modo, setModo] = useState('login');
-            var [loading, setLoading] = useState(false);
-            var [erro, setErro] = useState('');
+function Login(props) {
+    var onLoginSuccess = props.onLoginSuccess;
+    var onVoltar = props.onVoltar;
+    
+    var [email, setEmail] = useState('');
+    var [senha, setSenha] = useState('');
+    var [tipo, setTipo] = useState('cliente');
+    var [modo, setModo] = useState('login');
+    var [loading, setLoading] = useState(false);
+    var [erro, setErro] = useState('');
 
-            function handleSubmit(e) {
-                e.preventDefault();
-                setLoading(true);
-                setErro('');
+    function handleSubmit(e) {
+        e.preventDefault();
+        setLoading(true);
+        setErro('');
 
-                var url = API_URL;
-                var body = {};
+        var url = API_URL;
+        var body = {};
 
-                if (modo === 'login') {
-                    url = url + '/auth/login';
-                    body = { email: email, senha: senha, tipo: tipo };
-                } else {
-                    url = url + '/auth/register';
-                    body = { email: email, senha: senha, tipo: tipo, nome: email.split('@')[0] };
+        if (modo === 'login') {
+            url = url + '/auth/login';
+            body = { email: email, senha: senha, tipo: tipo };
+        } else {
+            url = url + '/auth/register';
+            body = { email: email, senha: senha, tipo: tipo, nome: email.split('@')[0] };
+        }
+
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.error) {
+                    throw new Error(data.error);
                 }
 
-                fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                })
-                    .then(function(response) { return response.json(); })
-                    .then(function(data) {
-                        if (data.error) {
-                            throw new Error(data.error);
-                        }
+                if (modo === 'login') {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    var prestadorParaCurtir = sessionStorage.getItem('curtirAposLogin');
+                    if (prestadorParaCurtir && data.user.tipo === 'cliente') {
+                        sessionStorage.removeItem('curtirAposLogin');
+                        onLoginSuccess(data.user, prestadorParaCurtir);
+                    } else {
+                        onLoginSuccess(data.user);
+                    }
+                } else {
+                    alert('Cadastro realizado! Faça login.');
+                    setModo('login');
+                }
+                setLoading(false);
+            })
+            .catch(function(error) {
+                setErro(error.message);
+                setLoading(false);
+            });
+    }
 
-                        if (modo === 'login') {
-                            localStorage.setItem('token', data.token);
-                            localStorage.setItem('user', JSON.stringify(data.user));
-                            
-                            var prestadorParaCurtir = sessionStorage.getItem('curtirAposLogin');
-                            if (prestadorParaCurtir && data.user.tipo === 'cliente') {
-                                sessionStorage.removeItem('curtirAposLogin');
-                                onLoginSuccess(data.user, prestadorParaCurtir);
-                            } else {
-                                onLoginSuccess(data.user);
-                            }
-                        } else {
-                            alert('Cadastro realizado! Faça login.');
-                            setModo('login');
-                        }
-                        setLoading(false);
-                    })
-                    .catch(function(error) {
-                        setErro(error.message);
-                        setLoading(false);
-                    });
-            }
+    var radioButtons = [];
+    var tipos = ['cliente', 'prestador'];
+    for (var i = 0; i < tipos.length; i++) {
+        var t = tipos[i];
+        var radio = React.createElement('label', { key: t, className: "flex items-center gap-2" },
+            React.createElement('input', {
+                type: "radio",
+                value: t,
+                checked: tipo === t,
+                onChange: function() { setTipo(t); },
+                className: "w-4 h-4 text-[#3d7a3d]"
+            }),
+            React.createElement('span', { className: "text-xs md:text-sm" }, 
+                t === 'cliente' ? 'Cliente' : 'Prestador'
+            )
+        );
+        radioButtons.push(radio);
+    }
 
-            var radioButtons = [];
-            var tipos = ['cliente', 'prestador'];
-            for (var i = 0; i < tipos.length; i++) {
-                var t = tipos[i];
-                var radio = React.createElement('label', { key: t, className: "flex items-center gap-2" },
+    var erroElement = null;
+    if (erro) {
+        erroElement = React.createElement('div', { className: "mb-4 p-3 rounded-lg bg-red-50 border border-red-200" },
+            React.createElement('p', { className: "text-sm text-red-600" }, erro)
+        );
+    }
+
+    var botaoTexto = modo === 'login' ? 'Entrar' : 'Cadastrar';
+    if (loading) {
+        botaoTexto = 'Processando...';
+    }
+
+    var linkTexto = modo === 'login' ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Faça login';
+
+    return React.createElement('div', { className: "max-w-md mx-auto px-4 py-8 md:py-12" },
+        React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-slate-200 p-6 md:p-8 shadow-sm" },
+            React.createElement('div', { className: "flex items-center justify-between mb-6" },
+                React.createElement('h1', { className: "text-xl md:text-2xl font-bold" }, 
+                    modo === 'login' ? 'Entrar' : 'Criar conta'
+                ),
+                React.createElement('button', { 
+                    onClick: onVoltar, 
+                    className: "text-xs md:text-sm text-slate-500 hover:text-[#3d7a3d]" 
+                }, "← Voltar")
+            ),
+
+            erroElement,
+
+            React.createElement('form', { onSubmit: handleSubmit, className: "space-y-4" },
+                React.createElement('div', null,
+                    React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Tipo de conta"),
+                    React.createElement('div', { className: "flex gap-4" }, radioButtons)
+                ),
+
+                React.createElement('div', null,
+                    React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "E-mail"),
                     React.createElement('input', {
-                        type: "radio",
-                        value: t,
-                        checked: tipo === t,
-                        onChange: function() { setTipo(t); },
-                        className: "w-4 h-4 text-indigo-600"
+                        type: "email",
+                        value: email,
+                        onChange: function(e) { setEmail(e.target.value); },
+                        className: "w-full px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-slate-200 text-sm focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all",
+                        required: true
+                    })
+                ),
+
+                React.createElement('div', null,
+                    React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Senha"),
+                    React.createElement('input', {
+                        type: "password",
+                        value: senha,
+                        onChange: function(e) { setSenha(e.target.value); },
+                        className: "w-full px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-slate-200 text-sm focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all",
+                        required: true,
+                        minLength: 6
                     }),
-                    React.createElement('span', { className: "text-xs md:text-sm" }, 
-                        t === 'cliente' ? 'Cliente' : 'Prestador'
-                    )
-                );
-                radioButtons.push(radio);
-            }
-
-            var erroElement = null;
-            if (erro) {
-                erroElement = React.createElement('div', { className: "mb-4 p-3 rounded-lg bg-red-50 border border-red-200" },
-                    React.createElement('p', { className: "text-sm text-red-600" }, erro)
-                );
-            }
-
-            var botaoTexto = modo === 'login' ? 'Entrar' : 'Cadastrar';
-            if (loading) {
-                botaoTexto = 'Processando...';
-            }
-
-            var linkTexto = modo === 'login' ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Faça login';
-
-            return React.createElement('div', { className: "max-w-md mx-auto px-4 py-8 md:py-12" },
-                React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-slate-200 p-6 md:p-8 shadow-sm" },
-                    React.createElement('div', { className: "flex items-center justify-between mb-6" },
-                        React.createElement('h1', { className: "text-xl md:text-2xl font-bold" }, 
-                            modo === 'login' ? 'Entrar' : 'Criar conta'
-                        ),
-                        React.createElement('button', { 
-                            onClick: onVoltar, 
-                            className: "text-xs md:text-sm text-slate-500 hover:text-indigo-600" 
-                        }, "← Voltar")
-                    ),
-
-                    erroElement,
-
-                    React.createElement('form', { onSubmit: handleSubmit, className: "space-y-4" },
-                        React.createElement('div', null,
-                            React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Tipo de conta"),
-                            React.createElement('div', { className: "flex gap-4" }, radioButtons)
-                        ),
-
-                        React.createElement('div', null,
-                            React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "E-mail"),
-                            React.createElement('input', {
-                                type: "email",
-                                value: email,
-                                onChange: function(e) { setEmail(e.target.value); },
-                                className: "w-full px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-slate-200 text-sm",
-                                required: true
-                            })
-                        ),
-
-                        React.createElement('div', null,
-                            React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Senha"),
-                            React.createElement('input', {
-                                type: "password",
-                                value: senha,
-                                onChange: function(e) { setSenha(e.target.value); },
-                                className: "w-full px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-slate-200 text-sm",
-                                required: true,
-                                minLength: 6
-                            }),
-                            React.createElement('div', { className: "text-right mt-1" },
-                                React.createElement('button', {
-                                    type: "button",
-                                    onClick: function() { navigate('/esqueci-senha'); },
-                                    className: "text-xs text-[#FFB347] hover:text-[#F09030] underline"
-                                }, "Esqueceu a senha?")
-                            )
-                        ),
-
+                    React.createElement('div', { className: "text-right mt-1" },
                         React.createElement('button', {
-                            type: "submit",
-                            disabled: loading,
-                            className: "w-full px-4 md:px-6 py-2.5 md:py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold disabled:opacity-50 text-sm md:text-base"
-                        }, botaoTexto),
-
-                        React.createElement('div', { className: "text-center mt-4" },
-                            React.createElement('button', {
-                                type: "button",
-                                onClick: function() { setModo(modo === 'login' ? 'registro' : 'login'); },
-                                className: "text-xs md:text-sm text-indigo-600 hover:text-indigo-800"
-                            }, linkTexto)
-                        )
+                            type: "button",
+                            onClick: function() { navigate('/esqueci-senha'); },
+                            className: "text-xs text-[#FFB347] hover:text-[#F09030] underline"
+                        }, "Esqueceu a senha?")
                     )
+                ),
+
+                React.createElement('button', {
+                    type: "submit",
+                    disabled: loading,
+                    className: "w-full px-4 md:px-6 py-2.5 md:py-3 rounded-xl bg-gradient-to-r from-[#3d7a3d] to-[#60a060] text-white font-semibold disabled:opacity-50 hover:shadow-lg transition text-sm md:text-base"
+                }, botaoTexto),
+
+                React.createElement('div', { className: "text-center mt-4" },
+                    React.createElement('button', {
+                        type: "button",
+                        onClick: function() { setModo(modo === 'login' ? 'registro' : 'login'); },
+                        className: "text-xs md:text-sm text-[#3d7a3d] hover:text-[#2d5a2d]"
+                    }, linkTexto)
                 )
-            );
-        }
+            )
+        )
+    );
+}
 
         // ========== TELA ESQUECI SENHA ==========
         function EsqueciSenha(props) {
