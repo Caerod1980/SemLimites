@@ -759,7 +759,7 @@ function NovoServico(props) {
                         value: formData.titulo,
                         onChange: handleChange,
                         required: true,
-                        maxLength: 20, // ✅ LIMITE DE 20 CARACTERES
+                        maxLength: 20,
                         className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 text-sm"
                     })
                 ),
@@ -803,6 +803,7 @@ function NovoServico(props) {
         )
     );
 }
+
      // ========== COMPONENTE DE LISTAGEM DE SERVIÇOS ==========
 function MeusServicos() {
     var [servicos, setServicos] = useState([]);
@@ -963,28 +964,21 @@ function MeusServicos() {
                     };
                     var status = statusConfig[s.status] || statusConfig.aguardando;
 
-                    // ===== CORREÇÃO DEFINITIVA DA DATA =====
                     var dataRealizacao = 'Data não informada';
                     if (s.dataRealizacao) {
                         try {
-                            // Converter para string
                             var dataStr = String(s.dataRealizacao);
                             
-                            // CASO 1: Formato "16T00:00:00.000Z/03/2026" (problema atual)
                             if (dataStr.includes('T') && dataStr.includes('/')) {
                                 var partesBarra = dataStr.split('/');
                                 if (partesBarra.length === 2) {
-                                    var ano = partesBarra[1]; // "2026"
-                                    var primeiraParte = partesBarra[0]; // "16T00:00:00.000Z"
+                                    var ano = partesBarra[1];
+                                    var primeiraParte = partesBarra[0];
                                     
                                     if (primeiraParte.includes('T')) {
-                                        var dia = primeiraParte.split('T')[0]; // "16"
-                                        // Extrair mês da string original (deve estar em algum lugar)
-                                        // Como não temos o mês, vamos tentar obter do objeto dataRealizacao original
-                                        // Se falhar, usa o mês atual
-                                        var mes = '03'; // Mês fixo para teste
+                                        var dia = primeiraParte.split('T')[0];
+                                        var mes = '03';
                                         
-                                        // Tentar extrair mês de outra forma
                                         if (s.dataRealizacaoOriginal && s.dataRealizacaoOriginal.includes('-')) {
                                             var partesOriginal = s.dataRealizacaoOriginal.split('-');
                                             if (partesOriginal.length >= 2) {
@@ -996,7 +990,6 @@ function MeusServicos() {
                                     }
                                 }
                             }
-                            // CASO 2: Formato ISO "2026-03-16T00:00:00.000Z"
                             else if (dataStr.includes('T')) {
                                 var parteData = dataStr.split('T')[0];
                                 var partes = parteData.split('-');
@@ -1004,18 +997,15 @@ function MeusServicos() {
                                     dataRealizacao = partes[2] + '/' + partes[1] + '/' + partes[0];
                                 }
                             }
-                            // CASO 3: Formato "2026-03-16"
                             else if (dataStr.includes('-')) {
                                 var partes = dataStr.split('-');
                                 if (partes.length === 3) {
                                     dataRealizacao = partes[2] + '/' + partes[1] + '/' + partes[0];
                                 }
                             }
-                            // CASO 4: Formato "16/03/2026" (já formatado)
                             else if (dataStr.includes('/')) {
                                 dataRealizacao = dataStr;
                             }
-                            // CASO 5: Qualquer outro formato
                             else {
                                 dataRealizacao = dataStr;
                             }
@@ -1979,7 +1969,7 @@ function MeusServicos() {
                         React.createElement('p', { className: "text-sm md:text-base text-slate-600 mb-6" }, erro || 'Este link de avaliação não é válido ou já foi utilizado.'),
                         React.createElement('button', {
                             onClick: function() { navigate('/'); },
-                            className: "px-4 md:px-6 py-2.5 md:py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 text-sm md:text-base w-full sm:w-auto"
+                            className: "px-4 md:px-6 py-2.5 md:py-3 bg-gradient-to-r from-[#3d7a3d] to-[#60a060] text-white rounded-xl hover:shadow-lg transition text-sm md:text-base w-full sm:w-auto"
                         }, "Ir para a página inicial")
                     )
                 );
@@ -2621,6 +2611,9 @@ function Login(props) {
             var [loading, setLoading] = useState(false);
             var [erro, setErro] = useState('');
             var [cpfValido, setCpfValido] = useState(true);
+            
+            // ===== NOVO ESTADO PARA CHECKBOX DE TERMOS =====
+            var [aceitouTermos, setAceitouTermos] = useState(false);
 
             useEffect(function() {
                 fetch(API_URL + '/categorias/principais')
@@ -2764,6 +2757,13 @@ function Login(props) {
 
             function handleSubmit(e) {
                 e.preventDefault();
+                
+                // ===== VERIFICAÇÃO DOS TERMOS =====
+                if (!aceitouTermos) {
+                    setErro('Você precisa aceitar os Termos de Uso para continuar.');
+                    return;
+                }
+                
                 setLoading(true);
                 setErro('');
 
@@ -2937,7 +2937,7 @@ function Login(props) {
                     type: "button",
                     onClick: handleVerificarCNPJ,
                     disabled: disabled,
-                    className: "px-3 md:px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs md:text-sm disabled:opacity-50 whitespace-nowrap"
+                    className: "px-3 md:px-4 py-2 bg-[#3d7a3d] text-white rounded-xl text-xs md:text-sm disabled:opacity-50 whitespace-nowrap hover:bg-[#2d5a2d] transition"
                 }, loading ? '...' : 'Verificar');
             }
 
@@ -3208,9 +3208,32 @@ function Login(props) {
                             })
                         ),
 
+                        // ===== CHECKBOX DE ACEITAÇÃO DOS TERMOS =====
+                        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0] mt-4" },
+                            React.createElement('label', { className: "flex items-start gap-3 cursor-pointer" },
+                                React.createElement('input', {
+                                    type: "checkbox",
+                                    checked: aceitouTermos,
+                                    onChange: function(e) { setAceitouTermos(e.target.checked); },
+                                    className: "w-4 h-4 mt-1 text-[#3d7a3d] rounded focus:ring-[#60a060]"
+                                }),
+                                React.createElement('span', { className: "text-xs md:text-sm text-slate-700 leading-relaxed" },
+                                    "☑ Declaro que sou responsável pelos serviços oferecidos e que a plataforma atua apenas como meio de divulgação e contato entre clientes e prestadores. ",
+                                    React.createElement('button', {
+                                        type: "button",
+                                        onClick: function(e) { 
+                                            e.preventDefault();
+                                            navigate('/termos'); 
+                                        },
+                                        className: "text-[#3d7a3d] underline hover:text-[#2d5a2d] font-medium"
+                                    }, "Li e concordo com os Termos de Uso")
+                                )
+                            )
+                        ),
+
                         React.createElement('button', {
                             type: "submit",
-                            disabled: loading,
+                            disabled: loading || !aceitouTermos,
                             className: "w-full px-4 md:px-6 py-3 md:py-4 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white font-semibold rounded-xl disabled:opacity-50 hover:shadow-md transition text-sm md:text-base"
                         }, loading ? 'Cadastrando...' : '✅ Cadastrar Prestador')
                     )
@@ -3218,7 +3241,7 @@ function Login(props) {
             );
         }
 
-        // ========== DASHBOARD DO PRESTADOR COM FUNÇÃO CORRIGIDA DE CLIENTES FIÉIS ==========
+        // ========== DASHBOARD DO PRESTADOR ==========
         function DashboardPrestador(props) {
             var usuario = props.usuario;
             var onSair = props.onSair;
@@ -3257,7 +3280,6 @@ function Login(props) {
                     });
             }
 
-            // FUNÇÃO CORRIGIDA DE CLIENTES FIÉIS
             function calcularClientesFieis() {
                 if (!servicos || servicos.length === 0) return 0;
                 
@@ -3684,231 +3706,227 @@ function Login(props) {
             );
         }
 
-       // ========== DASHBOARD DO CLIENTE COM EXCLUSÃO DE PERFIL ==========
-function DashboardCliente(props) {
-    var usuario = props.usuario;
-    var onSair = props.onSair;
-    var onVerPerfil = props.onVerPerfil;
-    
-    var [favoritos, setFavoritos] = useState([]);
-    var [loading, setLoading] = useState(true);
-    var [erro, setErro] = useState('');
-    var [excluindo, setExcluindo] = useState(false);
+        // ========== DASHBOARD DO CLIENTE ==========
+        function DashboardCliente(props) {
+            var usuario = props.usuario;
+            var onSair = props.onSair;
+            var onVerPerfil = props.onVerPerfil;
+            
+            var [favoritos, setFavoritos] = useState([]);
+            var [loading, setLoading] = useState(true);
+            var [erro, setErro] = useState('');
+            var [excluindo, setExcluindo] = useState(false);
 
-    useEffect(function() {
-        carregarFavoritos();
-    }, []);
+            useEffect(function() {
+                carregarFavoritos();
+            }, []);
 
-    function carregarFavoritos() {
-        setLoading(true);
-        
-        fetch(API_URL + '/favoritos/meus-favoritos', {
-            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
-        })
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
-                if (data.prestadores) {
-                    setFavoritos(data.prestadores);
-                }
-                setLoading(false);
-            })
-            .catch(function(error) {
-                console.error('Erro ao carregar favoritos:', error);
-                setErro('Erro ao carregar seus prestadores favoritos');
-                setLoading(false);
-            });
-    }
-
-    function handleDescurtir(prestadorId) {
-        if (!window.confirm('Remover este prestador dos seus favoritos?')) return;
-
-        fetch(API_URL + '/favoritos/' + prestadorId, {
-            method: 'DELETE',
-            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
-        })
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
-                if (data.success) {
-                    carregarFavoritos();
-                }
-            })
-            .catch(function(error) {
-                console.error('Erro ao descurtir:', error);
-                alert('Erro ao remover favorito');
-            });
-    }
-
-    // ===== FUNÇÃO DE EXCLUSÃO DE PERFIL DO CLIENTE =====
-    function handleExcluirPerfil() {
-        var confirmacao1 = window.confirm(
-            '⚠️ ATENÇÃO! Esta ação é PERMANENTE e IRREVERSÍVEL!\n\n' +
-            'Todo o seu histórico de favoritos, curtidas e dados serão excluídos do Sem Limites.\n\n' +
-            'Deseja continuar?'
-        );
-        if (!confirmacao1) return;
-
-        var confirmacao2 = window.prompt('Para confirmar a exclusão PERMANENTE, digite o seu E-MAIL completo:');
-        if (!confirmacao2) {
-            alert('Operação cancelada.');
-            return;
-        }
-        
-        if (confirmacao2.trim().toLowerCase() !== usuario?.email?.toLowerCase()) {
-            alert('❌ E-mail incorreto. Operação cancelada.');
-            return;
-        }
-
-        var confirmacao3 = window.prompt('Digite "EXCLUIR PERMANENTEMENTE" para confirmação final:');
-        if (confirmacao3 !== 'EXCLUIR PERMANENTEMENTE') {
-            alert('❌ Código de confirmação incorreto. Operação cancelada.');
-            return;
-        }
-
-        setExcluindo(true);
-
-        fetch(API_URL + '/usuarios/perfil', {
-            method: 'DELETE',
-            headers: {
-                'Authorization': 'Bearer ' + localStorage.getItem('token'),
-                'Content-Type': 'application/json'
+            function carregarFavoritos() {
+                setLoading(true);
+                
+                fetch(API_URL + '/favoritos/meus-favoritos', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                })
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        if (data.prestadores) {
+                            setFavoritos(data.prestadores);
+                        }
+                        setLoading(false);
+                    })
+                    .catch(function(error) {
+                        console.error('Erro ao carregar favoritos:', error);
+                        setErro('Erro ao carregar seus prestadores favoritos');
+                        setLoading(false);
+                    });
             }
-        })
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
-                if (data.message || data.success) {
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                    alert('✅ Perfil excluído permanentemente com sucesso.\n\nObrigado por utilizar o Sem Limites!');
-                    onSair();
-                } else {
-                    throw new Error(data.error || 'Erro ao excluir perfil');
+
+            function handleDescurtir(prestadorId) {
+                if (!window.confirm('Remover este prestador dos seus favoritos?')) return;
+
+                fetch(API_URL + '/favoritos/' + prestadorId, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                })
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        if (data.success) {
+                            carregarFavoritos();
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Erro ao descurtir:', error);
+                        alert('Erro ao remover favorito');
+                    });
+            }
+
+            function handleExcluirPerfil() {
+                var confirmacao1 = window.confirm(
+                    '⚠️ ATENÇÃO! Esta ação é PERMANENTE e IRREVERSÍVEL!\n\n' +
+                    'Todo o seu histórico de favoritos, curtidas e dados serão excluídos do Sem Limites.\n\n' +
+                    'Deseja continuar?'
+                );
+                if (!confirmacao1) return;
+
+                var confirmacao2 = window.prompt('Para confirmar a exclusão PERMANENTE, digite o seu E-MAIL completo:');
+                if (!confirmacao2) {
+                    alert('Operação cancelada.');
+                    return;
                 }
-            })
-            .catch(function(error) {
-                console.error('❌ Erro ao excluir:', error);
-                alert('Erro ao excluir perfil. Tente novamente.');
-                setExcluindo(false);
-            });
-    }
+                
+                if (confirmacao2.trim().toLowerCase() !== usuario?.email?.toLowerCase()) {
+                    alert('❌ E-mail incorreto. Operação cancelada.');
+                    return;
+                }
 
-    if (loading) {
-        return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-12 text-center" },
-            React.createElement('div', { className: "w-12 h-12 md:w-16 md:h-16 border-4 border-[#FFD966] border-t-[#FFB347] rounded-full animate-spin mx-auto mb-4" }),
-            React.createElement('p', { className: "text-sm md:text-base text-[#4a8a4a]" }, "Carregando seus favoritos...")
-        );
-    }
+                var confirmacao3 = window.prompt('Digite "EXCLUIR PERMANENTEMENTE" para confirmação final:');
+                if (confirmacao3 !== 'EXCLUIR PERMANENTEMENTE') {
+                    alert('❌ Código de confirmação incorreto. Operação cancelada.');
+                    return;
+                }
 
-    return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8" },
-        // ZONA DE PERIGO - Exclusão de conta
-        React.createElement('div', { className: "mb-6" },
-            React.createElement('div', { className: "bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border border-red-200 p-4" },
-                React.createElement('div', { className: "flex flex-col sm:flex-row items-center justify-between gap-4" },
-                    React.createElement('div', { className: "flex items-center gap-3" },
-                        React.createElement('div', { className: "bg-red-100 rounded-full p-2" },
-                            React.createElement('svg', { className: "w-5 h-5 text-red-600", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" })
-                            )
-                        ),
-                        React.createElement('span', { className: "text-sm font-medium text-red-800" }, "Zona de Perigo")
-                    ),
-                    React.createElement('button', {
-                        onClick: handleExcluirPerfil,
-                        disabled: excluindo,
-                        className: "px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition disabled:opacity-50 w-full sm:w-auto justify-center"
-                    },
-                        excluindo ? 'Excluindo...' : 'Excluir minha conta permanentemente'
-                    )
-                )
-            )
-        ),
+                setExcluindo(true);
 
-        // Header de boas-vindas
-        React.createElement('div', { 
-            className: "bg-gradient-to-r from-[#f0f7f0] to-[#fff8e7] rounded-2xl md:rounded-3xl p-6 md:p-8 mb-8 border border-[#c0dfc0]" 
-        },
-            React.createElement('div', { className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4" },
-                React.createElement('div', null,
-                    React.createElement('h1', { className: "text-xl md:text-3xl font-bold mb-2 text-[#3d7a3d]" },
-                        "Olá, " + (usuario?.email?.split('@')[0] || 'Cliente') + "!"
-                    ),
-                    React.createElement('p', { className: "text-sm md:text-base text-[#4a8a4a]" }, 
-                        "Aqui estão seus prestadores favoritos"
-                    )
-                ),
-                React.createElement('button', {
-                    onClick: onSair,
-                    className: "px-3 md:px-4 py-2 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white rounded-xl hover:shadow-md flex items-center gap-2 text-sm md:text-base"
-                },
-                    React.createElement('svg', { className: "w-4 h-4 md:w-5 md:h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" })
-                    ),
-                    "Sair"
-                )
-            )
-        ),
+                fetch(API_URL + '/usuarios/perfil', {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Content-Type': 'application/json'
+                    }
+                })
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        if (data.message || data.success) {
+                            localStorage.removeItem('token');
+                            localStorage.removeItem('user');
+                            alert('✅ Perfil excluído permanentemente com sucesso.\n\nObrigado por utilizar o Sem Limites!');
+                            onSair();
+                        } else {
+                            throw new Error(data.error || 'Erro ao excluir perfil');
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('❌ Erro ao excluir:', error);
+                        alert('Erro ao excluir perfil. Tente novamente.');
+                        setExcluindo(false);
+                    });
+            }
 
-        erro && React.createElement('div', { className: "mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm" }, erro),
+            if (loading) {
+                return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-12 text-center" },
+                    React.createElement('div', { className: "w-12 h-12 md:w-16 md:h-16 border-4 border-[#FFD966] border-t-[#FFB347] rounded-full animate-spin mx-auto mb-4" }),
+                    React.createElement('p', { className: "text-sm md:text-base text-[#4a8a4a]" }, "Carregando seus favoritos...")
+                );
+            }
 
-        // Lista de favoritos
-        favoritos.length === 0 ?
-            React.createElement('div', { className: "text-center py-12 bg-white rounded-2xl border border-[#c0dfc0]" },
-                React.createElement('div', { className: "text-5xl mb-4" }, "❤️"),
-                React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-2" }, "Nenhum favorito ainda"),
-                React.createElement('p', { className: "text-[#4a8a4a] mb-6" }, "Comece a curtir prestadores para vê-los aqui!"),
-                React.createElement('button', {
-                    onClick: function() { navigate('/'); },
-                    className: "px-4 py-2 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white rounded-lg hover:shadow-md"
-                }, "Buscar prestadores")
-            ) :
-            React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6" },
-                favoritos.map(function(p) {
-                    return React.createElement('div', {
-                        key: p._id,
-                        className: "bg-white rounded-xl border border-[#c0dfc0] overflow-hidden hover:shadow-lg transition-all"
-                    },
-                        React.createElement('div', { className: "p-4" },
-                            React.createElement('div', { className: "flex justify-between items-start mb-3" },
-                                React.createElement('h3', { className: "font-bold text-lg text-[#3d7a3d]" }, p.nome),
-                                React.createElement('button', {
-                                    onClick: function(e) { 
-                                        e.stopPropagation();
-                                        handleDescurtir(p._id); 
-                                    },
-                                    className: "text-red-500 hover:text-red-700 transition"
-                                },
-                                    React.createElement('svg', { className: "w-6 h-6", fill: "currentColor", viewBox: "0 0 24 24" },
-                                        React.createElement('path', { d: "M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" })
+            return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8" },
+                React.createElement('div', { className: "mb-6" },
+                    React.createElement('div', { className: "bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border border-red-200 p-4" },
+                        React.createElement('div', { className: "flex flex-col sm:flex-row items-center justify-between gap-4" },
+                            React.createElement('div', { className: "flex items-center gap-3" },
+                                React.createElement('div', { className: "bg-red-100 rounded-full p-2" },
+                                    React.createElement('svg', { className: "w-5 h-5 text-red-600", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" })
                                     )
-                                )
-                            ),
-                            React.createElement('p', { className: "text-sm text-[#4a8a4a] mb-2" },
-                                p.categoriaPrincipal?.nome || p.categoria || 'Profissional'
-                            ),
-                            React.createElement('p', { className: "text-xs text-slate-500 mb-3" },
-                                p.cidade + (p.estado ? ' - ' + p.estado : '')
-                            ),
-                            React.createElement('div', { className: "flex items-center gap-2 mb-3" },
-                                React.createElement(Stars, { value: p.estrelas || 0, size: "sm" }),
-                                React.createElement('span', { className: "text-xs text-slate-400" },
-                                    '(' + (p.avaliacoes || 0) + ')'
-                                )
-                            ),
-                            React.createElement('div', { className: "flex items-center gap-1 text-amber-600 mb-3" },
-                                React.createElement('span', { className: "text-sm font-medium" }, p.totalCurtidas || 0),
-                                React.createElement('span', { className: "text-xs" }, "curtidas")
+                                ),
+                                React.createElement('span', { className: "text-sm font-medium text-red-800" }, "Zona de Perigo")
                             ),
                             React.createElement('button', {
-                                onClick: function() { onVerPerfil(p); },
-                                className: "w-full px-3 py-2 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white rounded-lg text-sm font-medium hover:shadow-md transition"
-                            }, "Ver perfil")
+                                onClick: handleExcluirPerfil,
+                                disabled: excluindo,
+                                className: "px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition disabled:opacity-50 w-full sm:w-auto justify-center"
+                            },
+                                excluindo ? 'Excluindo...' : 'Excluir minha conta permanentemente'
+                            )
                         )
-                    );
-                })
-            )
-    );
-}
+                    )
+                ),
 
-        // ========== TELA DE PERFIL PÚBLICO COM BOTÃO WHATSAPP CORRIGIDO ==========
+                React.createElement('div', { 
+                    className: "bg-gradient-to-r from-[#f0f7f0] to-[#fff8e7] rounded-2xl md:rounded-3xl p-6 md:p-8 mb-8 border border-[#c0dfc0]" 
+                },
+                    React.createElement('div', { className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4" },
+                        React.createElement('div', null,
+                            React.createElement('h1', { className: "text-xl md:text-3xl font-bold mb-2 text-[#3d7a3d]" },
+                                "Olá, " + (usuario?.email?.split('@')[0] || 'Cliente') + "!"
+                            ),
+                            React.createElement('p', { className: "text-sm md:text-base text-[#4a8a4a]" }, 
+                                "Aqui estão seus prestadores favoritos"
+                            )
+                        ),
+                        React.createElement('button', {
+                            onClick: onSair,
+                            className: "px-3 md:px-4 py-2 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white rounded-xl hover:shadow-md flex items-center gap-2 text-sm md:text-base"
+                        },
+                            React.createElement('svg', { className: "w-4 h-4 md:w-5 md:h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" })
+                            ),
+                            "Sair"
+                        )
+                    )
+                ),
+
+                erro && React.createElement('div', { className: "mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm" }, erro),
+
+                favoritos.length === 0 ?
+                    React.createElement('div', { className: "text-center py-12 bg-white rounded-2xl border border-[#c0dfc0]" },
+                        React.createElement('div', { className: "text-5xl mb-4" }, "❤️"),
+                        React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-2" }, "Nenhum favorito ainda"),
+                        React.createElement('p', { className: "text-[#4a8a4a] mb-6" }, "Comece a curtir prestadores para vê-los aqui!"),
+                        React.createElement('button', {
+                            onClick: function() { navigate('/'); },
+                            className: "px-4 py-2 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white rounded-lg hover:shadow-md"
+                        }, "Buscar prestadores")
+                    ) :
+                    React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6" },
+                        favoritos.map(function(p) {
+                            return React.createElement('div', {
+                                key: p._id,
+                                className: "bg-white rounded-xl border border-[#c0dfc0] overflow-hidden hover:shadow-lg transition-all"
+                            },
+                                React.createElement('div', { className: "p-4" },
+                                    React.createElement('div', { className: "flex justify-between items-start mb-3" },
+                                        React.createElement('h3', { className: "font-bold text-lg text-[#3d7a3d]" }, p.nome),
+                                        React.createElement('button', {
+                                            onClick: function(e) { 
+                                                e.stopPropagation();
+                                                handleDescurtir(p._id); 
+                                            },
+                                            className: "text-red-500 hover:text-red-700 transition"
+                                        },
+                                            React.createElement('svg', { className: "w-6 h-6", fill: "currentColor", viewBox: "0 0 24 24" },
+                                                React.createElement('path', { d: "M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" })
+                                            )
+                                        )
+                                    ),
+                                    React.createElement('p', { className: "text-sm text-[#4a8a4a] mb-2" },
+                                        p.categoriaPrincipal?.nome || p.categoria || 'Profissional'
+                                    ),
+                                    React.createElement('p', { className: "text-xs text-slate-500 mb-3" },
+                                        p.cidade + (p.estado ? ' - ' + p.estado : '')
+                                    ),
+                                    React.createElement('div', { className: "flex items-center gap-2 mb-3" },
+                                        React.createElement(Stars, { value: p.estrelas || 0, size: "sm" }),
+                                        React.createElement('span', { className: "text-xs text-slate-400" },
+                                            '(' + (p.avaliacoes || 0) + ')'
+                                        )
+                                    ),
+                                    React.createElement('div', { className: "flex items-center gap-1 text-amber-600 mb-3" },
+                                        React.createElement('span', { className: "text-sm font-medium" }, p.totalCurtidas || 0),
+                                        React.createElement('span', { className: "text-xs" }, "curtidas")
+                                    ),
+                                    React.createElement('button', {
+                                        onClick: function() { onVerPerfil(p); },
+                                        className: "w-full px-3 py-2 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white rounded-lg text-sm font-medium hover:shadow-md transition"
+                                    }, "Ver perfil")
+                                )
+                            );
+                        })
+                    )
+            );
+        }
+
+        // ========== TELA DE PERFIL PÚBLICO ==========
         function TelaPerfil(props) {
             var prestador = props.prestador;
             var prestadorId = props.prestadorId;
@@ -4399,7 +4417,6 @@ function DashboardCliente(props) {
                             )
                         ),
 
-                        // ========== SEÇÃO DE CONTATO COM BOTÃO WHATSAPP ==========
                         React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl md:rounded-2xl p-4 md:p-6 border border-[#c0dfc0]" },
                             React.createElement('h2', { className: "text-base md:text-xl font-semibold mb-4 text-[#3d7a3d] flex items-center gap-2" },
                                 React.createElement('svg', { className: "w-5 h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -4463,6 +4480,424 @@ function DashboardCliente(props) {
             );
         }
 
+        // ========== COMPONENTES JURÍDICOS ==========
+        
+        function TermosDeUso(props) {
+            var onVoltar = props.onVoltar;
+
+            return React.createElement('div', { className: "max-w-4xl mx-auto px-4 py-8 md:py-12" },
+                React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-6 md:p-8 shadow-sm" },
+                    React.createElement('div', { className: "flex items-center justify-between mb-6" },
+                        React.createElement('h1', { className: "text-2xl md:text-3xl font-bold text-[#3d7a3d]" }, "Termos de Uso"),
+                        React.createElement('button', {
+                            onClick: onVoltar,
+                            className: "text-sm text-[#4a8a4a] hover:text-[#2d5a2d] flex items-center gap-1"
+                        },
+                            React.createElement('svg', { className: "w-4 h-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M10 19l-7-7m0 0l7-7m-7 7h18" })
+                            ),
+                            "Voltar"
+                        )
+                    ),
+
+                    React.createElement('div', { className: "prose prose-sm md:prose-base max-w-none text-slate-700 space-y-6" },
+                        
+                        React.createElement('div', { className: "border-b border-[#c0dfc0] pb-4" },
+                            React.createElement('h2', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-3" }, "1. Aceitação dos Termos"),
+                            React.createElement('p', { className: "text-sm md:text-base" },
+                                "Ao acessar ou utilizar esta plataforma, o usuário declara que leu, compreendeu e concorda com os presentes Termos de Uso."
+                            ),
+                            React.createElement('p', { className: "text-sm md:text-base mt-2" },
+                                "Caso não concorde com qualquer parte destes termos, o usuário não deverá utilizar a plataforma."
+                            )
+                        ),
+
+                        React.createElement('div', { className: "border-b border-[#c0dfc0] pb-4" },
+                            React.createElement('h2', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-3" }, "2. Sobre a Plataforma"),
+                            React.createElement('p', { className: "text-sm md:text-base" },
+                                "A plataforma tem como objetivo conectar usuários interessados em contratar serviços com prestadores independentes."
+                            ),
+                            React.createElement('p', { className: "text-sm md:text-base mt-2" },
+                                "A plataforma atua exclusivamente como meio de divulgação e contato entre usuários e prestadores de serviços, não executando diretamente nenhum serviço anunciado."
+                            )
+                        ),
+
+                        React.createElement('div', { className: "border-b border-[#c0dfc0] pb-4" },
+                            React.createElement('h2', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-3" }, "3. Cadastro de Usuários e Prestadores"),
+                            React.createElement('p', { className: "text-sm md:text-base" },
+                                "Para utilizar determinadas funcionalidades da plataforma poderá ser necessário realizar cadastro."
+                            ),
+                            React.createElement('p', { className: "text-sm md:text-base mt-2 font-medium" }, "O usuário se compromete a:"),
+                            React.createElement('ul', { className: "list-disc pl-5 mt-2 space-y-1 text-sm md:text-base" },
+                                React.createElement('li', null, "fornecer informações verdadeiras"),
+                                React.createElement('li', null, "manter seus dados atualizados"),
+                                React.createElement('li', null, "manter confidencialidade de sua conta")
+                            ),
+                            React.createElement('p', { className: "text-sm md:text-base mt-2" },
+                                "Prestadores podem se cadastrar utilizando CPF ou CNPJ."
+                            ),
+                            React.createElement('p', { className: "text-sm md:text-base mt-2" },
+                                "Cada prestador é responsável pela legalidade e regularidade de sua atividade profissional."
+                            )
+                        ),
+
+                        React.createElement('div', { className: "border-b border-[#c0dfc0] pb-4" },
+                            React.createElement('h2', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-3" }, "4. Responsabilidade dos Prestadores"),
+                            React.createElement('p', { className: "text-sm md:text-base" },
+                                "Os prestadores cadastrados são profissionais independentes."
+                            ),
+                            React.createElement('p', { className: "text-sm md:text-base mt-2 font-medium" }, "Eles são exclusivamente responsáveis por:"),
+                            React.createElement('ul', { className: "list-disc pl-5 mt-2 space-y-1 text-sm md:text-base" },
+                                React.createElement('li', null, "execução dos serviços"),
+                                React.createElement('li', null, "negociação de valores"),
+                                React.createElement('li', null, "qualidade do trabalho"),
+                                React.createElement('li', null, "cumprimento de prazos"),
+                                React.createElement('li', null, "garantias oferecidas"),
+                                React.createElement('li', null, "obrigações fiscais e legais")
+                            ),
+                            React.createElement('p', { className: "text-sm md:text-base mt-2 font-medium text-amber-600" },
+                                "A plataforma não garante a qualidade dos serviços prestados."
+                            )
+                        ),
+
+                        React.createElement('div', { className: "border-b border-[#c0dfc0] pb-4" },
+                            React.createElement('h2', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-3" }, "5. Contratação de Serviços"),
+                            React.createElement('p', { className: "text-sm md:text-base" },
+                                "A contratação ocorre diretamente entre o usuário e o prestador de serviços."
+                            ),
+                            React.createElement('p', { className: "text-sm md:text-base mt-2" },
+                                "A plataforma não participa da negociação, execução ou pagamento do serviço, salvo quando explicitamente informado."
+                            )
+                        ),
+
+                        React.createElement('div', { className: "border-b border-[#c0dfc0] pb-4" },
+                            React.createElement('h2', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-3" }, "6. Conteúdo dos Perfis"),
+                            React.createElement('p', { className: "text-sm md:text-base" },
+                                "Cada prestador é responsável pelas informações publicadas em seu perfil."
+                            ),
+                            React.createElement('p', { className: "text-sm md:text-base mt-2" },
+                                "A plataforma poderá remover perfis que contenham informações falsas, violem a legislação ou prejudiquem outros usuários."
+                            )
+                        ),
+
+                        React.createElement('div', { className: "border-b border-[#c0dfc0] pb-4" },
+                            React.createElement('h2', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-3" }, "7. Limitação de Responsabilidade"),
+                            React.createElement('p', { className: "text-sm md:text-base" },
+                                "A plataforma não será responsável por:"
+                            ),
+                            React.createElement('ul', { className: "list-disc pl-5 mt-2 space-y-1 text-sm md:text-base" },
+                                React.createElement('li', null, "danos decorrentes de serviços contratados"),
+                                React.createElement('li', null, "conflitos entre usuários e prestadores"),
+                                React.createElement('li', null, "atrasos ou falhas na execução de serviços")
+                            )
+                        ),
+
+                        React.createElement('div', { className: "border-b border-[#c0dfc0] pb-4" },
+                            React.createElement('h2', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-3" }, "8. Suspensão ou Exclusão de Contas"),
+                            React.createElement('p', { className: "text-sm md:text-base" },
+                                "A plataforma poderá suspender ou excluir contas que violem estes termos, pratiquem atividades ilícitas ou prejudiquem outros usuários."
+                            )
+                        ),
+
+                        React.createElement('div', { className: "pb-4" },
+                            React.createElement('h2', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-3" }, "9. Modificações"),
+                            React.createElement('p', { className: "text-sm md:text-base" },
+                                "Estes termos podem ser atualizados a qualquer momento."
+                            ),
+                            React.createElement('p', { className: "text-sm md:text-base mt-2" },
+                                "A continuidade do uso da plataforma implica aceitação das novas condições."
+                            )
+                        ),
+
+                        React.createElement('div', { className: "mt-6 p-4 bg-[#f0f7f0] rounded-xl border border-[#c0dfc0] text-sm text-[#4a8a4a]" },
+                            "Última atualização: 16 de março de 2026"
+                        )
+                    )
+                )
+            );
+        }
+
+        function PoliticaPrivacidade(props) {
+            var onVoltar = props.onVoltar;
+
+            return React.createElement('div', { className: "max-w-4xl mx-auto px-4 py-8 md:py-12" },
+                React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-6 md:p-8 shadow-sm" },
+                    React.createElement('div', { className: "flex items-center justify-between mb-6" },
+                        React.createElement('h1', { className: "text-2xl md:text-3xl font-bold text-[#3d7a3d]" }, "Política de Privacidade"),
+                        React.createElement('button', {
+                            onClick: onVoltar,
+                            className: "text-sm text-[#4a8a4a] hover:text-[#2d5a2d] flex items-center gap-1"
+                        },
+                            React.createElement('svg', { className: "w-4 h-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M10 19l-7-7m0 0l7-7m-7 7h18" })
+                            ),
+                            "Voltar"
+                        )
+                    ),
+
+                    React.createElement('div', { className: "prose prose-sm md:prose-base max-w-none text-slate-700 space-y-6" },
+                        
+                        React.createElement('div', { className: "bg-[#f0f7f0] p-4 rounded-xl border border-[#c0dfc0] mb-6" },
+                            React.createElement('p', { className: "text-sm text-[#2d5a2d] font-medium" },
+                                "Esta Política de Privacidade está de acordo com a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018)."
+                            )
+                        ),
+
+                        React.createElement('div', { className: "border-b border-[#c0dfc0] pb-4" },
+                            React.createElement('h2', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-3" }, "1. Coleta de Dados"),
+                            React.createElement('p', { className: "text-sm md:text-base font-medium" }, "Podemos coletar os seguintes dados:"),
+                            React.createElement('ul', { className: "list-disc pl-5 mt-2 space-y-1 text-sm md:text-base" },
+                                React.createElement('li', null, "nome"),
+                                React.createElement('li', null, "e-mail"),
+                                React.createElement('li', null, "telefone"),
+                                React.createElement('li', null, "localização"),
+                                React.createElement('li', null, "informações de perfil"),
+                                React.createElement('li', null, "dados fornecidos no cadastro")
+                            )
+                        ),
+
+                        React.createElement('div', { className: "border-b border-[#c0dfc0] pb-4" },
+                            React.createElement('h2', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-3" }, "2. Finalidade do Uso dos Dados"),
+                            React.createElement('p', { className: "text-sm md:text-base font-medium" }, "Os dados são utilizados para:"),
+                            React.createElement('ul', { className: "list-disc pl-5 mt-2 space-y-1 text-sm md:text-base" },
+                                React.createElement('li', null, "funcionamento da plataforma"),
+                                React.createElement('li', null, "conexão entre usuários e prestadores"),
+                                React.createElement('li', null, "melhoria da experiência do usuário"),
+                                React.createElement('li', null, "comunicação com usuários")
+                            )
+                        ),
+
+                        React.createElement('div', { className: "border-b border-[#c0dfc0] pb-4" },
+                            React.createElement('h2', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-3" }, "3. Compartilhamento de Dados"),
+                            React.createElement('p', { className: "text-sm md:text-base" },
+                                "Os dados podem ser compartilhados apenas quando necessário para o funcionamento da plataforma ou cumprimento de obrigações legais."
+                            ),
+                            React.createElement('p', { className: "text-sm md:text-base mt-2 font-medium text-emerald-600" },
+                                "A plataforma não vende dados pessoais."
+                            )
+                        ),
+
+                        React.createElement('div', { className: "border-b border-[#c0dfc0] pb-4" },
+                            React.createElement('h2', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-3" }, "4. Segurança das Informações"),
+                            React.createElement('p', { className: "text-sm md:text-base" },
+                                "Adotamos medidas técnicas e administrativas para proteger os dados contra acesso não autorizado, perda ou alteração indevida."
+                            )
+                        ),
+
+                        React.createElement('div', { className: "border-b border-[#c0dfc0] pb-4" },
+                            React.createElement('h2', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-3" }, "5. Direitos do Usuário (LGPD)"),
+                            React.createElement('p', { className: "text-sm md:text-base font-medium" }, "De acordo com a LGPD, o usuário pode solicitar:"),
+                            React.createElement('ul', { className: "list-disc pl-5 mt-2 space-y-1 text-sm md:text-base" },
+                                React.createElement('li', null, "acesso aos dados"),
+                                React.createElement('li', null, "correção de dados"),
+                                React.createElement('li', null, "exclusão de dados"),
+                                React.createElement('li', null, "revogação do consentimento")
+                            )
+                        ),
+
+                        React.createElement('div', { className: "pb-4" },
+                            React.createElement('h2', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-3" }, "6. Armazenamento"),
+                            React.createElement('p', { className: "text-sm md:text-base" },
+                                "Os dados serão armazenados pelo tempo necessário para cumprir as finalidades descritas nesta política."
+                            )
+                        ),
+
+                        React.createElement('div', { className: "mt-6 p-4 bg-[#f0f7f0] rounded-xl border border-[#c0dfc0] text-sm text-[#4a8a4a]" },
+                            "Última atualização: 16 de março de 2026"
+                        )
+                    )
+                )
+            );
+        }
+
+        function PoliticaCookies(props) {
+            var onVoltar = props.onVoltar;
+
+            return React.createElement('div', { className: "max-w-4xl mx-auto px-4 py-8 md:py-12" },
+                React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-6 md:p-8 shadow-sm" },
+                    React.createElement('div', { className: "flex items-center justify-between mb-6" },
+                        React.createElement('h1', { className: "text-2xl md:text-3xl font-bold text-[#3d7a3d]" }, "Política de Cookies"),
+                        React.createElement('button', {
+                            onClick: onVoltar,
+                            className: "text-sm text-[#4a8a4a] hover:text-[#2d5a2d] flex items-center gap-1"
+                        },
+                            React.createElement('svg', { className: "w-4 h-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M10 19l-7-7m0 0l7-7m-7 7h18" })
+                            ),
+                            "Voltar"
+                        )
+                    ),
+
+                    React.createElement('div', { className: "prose prose-sm md:prose-base max-w-none text-slate-700 space-y-6" },
+                        
+                        React.createElement('div', null,
+                            React.createElement('h2', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-3" }, "O que são cookies"),
+                            React.createElement('p', { className: "text-sm md:text-base" },
+                                "Cookies são pequenos arquivos armazenados no dispositivo do usuário para melhorar a experiência de navegação."
+                            )
+                        ),
+
+                        React.createElement('div', { className: "border-t border-[#c0dfc0] pt-4" },
+                            React.createElement('h2', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-3" }, "Tipos de cookies utilizados"),
+                            
+                            React.createElement('div', { className: "mt-4 space-y-4" },
+                                React.createElement('div', { className: "bg-[#f0f7f0] p-4 rounded-xl border border-[#c0dfc0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "🍪 Cookies essenciais"),
+                                    React.createElement('p', { className: "text-sm" }, "Necessários para funcionamento da plataforma.")
+                                ),
+                                
+                                React.createElement('div', { className: "bg-[#fff8e7] p-4 rounded-xl border border-[#FFE3A0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#F09030] mb-2" }, "📊 Cookies de desempenho"),
+                                    React.createElement('p', { className: "text-sm" }, "Utilizados para analisar o uso do site e melhorar serviços.")
+                                ),
+                                
+                                React.createElement('div', { className: "bg-[#f0f7f0] p-4 rounded-xl border border-[#c0dfc0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "⚙️ Cookies de funcionalidade"),
+                                    React.createElement('p', { className: "text-sm" }, "Permitem lembrar preferências do usuário.")
+                                )
+                            )
+                        ),
+
+                        React.createElement('div', { className: "border-t border-[#c0dfc0] pt-4" },
+                            React.createElement('h2', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-3" }, "Gerenciamento de cookies"),
+                            React.createElement('p', { className: "text-sm md:text-base" },
+                                "O usuário pode configurar seu navegador para recusar cookies, porém algumas funcionalidades do site podem ser afetadas."
+                            )
+                        ),
+
+                        React.createElement('div', { className: "mt-6 p-4 bg-[#f0f7f0] rounded-xl border border-[#c0dfc0] text-sm text-[#4a8a4a]" },
+                            "Última atualização: 16 de março de 2026"
+                        )
+                    )
+                )
+            );
+        }
+
+        // ========== COMPONENTE DE RODAPÉ ==========
+        function Rodape(props) {
+            var onNavigate = props.onNavigate;
+
+            return React.createElement('footer', { className: "bg-white/90 backdrop-blur-md border-t border-neutral-200/60 mt-12" },
+                React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8 md:py-12" },
+                    
+                    React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 md:p-6 border border-[#c0dfc0] mb-8" },
+                        React.createElement('p', { className: "text-xs md:text-sm text-[#4a8a4a] text-center leading-relaxed" },
+                            "Esta plataforma atua exclusivamente como meio de divulgação e conexão entre usuários e prestadores de serviços independentes. ",
+                            "A responsabilidade pela execução dos serviços é integralmente do prestador contratado."
+                        )
+                    ),
+
+                    React.createElement('div', { className: "grid grid-cols-2 md:grid-cols-4 gap-6 mb-8" },
+                        
+                        React.createElement('div', null,
+                            React.createElement('h3', { className: "font-semibold text-[#3d7a3d] mb-3 text-sm md:text-base" }, "Institucional"),
+                            React.createElement('ul', { className: "space-y-2" },
+                                React.createElement('li', null,
+                                    React.createElement('button', {
+                                        onClick: function() { onNavigate('/sobre'); },
+                                        className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
+                                    }, "Sobre Nós")
+                                ),
+                                React.createElement('li', null,
+                                    React.createElement('button', {
+                                        onClick: function() { onNavigate('/como-funciona'); },
+                                        className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
+                                    }, "Como Funciona")
+                                ),
+                                React.createElement('li', null,
+                                    React.createElement('button', {
+                                        onClick: function() { onNavigate('/contato'); },
+                                        className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
+                                    }, "Contato / Suporte")
+                                )
+                            )
+                        ),
+
+                        React.createElement('div', null,
+                            React.createElement('h3', { className: "font-semibold text-[#3d7a3d] mb-3 text-sm md:text-base" }, "Jurídico"),
+                            React.createElement('ul', { className: "space-y-2" },
+                                React.createElement('li', null,
+                                    React.createElement('button', {
+                                        onClick: function() { onNavigate('/termos'); },
+                                        className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
+                                    }, "Termos de Uso")
+                                ),
+                                React.createElement('li', null,
+                                    React.createElement('button', {
+                                        onClick: function() { onNavigate('/privacidade'); },
+                                        className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
+                                    }, "Política de Privacidade")
+                                ),
+                                React.createElement('li', null,
+                                    React.createElement('button', {
+                                        onClick: function() { onNavigate('/cookies'); },
+                                        className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
+                                    }, "Política de Cookies")
+                                )
+                            )
+                        ),
+
+                        React.createElement('div', null,
+                            React.createElement('h3', { className: "font-semibold text-[#3d7a3d] mb-3 text-sm md:text-base" }, "Prestadores"),
+                            React.createElement('ul', { className: "space-y-2" },
+                                React.createElement('li', null,
+                                    React.createElement('button', {
+                                        onClick: function() { onNavigate('/cadastro'); },
+                                        className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
+                                    }, "Quero ser Prestador")
+                                ),
+                                React.createElement('li', null,
+                                    React.createElement('button', {
+                                        onClick: function() { onNavigate('/dashboard'); },
+                                        className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
+                                    }, "Área do Prestador")
+                                ),
+                                React.createElement('li', null,
+                                    React.createElement('button', {
+                                        onClick: function() { onNavigate('/faq-prestador'); },
+                                        className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
+                                    }, "FAQ para Prestadores")
+                                )
+                            )
+                        ),
+
+                        React.createElement('div', null,
+                            React.createElement('h3', { className: "font-semibold text-[#3d7a3d] mb-3 text-sm md:text-base" }, "Clientes"),
+                            React.createElement('ul', { className: "space-y-2" },
+                                React.createElement('li', null,
+                                    React.createElement('button', {
+                                        onClick: function() { onNavigate('/'); },
+                                        className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
+                                    }, "Buscar Profissionais")
+                                ),
+                                React.createElement('li', null,
+                                    React.createElement('button', {
+                                        onClick: function() { onNavigate('/dashboard-cliente'); },
+                                        className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
+                                    }, "Meus Favoritos")
+                                ),
+                                React.createElement('li', null,
+                                    React.createElement('button', {
+                                        onClick: function() { onNavigate('/faq-cliente'); },
+                                        className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
+                                    }, "FAQ para Clientes")
+                                )
+                            )
+                        )
+                    ),
+
+                    React.createElement('div', { className: "text-center pt-6 border-t border-[#c0dfc0]" },
+                        React.createElement('p', { className: "text-xs text-slate-500" },
+                            "© 2026 Sem Limites. Todos os direitos reservados."
+                        ),
+                        React.createElement('p', { className: "text-[10px] text-slate-400 mt-2" },
+                            "CNPJ: 00.000.000/0001-00"
+                        )
+                    )
+                )
+            );
+        }
+
         // ========== FUNÇÃO DE NAVEGAÇÃO ==========
         function navigate(path) {
             var fullPath = BASE_PATH + path;
@@ -4484,6 +4919,23 @@ function DashboardCliente(props) {
                 window.appSetModo('esqueci-senha');
             } else if (path.startsWith('/resetar-senha/')) {
                 window.appSetModo('resetar-senha');
+            } 
+            else if (path === '/termos') {
+                window.appSetModo('termos');
+            } else if (path === '/privacidade') {
+                window.appSetModo('privacidade');
+            } else if (path === '/cookies') {
+                window.appSetModo('cookies');
+            } else if (path === '/contato') {
+                window.appSetModo('contato');
+            } else if (path === '/sobre') {
+                window.appSetModo('sobre');
+            } else if (path === '/como-funciona') {
+                window.appSetModo('como-funciona');
+            } else if (path === '/faq-prestador') {
+                window.appSetModo('faq-prestador');
+            } else if (path === '/faq-cliente') {
+                window.appSetModo('faq-cliente');
             } else {
                 window.appSetModo('busca');
             }
@@ -4526,6 +4978,23 @@ function DashboardCliente(props) {
                     setModo('esqueci-senha');
                 } else if (path.startsWith('/resetar-senha/')) {
                     setModo('resetar-senha');
+                } 
+                else if (path === '/termos') {
+                    setModo('termos');
+                } else if (path === '/privacidade') {
+                    setModo('privacidade');
+                } else if (path === '/cookies') {
+                    setModo('cookies');
+                } else if (path === '/contato') {
+                    setModo('contato');
+                } else if (path === '/sobre') {
+                    setModo('sobre');
+                } else if (path === '/como-funciona') {
+                    setModo('como-funciona');
+                } else if (path === '/faq-prestador') {
+                    setModo('faq-prestador');
+                } else if (path === '/faq-cliente') {
+                    setModo('faq-cliente');
                 } else {
                     setModo('busca');
                 }
@@ -4620,11 +5089,27 @@ function DashboardCliente(props) {
                     onVoltar: voltarParaBusca,
                     onSucesso: function() { navigate('/login'); }
                 });
+            } 
+            else if (modo === 'termos') {
+                content = React.createElement(TermosDeUso, { onVoltar: voltarParaBusca });
+            } else if (modo === 'privacidade') {
+                content = React.createElement(PoliticaPrivacidade, { onVoltar: voltarParaBusca });
+            } else if (modo === 'cookies') {
+                content = React.createElement(PoliticaCookies, { onVoltar: voltarParaBusca });
+            } else if (modo === 'contato' || modo === 'sobre' || modo === 'como-funciona' || modo === 'faq-prestador' || modo === 'faq-cliente') {
+                setTimeout(function() { navigate('/'); }, 100);
+                content = React.createElement('div', { className: "text-center py-12" },
+                    React.createElement('div', { className: "w-10 h-10 border-4 border-[#FFD966] border-t-[#FFB347] rounded-full animate-spin mx-auto mb-4" }),
+                    React.createElement('p', { className: "text-[#4a8a4a]" }, "Redirecionando...")
+                );
             }
+
+            var rodape = modo !== 'avaliar' ? React.createElement(Rodape, { onNavigate: navigate }) : null;
 
             return React.createElement('div', { className: "min-h-screen bg-gradient-to-b from-[#fcf8f3] to-white overflow-guard" },
                 header,
-                React.createElement('main', null, content)
+                React.createElement('main', null, content),
+                rodape
             );
         }
 
