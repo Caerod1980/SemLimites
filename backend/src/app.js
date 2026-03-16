@@ -6,6 +6,7 @@ import prestadoresRoutes from './routes/prestadores.js';
 import authRoutes from './routes/auth.js';
 import servicosRoutes from './routes/servicos.js';
 import categoriasRoutes from './routes/categorias.js';
+import favoritosRoutes from './routes/favoritos.js';
 
 dotenv.config();
 
@@ -47,6 +48,7 @@ app.use('/api/prestadores', prestadoresRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/servicos', servicosRoutes);
 app.use('/api/categorias', categoriasRoutes);
+app.use('/api/favoritos', favoritosRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
