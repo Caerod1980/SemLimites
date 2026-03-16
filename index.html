@@ -803,7 +803,7 @@ function NovoServico(props) {
         )
     );
 }
-      // ========== COMPONENTE DE LISTAGEM DE SERVIÇOS ==========
+     // ========== COMPONENTE DE LISTAGEM DE SERVIÇOS ==========
 function MeusServicos() {
     var [servicos, setServicos] = useState([]);
     var [loading, setLoading] = useState(true);
@@ -913,7 +913,7 @@ function MeusServicos() {
             React.createElement('h2', { className: "text-xl md:text-2xl font-bold text-slate-900" }, "Meus Serviços"),
             React.createElement('button', {
                 onClick: function() { setMostrarForm(!mostrarForm); },
-                className: "px-3 md:px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl hover:shadow-lg transition flex items-center gap-2 text-sm md:text-base w-full sm:w-auto justify-center"
+                className: "px-3 md:px-4 py-2 bg-gradient-to-r from-[#3d7a3d] to-[#60a060] text-white rounded-xl hover:shadow-lg transition flex items-center gap-2 text-sm md:text-base w-full sm:w-auto justify-center"
             },
                 React.createElement('svg', { className: "w-4 h-4 md:w-5 md:h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
                     React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M12 4v16m8-8H4" })
@@ -951,7 +951,7 @@ function MeusServicos() {
                 React.createElement('p', { className: "text-xs md:text-sm text-slate-500 mb-6" }, "Cadastre seu primeiro serviço para começar"),
                 React.createElement('button', {
                     onClick: function() { setMostrarForm(true); },
-                    className: "px-4 md:px-6 py-2.5 md:py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 text-sm md:text-base"
+                    className: "px-4 md:px-6 py-2.5 md:py-3 bg-gradient-to-r from-[#3d7a3d] to-[#60a060] text-white rounded-xl hover:shadow-lg transition text-sm md:text-base"
                 }, "+ Novo Serviço")
             ) :
             React.createElement('div', { className: "grid gap-4" },
