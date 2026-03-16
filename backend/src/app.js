@@ -8,6 +8,7 @@ import authRoutes from './routes/auth.js';
 import servicosRoutes from './routes/servicos.js';
 import categoriasRoutes from './routes/categorias.js';
 import favoritosRoutes from './routes/favoritos.js'; // ADICIONADO
+import usuarioRoutes from './routes/usuarios.js';
 
 dotenv.config();
 
@@ -67,6 +68,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/servicos', servicosRoutes);
 app.use('/api/categorias', categoriasRoutes);
 app.use('/api/favoritos', favoritosRoutes); // ADICIONADO
+app.use('/api/usuarios', usuarioRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
