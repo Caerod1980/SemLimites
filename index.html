@@ -803,273 +803,285 @@ function NovoServico(props) {
     );
 }
 
-        // ========== COMPONENTE DE LISTAGEM DE SERVIÇOS ==========
-        function MeusServicos() {
-            var [servicos, setServicos] = useState([]);
-            var [loading, setLoading] = useState(true);
-            var [mostrarForm, setMostrarForm] = useState(false);
-            var [filtro, setFiltro] = useState('todos');
-            var [copiado, setCopiado] = useState(null);
+       // ========== COMPONENTE DE LISTAGEM DE SERVIÇOS ==========
+function MeusServicos() {
+    var [servicos, setServicos] = useState([]);
+    var [loading, setLoading] = useState(true);
+    var [mostrarForm, setMostrarForm] = useState(false);
+    var [filtro, setFiltro] = useState('todos');
+    var [copiado, setCopiado] = useState(null);
 
-            function carregarServicos() {
-                setLoading(true);
-                
-                var url = API_URL + '/servicos/meus';
-                if (filtro !== 'todos') {
-                    url = url + '?status=' + filtro;
+    function carregarServicos() {
+        setLoading(true);
+        
+        var url = API_URL + '/servicos/meus';
+        if (filtro !== 'todos') {
+            url = url + '?status=' + filtro;
+        }
+        
+        fetch(url, {
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.servicos) {
+                    setServicos(data.servicos);
                 }
-                
-                fetch(url, {
-                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
-                })
-                    .then(function(response) { return response.json(); })
-                    .then(function(data) {
-                        if (data.servicos) {
-                            setServicos(data.servicos);
-                        }
-                        setLoading(false);
-                    })
-                    .catch(function(error) {
-                        console.error('Erro ao carregar serviços:', error);
-                        setLoading(false);
-                    });
-            }
+                setLoading(false);
+            })
+            .catch(function(error) {
+                console.error('Erro ao carregar serviços:', error);
+                setLoading(false);
+            });
+    }
 
-            useEffect(function() {
+    useEffect(function() {
+        carregarServicos();
+    }, [filtro]);
+
+    function handleCopiarLink(link) {
+        var fullUrl = window.location.origin + BASE_PATH + '/avaliar/' + link.split('/').pop();
+        navigator.clipboard.writeText(fullUrl);
+        setCopiado(link);
+        setTimeout(function() { setCopiado(null); }, 2000);
+    }
+
+    function handleEnviarWhatsApp(servico) {
+        var fullUrl = window.location.origin + BASE_PATH + '/avaliar/' + servico.avaliacaoToken;
+        var mensagem = "Olá " + servico.clienteNome + "! 👋\n\n";
+        mensagem = mensagem + "Você contratou " + servico.titulo + " pelo SemLimites.\n\n";
+        mensagem = mensagem + "Para avaliar o serviço, acesse o link abaixo e informe seu e-mail cadastrado:\n";
+        mensagem = mensagem + fullUrl + "\n\n";
+        mensagem = mensagem + "E-mail cadastrado: " + servico.clienteEmail + "\n\n";
+        mensagem = mensagem + "Sua avaliação é muito importante para nós! ⭐";
+        
+        window.open('https://wa.me/' + servico.clienteWhatsApp + '?text=' + encodeURIComponent(mensagem), '_blank');
+    }
+
+    function handleReenviarLink(id) {
+        fetch(API_URL + '/servicos/' + id + '/reenviar', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.linkAvaliacao) {
+                    alert('✅ Novo link gerado!');
+                    carregarServicos();
+                }
+            })
+            .catch(function(error) {
+                alert('Erro ao gerar novo link');
+            });
+    }
+
+    function handleExcluir(id) {
+        if (!window.confirm('Tem certeza que deseja excluir este serviço?')) {
+            return;
+        }
+        
+        fetch(API_URL + '/servicos/' + id, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.message) {
+                    alert('✅ Serviço excluído!');
+                    carregarServicos();
+                }
+            })
+            .catch(function(error) {
+                alert('Erro ao excluir serviço');
+            });
+    }
+
+    if (loading) {
+        return React.createElement('div', { className: "text-center py-12" },
+            React.createElement('div', { className: "w-10 h-10 md:w-12 md:h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" }),
+            React.createElement('p', { className: "text-sm md:text-base text-slate-600" }, "Carregando serviços...")
+        );
+    }
+
+    var servicosFiltrados = servicos;
+    if (filtro !== 'todos') {
+        servicosFiltrados = servicos.filter(function(s) { return s.status === filtro; });
+    }
+
+    return React.createElement('div', { className: "space-y-4 md:space-y-6" },
+        React.createElement('div', { className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3" },
+            React.createElement('h2', { className: "text-xl md:text-2xl font-bold text-slate-900" }, "Meus Serviços"),
+            React.createElement('button', {
+                onClick: function() { setMostrarForm(!mostrarForm); },
+                className: "px-3 md:px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl hover:shadow-lg transition flex items-center gap-2 text-sm md:text-base w-full sm:w-auto justify-center"
+            },
+                React.createElement('svg', { className: "w-4 h-4 md:w-5 md:h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                    React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M12 4v16m8-8H4" })
+                ),
+                "Novo Serviço"
+            )
+        ),
+
+        mostrarForm && React.createElement(NovoServico, {
+            onSucesso: function() {
+                setMostrarForm(false);
                 carregarServicos();
-            }, [filtro]);
+            },
+            onCancelar: function() { setMostrarForm(false); }
+        }),
 
-            function handleCopiarLink(link) {
-                var fullUrl = window.location.origin + BASE_PATH + '/avaliar/' + link.split('/').pop();
-                navigator.clipboard.writeText(fullUrl);
-                setCopiado(link);
-                setTimeout(function() { setCopiado(null); }, 2000);
-            }
+        React.createElement('div', { className: "flex gap-1 md:gap-2 border-b border-slate-200 pb-4 overflow-x-auto hide-scrollbar" },
+            ['todos', 'aguardando', 'avaliado', 'expirado'].map(function(status) {
+                var labels = { todos: 'Todos', aguardando: 'Aguardando', avaliado: 'Avaliados', expirado: 'Expirados' };
+                return React.createElement('button', {
+                    key: status,
+                    onClick: function() { setFiltro(status); },
+                    className: "px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-xs md:text-sm font-medium transition whitespace-nowrap " + 
+                        (filtro === status ? 'bg-indigo-100 text-indigo-700' : 'text-slate-500 hover:bg-slate-100')
+                }, labels[status]);
+            })
+        ),
 
-            function handleEnviarWhatsApp(servico) {
-                var fullUrl = window.location.origin + BASE_PATH + '/avaliar/' + servico.avaliacaoToken;
-                var mensagem = "Olá " + servico.clienteNome + "! 👋\n\n";
-                mensagem = mensagem + "Você contratou " + servico.titulo + " pelo SemLimites.\n\n";
-                mensagem = mensagem + "Para avaliar o serviço, acesse o link abaixo e informe seu e-mail cadastrado:\n";
-                mensagem = mensagem + fullUrl + "\n\n";
-                mensagem = mensagem + "E-mail cadastrado: " + servico.clienteEmail + "\n\n";
-                mensagem = mensagem + "Sua avaliação é muito importante para nós! ⭐";
-                
-                window.open('https://wa.me/' + servico.clienteWhatsApp + '?text=' + encodeURIComponent(mensagem), '_blank');
-            }
-
-            function handleReenviarLink(id) {
-                fetch(API_URL + '/servicos/' + id + '/reenviar', {
-                    method: 'POST',
-                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
-                })
-                    .then(function(response) { return response.json(); })
-                    .then(function(data) {
-                        if (data.linkAvaliacao) {
-                            alert('✅ Novo link gerado!');
-                            carregarServicos();
-                        }
-                    })
-                    .catch(function(error) {
-                        alert('Erro ao gerar novo link');
-                    });
-            }
-
-            function handleExcluir(id) {
-                if (!window.confirm('Tem certeza que deseja excluir este serviço?')) {
-                    return;
-                }
-                
-                fetch(API_URL + '/servicos/' + id, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
-                })
-                    .then(function(response) { return response.json(); })
-                    .then(function(data) {
-                        if (data.message) {
-                            alert('✅ Serviço excluído!');
-                            carregarServicos();
-                        }
-                    })
-                    .catch(function(error) {
-                        alert('Erro ao excluir serviço');
-                    });
-            }
-
-            if (loading) {
-                return React.createElement('div', { className: "text-center py-12" },
-                    React.createElement('div', { className: "w-10 h-10 md:w-12 md:h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" }),
-                    React.createElement('p', { className: "text-sm md:text-base text-slate-600" }, "Carregando serviços...")
-                );
-            }
-
-            var servicosFiltrados = servicos;
-            if (filtro !== 'todos') {
-                servicosFiltrados = servicos.filter(function(s) { return s.status === filtro; });
-            }
-
-            return React.createElement('div', { className: "space-y-4 md:space-y-6" },
-                React.createElement('div', { className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3" },
-                    React.createElement('h2', { className: "text-xl md:text-2xl font-bold text-slate-900" }, "Meus Serviços"),
-                    React.createElement('button', {
-                        onClick: function() { setMostrarForm(!mostrarForm); },
-                        className: "px-3 md:px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl hover:shadow-lg transition flex items-center gap-2 text-sm md:text-base w-full sm:w-auto justify-center"
-                    },
-                        React.createElement('svg', { className: "w-4 h-4 md:w-5 md:h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                            React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M12 4v16m8-8H4" })
-                        ),
-                        "Novo Serviço"
-                    )
+        servicosFiltrados.length === 0 ?
+            React.createElement('div', { className: "text-center py-8 md:py-12 bg-slate-50 rounded-2xl border border-slate-200" },
+                React.createElement('svg', { className: "w-12 h-12 md:w-16 md:h-16 text-slate-300 mx-auto mb-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                    React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" })
                 ),
+                React.createElement('p', { className: "text-base md:text-lg font-medium text-slate-700 mb-2" }, "Nenhum serviço encontrado"),
+                React.createElement('p', { className: "text-xs md:text-sm text-slate-500 mb-6" }, "Cadastre seu primeiro serviço para começar"),
+                React.createElement('button', {
+                    onClick: function() { setMostrarForm(true); },
+                    className: "px-4 md:px-6 py-2.5 md:py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 text-sm md:text-base"
+                }, "+ Novo Serviço")
+            ) :
+            React.createElement('div', { className: "grid gap-4" },
+                servicosFiltrados.map(function(s) {
+                    var statusConfig = {
+                        aguardando: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', label: 'Aguardando', icon: '⏳' },
+                        avaliado: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', label: 'Avaliado', icon: '✅' },
+                        expirado: { bg: 'bg-slate-50', text: 'text-slate-500', border: 'border-slate-200', label: 'Expirado', icon: '⌛' }
+                    };
+                    var status = statusConfig[s.status] || statusConfig.aguardando;
 
-                mostrarForm && React.createElement(NovoServico, {
-                    onSucesso: function() {
-                        setMostrarForm(false);
-                        carregarServicos();
-                    },
-                    onCancelar: function() { setMostrarForm(false); }
-                }),
-
-                React.createElement('div', { className: "flex gap-1 md:gap-2 border-b border-slate-200 pb-4 overflow-x-auto hide-scrollbar" },
-                    ['todos', 'aguardando', 'avaliado', 'expirado'].map(function(status) {
-                        var labels = { todos: 'Todos', aguardando: 'Aguardando', avaliado: 'Avaliados', expirado: 'Expirados' };
-                        return React.createElement('button', {
-                            key: status,
-                            onClick: function() { setFiltro(status); },
-                            className: "px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-xs md:text-sm font-medium transition whitespace-nowrap " + 
-                                (filtro === status ? 'bg-indigo-100 text-indigo-700' : 'text-slate-500 hover:bg-slate-100')
-                        }, labels[status]);
-                    })
-                ),
-
-                servicosFiltrados.length === 0 ?
-                    React.createElement('div', { className: "text-center py-8 md:py-12 bg-slate-50 rounded-2xl border border-slate-200" },
-                        React.createElement('svg', { className: "w-12 h-12 md:w-16 md:h-16 text-slate-300 mx-auto mb-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                            React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" })
-                        ),
-                        React.createElement('p', { className: "text-base md:text-lg font-medium text-slate-700 mb-2" }, "Nenhum serviço encontrado"),
-                        React.createElement('p', { className: "text-xs md:text-sm text-slate-500 mb-6" }, "Cadastre seu primeiro serviço para começar"),
-                        React.createElement('button', {
-                            onClick: function() { setMostrarForm(true); },
-                            className: "px-4 md:px-6 py-2.5 md:py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 text-sm md:text-base"
-                        }, "+ Novo Serviço")
-                    ) :
-                    React.createElement('div', { className: "grid gap-4" },
-                        servicosFiltrados.map(function(s) {
-                            var statusConfig = {
-                                aguardando: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', label: 'Aguardando', icon: '⏳' },
-                                avaliado: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', label: 'Avaliado', icon: '✅' },
-                                expirado: { bg: 'bg-slate-50', text: 'text-slate-500', border: 'border-slate-200', label: 'Expirado', icon: '⌛' }
-                            };
-                            var status = statusConfig[s.status] || statusConfig.aguardando;
-
-                            var dataRealizacao = '';
-                            if (s.dataRealizacao) {
+                    // CORREÇÃO DA DATA AQUI
+                    var dataRealizacao = '';
+                    if (s.dataRealizacao) {
+                        // Se for string no formato YYYY-MM-DD, converter manualmente
+                        if (typeof s.dataRealizacao === 'string' && s.dataRealizacao.includes('-')) {
+                            var partes = s.dataRealizacao.split('-');
+                            if (partes.length === 3) {
+                                // Formatar como DD/MM/YYYY
+                                dataRealizacao = partes[2] + '/' + partes[1] + '/' + partes[0];
+                            } else {
                                 dataRealizacao = new Date(s.dataRealizacao).toLocaleDateString('pt-BR');
                             }
+                        } else {
+                            dataRealizacao = new Date(s.dataRealizacao).toLocaleDateString('pt-BR');
+                        }
+                    }
 
-                            var linkCompleto = window.location.origin + BASE_PATH + '/avaliar/' + s.avaliacaoToken;
+                    var linkCompleto = window.location.origin + BASE_PATH + '/avaliar/' + s.avaliacaoToken;
 
-                            return React.createElement('div', { 
-                                key: s._id, 
-                                className: "bg-white rounded-xl md:rounded-2xl border " + status.border + " overflow-hidden hover:shadow-lg transition-all"
-                            },
-                                React.createElement('div', { className: status.bg + " px-4 md:px-6 py-3 md:py-4 border-b " + status.border + " flex justify-between items-center" },
-                                    React.createElement('div', { className: "flex items-center gap-2 md:gap-3" },
-                                        React.createElement('span', { className: "text-xl md:text-2xl" }, status.icon),
-                                        React.createElement('div', { className: "min-w-0" },
-                                            React.createElement('h3', { className: "font-bold text-base md:text-lg text-slate-900 truncate" }, s.titulo),
-                                            React.createElement('p', { className: "text-xs md:text-sm text-slate-600 truncate" },
-                                                s.clienteNome + " • " + dataRealizacao
-                                            )
-                                        )
-                                    ),
-                                    React.createElement('span', { className: "px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-medium " + status.bg + " " + status.text + " border " + status.border + " whitespace-nowrap" },
-                                        status.label
-                                    )
-                                ),
-
-                                React.createElement('div', { className: "p-4 md:p-6 space-y-4" },
-                                    React.createElement('p', { className: "text-xs md:text-sm text-slate-600" }, s.descricao),
-
-                                    s.status === 'aguardando' && React.createElement('div', { className: "bg-indigo-50 rounded-xl p-3 md:p-4 border border-indigo-200" },
-                                        React.createElement('p', { className: "text-xs md:text-sm font-medium text-indigo-900 mb-3 flex items-center gap-2" },
-                                            React.createElement('svg', { className: "w-4 h-4 md:w-5 md:h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" })
-                                            ),
-                                            "Link de avaliação"
-                                        ),
-                                        React.createElement('div', { className: "flex flex-col sm:flex-row gap-2" },
-                                            React.createElement('input', {
-                                                type: "text",
-                                                value: linkCompleto,
-                                                readOnly: true,
-                                                className: "flex-1 px-3 md:px-4 py-2 md:py-3 bg-white rounded-xl border border-indigo-200 text-xs md:text-sm font-mono"
-                                            }),
-                                            React.createElement('div', { className: "flex gap-2" },
-                                                React.createElement('button', {
-                                                    onClick: function() { handleCopiarLink(linkCompleto); },
-                                                    className: "px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-medium transition " + (copiado === linkCompleto ? 'bg-emerald-600 text-white' : 'bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50')
-                                                }, copiado === linkCompleto ? '✓' : '📋'),
-                                                React.createElement('button', {
-                                                    onClick: function() { handleEnviarWhatsApp(s); },
-                                                    className: "px-3 md:px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs md:text-sm font-medium hover:bg-emerald-700 transition flex items-center gap-1"
-                                                },
-                                                    React.createElement('svg', { className: "w-4 h-4", fill: "currentColor", viewBox: "0 0 24 24" },
-                                                        React.createElement('path', { d: "M12.001 2C6.478 2 2 6.478 2 12c0 1.85.502 3.647 1.425 5.204L2.038 21.5l4.379-1.282c1.5.852 3.2 1.321 5.022 1.321 5.523 0 10-4.478 10-10s-4.477-10-10-10zm0 18c-1.502 0-2.93-.421-4.166-1.166l-.3-.178-2.7.79.79-2.6-.164-.312A7.968 7.968 0 014 12c0-4.411 3.589-8 8.001-8 4.41 0 7.999 3.589 7.999 8 0 4.412-3.589 8-7.999 8z" }),
-                                                        React.createElement('path', { d: "M13.099 14.302l-1.8-.8c-.3-.1-.6-.1-.8.1l-1.2 1.4c-.1.1-.2.1-.3.1-.1 0-.2 0-.3-.1-1.3-.8-2.4-1.9-3.2-3.2 0-.1 0-.2.1-.3l1.4-1.2c.1-.1.2-.3.1-.5l-.8-1.8c0-.2-.2-.4-.4-.4h-1.4c-.2 0-.4.2-.4.4 0 2.8 1.4 5.4 3.7 7 2.3 1.6 5 2.1 7.6 1.2.2-.1.4-.3.4-.5v-1.4c.2-.2 0-.4-.2-.5z" })
-                                                    ),
-                                                    React.createElement('span', { className: "hidden xs:inline" }, "WhatsApp")
-                                                )
-                                            )
-                                        ),
-                                        s.tokenExpiracao && React.createElement('p', { className: "text-[10px] md:text-xs text-indigo-600 mt-3" },
-                                            "Expira em: " + new Date(s.tokenExpiracao).toLocaleDateString('pt-BR')
-                                        )
-                                    ),
-
-                                    s.avaliacao && React.createElement('div', { className: "bg-amber-50 rounded-xl p-3 md:p-4 border border-amber-200" },
-                                        React.createElement('div', { className: "flex items-center justify-between mb-2" },
-                                            React.createElement('div', { className: "flex items-center gap-2" },
-                                                React.createElement('div', { className: "flex" },
-                                                    [1,2,3,4,5].map(function(e) {
-                                                        return React.createElement('svg', {
-                                                            key: e,
-                                                            className: "w-4 h-4 md:w-5 md:h-5 " + (e <= s.avaliacao.estrelas ? 'text-amber-400' : 'text-slate-300'),
-                                                            fill: "currentColor",
-                                                            viewBox: "0 0 20 20"
-                                                        },
-                                                            React.createElement('path', { d: "M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" })
-                                                        );
-                                                    })
-                                                ),
-                                                React.createElement('span', { className: "text-xs md:text-sm font-medium text-amber-800" }, s.avaliacao.estrelas + ".0")
-                                            ),
-                                            s.avaliacao.dataAvaliacao && React.createElement('span', { className: "text-[10px] md:text-xs text-slate-500" },
-                                                new Date(s.avaliacao.dataAvaliacao).toLocaleDateString('pt-BR')
-                                            )
-                                        ),
-                                        s.avaliacao.comentario && React.createElement('p', { className: "text-xs md:text-sm text-slate-700 italic" },
-                                            '"' + s.avaliacao.comentario + '"'
-                                        )
-                                    ),
-
-                                    s.status === 'aguardando' && React.createElement('div', { className: "flex justify-end gap-2 pt-2 border-t border-slate-100" },
-                                        React.createElement('button', {
-                                            onClick: function() { handleReenviarLink(s._id); },
-                                            className: "px-2 md:px-3 py-1 md:py-2 text-xs md:text-sm text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition"
-                                        }, "Gerar novo link"),
-                                        React.createElement('button', {
-                                            onClick: function() { handleExcluir(s._id); },
-                                            className: "px-2 md:px-3 py-1 md:py-2 text-xs md:text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition"
-                                        }, "Excluir")
+                    return React.createElement('div', { 
+                        key: s._id, 
+                        className: "bg-white rounded-xl md:rounded-2xl border " + status.border + " overflow-hidden hover:shadow-lg transition-all"
+                    },
+                        React.createElement('div', { className: status.bg + " px-4 md:px-6 py-3 md:py-4 border-b " + status.border + " flex justify-between items-center" },
+                            React.createElement('div', { className: "flex items-center gap-2 md:gap-3" },
+                                React.createElement('span', { className: "text-xl md:text-2xl" }, status.icon),
+                                React.createElement('div', { className: "min-w-0" },
+                                    React.createElement('h3', { className: "font-bold text-base md:text-lg text-slate-900 truncate" }, s.titulo),
+                                    React.createElement('p', { className: "text-xs md:text-sm text-slate-600 truncate" },
+                                        s.clienteNome + " • " + dataRealizacao
                                     )
                                 )
-                            );
-                        })
-                    )
-            );
-        }
+                            ),
+                            React.createElement('span', { className: "px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-medium " + status.bg + " " + status.text + " border " + status.border + " whitespace-nowrap" },
+                                status.label
+                            )
+                        ),
+
+                        React.createElement('div', { className: "p-4 md:p-6 space-y-4" },
+                            React.createElement('p', { className: "text-xs md:text-sm text-slate-600" }, s.descricao),
+
+                            s.status === 'aguardando' && React.createElement('div', { className: "bg-indigo-50 rounded-xl p-3 md:p-4 border border-indigo-200" },
+                                React.createElement('p', { className: "text-xs md:text-sm font-medium text-indigo-900 mb-3 flex items-center gap-2" },
+                                    React.createElement('svg', { className: "w-4 h-4 md:w-5 md:h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" })
+                                    ),
+                                    "Link de avaliação"
+                                ),
+                                React.createElement('div', { className: "flex flex-col sm:flex-row gap-2" },
+                                    React.createElement('input', {
+                                        type: "text",
+                                        value: linkCompleto,
+                                        readOnly: true,
+                                        className: "flex-1 px-3 md:px-4 py-2 md:py-3 bg-white rounded-xl border border-indigo-200 text-xs md:text-sm font-mono"
+                                    }),
+                                    React.createElement('div', { className: "flex gap-2" },
+                                        React.createElement('button', {
+                                            onClick: function() { handleCopiarLink(linkCompleto); },
+                                            className: "px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-medium transition " + (copiado === linkCompleto ? 'bg-emerald-600 text-white' : 'bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50')
+                                        }, copiado === linkCompleto ? '✓' : '📋'),
+                                        React.createElement('button', {
+                                            onClick: function() { handleEnviarWhatsApp(s); },
+                                            className: "px-3 md:px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs md:text-sm font-medium hover:bg-emerald-700 transition flex items-center gap-1"
+                                        },
+                                            React.createElement('svg', { className: "w-4 h-4", fill: "currentColor", viewBox: "0 0 24 24" },
+                                                React.createElement('path', { d: "M12.001 2C6.478 2 2 6.478 2 12c0 1.85.502 3.647 1.425 5.204L2.038 21.5l4.379-1.282c1.5.852 3.2 1.321 5.022 1.321 5.523 0 10-4.478 10-10s-4.477-10-10-10zm0 18c-1.502 0-2.93-.421-4.166-1.166l-.3-.178-2.7.79.79-2.6-.164-.312A7.968 7.968 0 014 12c0-4.411 3.589-8 8.001-8 4.41 0 7.999 3.589 7.999 8 0 4.412-3.589 8-7.999 8z" }),
+                                                React.createElement('path', { d: "M13.099 14.302l-1.8-.8c-.3-.1-.6-.1-.8.1l-1.2 1.4c-.1.1-.2.1-.3.1-.1 0-.2 0-.3-.1-1.3-.8-2.4-1.9-3.2-3.2 0-.1 0-.2.1-.3l1.4-1.2c.1-.1.2-.3.1-.5l-.8-1.8c0-.2-.2-.4-.4-.4h-1.4c-.2 0-.4.2-.4.4 0 2.8 1.4 5.4 3.7 7 2.3 1.6 5 2.1 7.6 1.2.2-.1.4-.3.4-.5v-1.4c.2-.2 0-.4-.2-.5z" })
+                                            ),
+                                            React.createElement('span', { className: "hidden xs:inline" }, "WhatsApp")
+                                        )
+                                    )
+                                ),
+                                s.tokenExpiracao && React.createElement('p', { className: "text-[10px] md:text-xs text-indigo-600 mt-3" },
+                                    "Expira em: " + new Date(s.tokenExpiracao).toLocaleDateString('pt-BR')
+                                )
+                            ),
+
+                            s.avaliacao && React.createElement('div', { className: "bg-amber-50 rounded-xl p-3 md:p-4 border border-amber-200" },
+                                React.createElement('div', { className: "flex items-center justify-between mb-2" },
+                                    React.createElement('div', { className: "flex items-center gap-2" },
+                                        React.createElement('div', { className: "flex" },
+                                            [1,2,3,4,5].map(function(e) {
+                                                return React.createElement('svg', {
+                                                    key: e,
+                                                    className: "w-4 h-4 md:w-5 md:h-5 " + (e <= s.avaliacao.estrelas ? 'text-amber-400' : 'text-slate-300'),
+                                                    fill: "currentColor",
+                                                    viewBox: "0 0 20 20"
+                                                },
+                                                    React.createElement('path', { d: "M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" })
+                                                );
+                                            })
+                                        ),
+                                        React.createElement('span', { className: "text-xs md:text-sm font-medium text-amber-800" }, s.avaliacao.estrelas + ".0")
+                                    ),
+                                    s.avaliacao.dataAvaliacao && React.createElement('span', { className: "text-[10px] md:text-xs text-slate-500" },
+                                        new Date(s.avaliacao.dataAvaliacao).toLocaleDateString('pt-BR')
+                                    )
+                                ),
+                                s.avaliacao.comentario && React.createElement('p', { className: "text-xs md:text-sm text-slate-700 italic" },
+                                    '"' + s.avaliacao.comentario + '"'
+                                )
+                            ),
+
+                            s.status === 'aguardando' && React.createElement('div', { className: "flex justify-end gap-2 pt-2 border-t border-slate-100" },
+                                React.createElement('button', {
+                                    onClick: function() { handleReenviarLink(s._id); },
+                                    className: "px-2 md:px-3 py-1 md:py-2 text-xs md:text-sm text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition"
+                                }, "Gerar novo link"),
+                                React.createElement('button', {
+                                    onClick: function() { handleExcluir(s._id); },
+                                    className: "px-2 md:px-3 py-1 md:py-2 text-xs md:text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition"
+                                }, "Excluir")
+                            )
+                        )
+                    );
+                })
+            )
+    );
+}
 
         // ========== COMPONENTE DE AVALIAÇÕES ==========
         function MinhasAvaliacoes() {
