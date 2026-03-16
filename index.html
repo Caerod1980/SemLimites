@@ -258,10 +258,16 @@
                                     onClick: function() { onNavigate('/login'); },
                                     className: "px-2 md:px-4 py-1.5 md:py-2 rounded-xl border border-neutral-200 hover:bg-neutral-50 text-neutral-700 font-medium transition-all text-xs md:text-sm whitespace-nowrap"
                                 }, "Entrar") :
-                                React.createElement('button', {
-                                    onClick: function() { onNavigate('/dashboard'); },
-                                    className: "px-2 md:px-4 py-1.5 md:py-2 rounded-xl bg-gradient-to-r from-[#3d7a3d] to-[#60a060] text-white font-medium shadow-sm hover:shadow-md transition-all text-xs md:text-sm whitespace-nowrap"
-                                }, "Dashboard"),
+                                (usuario.tipo === 'prestador' ?
+                                    React.createElement('button', {
+                                        onClick: function() { onNavigate('/dashboard'); },
+                                        className: "px-2 md:px-4 py-1.5 md:py-2 rounded-xl bg-gradient-to-r from-[#3d7a3d] to-[#60a060] text-white font-medium shadow-sm hover:shadow-md transition-all text-xs md:text-sm whitespace-nowrap"
+                                    }, "Dashboard") :
+                                    React.createElement('button', {
+                                        onClick: function() { onNavigate('/dashboard-cliente'); },
+                                        className: "px-2 md:px-4 py-1.5 md:py-2 rounded-xl bg-gradient-to-r from-[#3d7a3d] to-[#60a060] text-white font-medium shadow-sm hover:shadow-md transition-all text-xs md:text-sm whitespace-nowrap"
+                                    }, "Favoritos ❤️")
+                                ),
 
                             React.createElement('button', {
                                 onClick: function() { onNavigate('/cadastro'); },
@@ -2156,7 +2162,17 @@ function EditarPerfil(props) {
                         if (modo === 'login') {
                             localStorage.setItem('token', data.token);
                             localStorage.setItem('user', JSON.stringify(data.user));
-                            onLoginSuccess(data.user);
+                            
+                            // Verificar se tem intenção de curtir
+                            var prestadorParaCurtir = sessionStorage.getItem('curtirAposLogin');
+                            if (prestadorParaCurtir && data.user.tipo === 'cliente') {
+                                sessionStorage.removeItem('curtirAposLogin');
+                                // Vai curtir após redirecionar para o perfil
+                                // Por enquanto, navega para o dashboard do cliente
+                                onLoginSuccess(data.user, prestadorParaCurtir);
+                            } else {
+                                onLoginSuccess(data.user);
+                            }
                         } else {
                             alert('Cadastro realizado! Faça login.');
                             setModo('login');
@@ -3266,7 +3282,8 @@ function DashboardPrestador(props) {
         totalAvaliacoes: prestador?.avaliacoes || 0,
         taxaAprovacao: servicos.filter(s => s.status === 'avaliado').length > 0 
             ? Math.round((servicos.filter(s => s.status === 'avaliado' && s.avaliacao?.estrelas >= 4).length / servicos.filter(s => s.status === 'avaliado').length) * 100) 
-            : 0
+            : 0,
+        totalCurtidas: prestador?.totalCurtidas || 0
     };
 
     function handleExcluirPerfil() {
@@ -3395,7 +3412,7 @@ function DashboardPrestador(props) {
         ),
 
         // ESTATÍSTICAS MELHORADAS
-        React.createElement('div', { className: "grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8" },
+        React.createElement('div', { className: "grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-8" },
             // Reputação
             React.createElement('div', { className: "bg-white rounded-xl border border-[#c0dfc0] p-3 md:p-4 hover:shadow-md transition" },
                 React.createElement('div', { className: "flex items-center gap-2 text-amber-500 mb-2" },
@@ -3406,7 +3423,7 @@ function DashboardPrestador(props) {
                 ),
                 React.createElement('div', { className: "text-lg md:text-2xl font-bold text-slate-900" }, estatisticas.reputacao.toFixed(1)),
                 React.createElement('div', { className: "text-[10px] md:text-xs text-[#4a8a4a] mt-1" }, 
-                    estatisticas.avaliacoes + " avaliações • " + estatisticas.taxaAprovacao + "% aprovação"
+                    estatisticas.avaliacoes + " avaliações"
                 )
             ),
 
@@ -3420,7 +3437,21 @@ function DashboardPrestador(props) {
                 ),
                 React.createElement('div', { className: "text-lg md:text-2xl font-bold text-slate-900" }, estatisticas.servicosRealizados),
                 React.createElement('div', { className: "text-[10px] md:text-xs text-[#4a8a4a] mt-1" }, 
-                    "de " + estatisticas.totalServicos + " total"
+                    "de " + estatisticas.totalServicos
+                )
+            ),
+
+            // Curtidas (NOVO)
+            React.createElement('div', { className: "bg-white rounded-xl border border-[#c0dfc0] p-3 md:p-4 hover:shadow-md transition" },
+                React.createElement('div', { className: "flex items-center gap-2 text-red-500 mb-2" },
+                    React.createElement('svg', { className: "w-4 h-4 md:w-5 md:h-5", fill: "currentColor", viewBox: "0 0 20 20" },
+                        React.createElement('path', { fillRule: "evenodd", d: "M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z", clipRule: "evenodd" })
+                    ),
+                    React.createElement('span', { className: "text-xs md:text-sm font-medium text-[#3d7a3d]" }, "Curtidas")
+                ),
+                React.createElement('div', { className: "text-lg md:text-2xl font-bold text-slate-900" }, estatisticas.totalCurtidas),
+                React.createElement('div', { className: "text-[10px] md:text-xs text-[#4a8a4a] mt-1" }, 
+                    "de clientes"
                 )
             ),
 
@@ -3650,7 +3681,154 @@ function DashboardPrestador(props) {
     );
 }
 
-  // ========== TELA DE PERFIL PÚBLICO - CORRIGIDA COM VERIFICAÇÕES DE SEGURANÇA ==========
+      // ========== DASHBOARD DO CLIENTE (NOVO) ==========
+function DashboardCliente(props) {
+    var usuario = props.usuario;
+    var onSair = props.onSair;
+    var onVerPerfil = props.onVerPerfil;
+    
+    var [favoritos, setFavoritos] = useState([]);
+    var [loading, setLoading] = useState(true);
+    var [erro, setErro] = useState('');
+
+    useEffect(function() {
+        carregarFavoritos();
+    }, []);
+
+    function carregarFavoritos() {
+        setLoading(true);
+        
+        fetch(API_URL + '/favoritos/meus-favoritos', {
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.prestadores) {
+                    setFavoritos(data.prestadores);
+                }
+                setLoading(false);
+            })
+            .catch(function(error) {
+                console.error('Erro ao carregar favoritos:', error);
+                setErro('Erro ao carregar seus prestadores favoritos');
+                setLoading(false);
+            });
+    }
+
+    function handleDescurtir(prestadorId) {
+        if (!window.confirm('Remover este prestador dos seus favoritos?')) return;
+
+        fetch(API_URL + '/favoritos/' + prestadorId, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    carregarFavoritos(); // Recarregar lista
+                }
+            })
+            .catch(function(error) {
+                console.error('Erro ao descurtir:', error);
+                alert('Erro ao remover favorito');
+            });
+    }
+
+    if (loading) {
+        return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-12 text-center" },
+            React.createElement('div', { className: "w-12 h-12 md:w-16 md:h-16 border-4 border-[#FFD966] border-t-[#FFB347] rounded-full animate-spin mx-auto mb-4" }),
+            React.createElement('p', { className: "text-sm md:text-base text-[#4a8a4a]" }, "Carregando seus favoritos...")
+        );
+    }
+
+    return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8" },
+        // Header de boas-vindas
+        React.createElement('div', { 
+            className: "bg-gradient-to-r from-[#f0f7f0] to-[#fff8e7] rounded-2xl md:rounded-3xl p-6 md:p-8 mb-8 border border-[#c0dfc0]" 
+        },
+            React.createElement('div', { className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4" },
+                React.createElement('div', null,
+                    React.createElement('h1', { className: "text-xl md:text-3xl font-bold mb-2 text-[#3d7a3d]" },
+                        "Olá, " + (usuario?.email?.split('@')[0] || 'Cliente') + "!"
+                    ),
+                    React.createElement('p', { className: "text-sm md:text-base text-[#4a8a4a]" }, 
+                        "Aqui estão seus prestadores favoritos"
+                    )
+                ),
+                React.createElement('button', {
+                    onClick: onSair,
+                    className: "px-3 md:px-4 py-2 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white rounded-xl hover:shadow-md flex items-center gap-2 text-sm md:text-base"
+                },
+                    React.createElement('svg', { className: "w-4 h-4 md:w-5 md:h-5", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" })
+                    ),
+                    "Sair"
+                )
+            )
+        ),
+
+        erro && React.createElement('div', { className: "mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm" }, erro),
+
+        // Lista de favoritos
+        favoritos.length === 0 ?
+            React.createElement('div', { className: "text-center py-12 bg-white rounded-2xl border border-[#c0dfc0]" },
+                React.createElement('div', { className: "text-5xl mb-4" }, "❤️"),
+                React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-2" }, "Nenhum favorito ainda"),
+                React.createElement('p', { className: "text-[#4a8a4a] mb-6" }, "Comece a curtir prestadores para vê-los aqui!"),
+                React.createElement('button', {
+                    onClick: function() { navigate('/'); },
+                    className: "px-4 py-2 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white rounded-lg hover:shadow-md"
+                }, "Buscar prestadores")
+            ) :
+            React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6" },
+                favoritos.map(function(p) {
+                    return React.createElement('div', {
+                        key: p._id,
+                        className: "bg-white rounded-xl border border-[#c0dfc0] overflow-hidden hover:shadow-lg transition-all"
+                    },
+                        React.createElement('div', { className: "p-4" },
+                            React.createElement('div', { className: "flex justify-between items-start mb-3" },
+                                React.createElement('h3', { className: "font-bold text-lg text-[#3d7a3d]" }, p.nome),
+                                React.createElement('button', {
+                                    onClick: function(e) { 
+                                        e.stopPropagation();
+                                        handleDescurtir(p._id); 
+                                    },
+                                    className: "text-red-500 hover:text-red-700 transition"
+                                },
+                                    React.createElement('svg', { className: "w-6 h-6", fill: "currentColor", viewBox: "0 0 24 24" },
+                                        React.createElement('path', { d: "M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" })
+                                    )
+                                )
+                            ),
+                            React.createElement('p', { className: "text-sm text-[#4a8a4a] mb-2" },
+                                p.categoriaPrincipal?.nome || p.categoria || 'Profissional'
+                            ),
+                            React.createElement('p', { className: "text-xs text-slate-500 mb-3" },
+                                p.cidade + (p.estado ? ' - ' + p.estado : '')
+                            ),
+                            React.createElement('div', { className: "flex items-center gap-2 mb-3" },
+                                React.createElement(Stars, { value: p.estrelas || 0, size: "sm" }),
+                                React.createElement('span', { className: "text-xs text-slate-400" },
+                                    '(' + (p.avaliacoes || 0) + ')'
+                                )
+                            ),
+                            React.createElement('div', { className: "flex items-center gap-1 text-amber-600 mb-3" },
+                                React.createElement('span', { className: "text-sm font-medium" }, p.totalCurtidas || 0),
+                                React.createElement('span', { className: "text-xs" }, "curtidas")
+                            ),
+                            React.createElement('button', {
+                                onClick: function() { onVerPerfil(p); },
+                                className: "w-full px-3 py-2 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white rounded-lg text-sm font-medium hover:shadow-md transition"
+                            }, "Ver perfil")
+                        )
+                    );
+                })
+            )
+    );
+}
+
+  // ========== TELA DE PERFIL PÚBLICO - CORRIGIDA COM CURTIDAS ==========
 function TelaPerfil(props) {
     var prestador = props.prestador;
     var prestadorId = props.prestadorId;
@@ -3662,6 +3840,11 @@ function TelaPerfil(props) {
     var [categoriaPrincipalDetalhada, setCategoriaPrincipalDetalhada] = useState(null);
     var [erro, setErro] = useState('');
     var [compartilhado, setCompartilhado] = useState(false);
+    
+    // Estados para curtidas
+    var [curtido, setCurtido] = useState(false);
+    var [totalCurtidas, setTotalCurtidas] = useState(0);
+    var [carregandoCurtida, setCarregandoCurtida] = useState(false);
 
     useEffect(function() {
         var idParaBuscar = prestador?._id || prestadorId;
@@ -3672,6 +3855,40 @@ function TelaPerfil(props) {
             setErro('Prestador não encontrado');
         }
     }, [prestador, prestadorId]);
+
+    useEffect(function() {
+        if (dadosCompletos && dadosCompletos._id) {
+            // Buscar total de curtidas
+            fetch(API_URL + '/favoritos/prestador/' + dadosCompletos._id + '/total')
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    setTotalCurtidas(data.totalCurtidas || 0);
+                })
+                .catch(function(error) {
+                    console.error('Erro ao buscar total de curtidas:', error);
+                });
+
+            // Verificar se o usuário logado (cliente) já curtiu
+            var token = localStorage.getItem('token');
+            var user = localStorage.getItem('user');
+            
+            if (token && user) {
+                var userData = JSON.parse(user);
+                if (userData.tipo === 'cliente') {
+                    fetch(API_URL + '/favoritos/' + dadosCompletos._id + '/check', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+                        .then(function(response) { return response.json(); })
+                        .then(function(data) {
+                            setCurtido(data.curtido);
+                        })
+                        .catch(function(error) {
+                            console.error('Erro ao verificar curtida:', error);
+                        });
+                }
+            }
+        }
+    }, [dadosCompletos]);
 
     function carregarDadosCompletos(id) {
         setLoading(true);
@@ -3735,6 +3952,55 @@ function TelaPerfil(props) {
             });
     }
 
+    function handleCurtir() {
+        var token = localStorage.getItem('token');
+        
+        if (!token) {
+            // Salvar intenção de curtir e redirecionar para login
+            sessionStorage.setItem('curtirAposLogin', dadosCompletos._id);
+            navigate('/login');
+            return;
+        }
+
+        var user = localStorage.getItem('user');
+        if (user) {
+            var userData = JSON.parse(user);
+            if (userData.tipo !== 'cliente') {
+                alert('Apenas clientes podem curtir prestadores');
+                return;
+            }
+        }
+
+        setCarregandoCurtida(true);
+
+        var method = curtido ? 'DELETE' : 'POST';
+        var url = API_URL + '/favoritos/' + dadosCompletos._id;
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.success || data.curtido !== undefined) {
+                    setCurtido(!curtido);
+                    setTotalCurtidas(prev => curtido ? prev - 1 : prev + 1);
+                } else if (data.error) {
+                    alert(data.error);
+                }
+            })
+            .catch(function(error) {
+                console.error('Erro ao curtir:', error);
+                alert('Erro ao processar curtida');
+            })
+            .finally(function() {
+                setCarregandoCurtida(false);
+            });
+    }
+
     function handleCompartilhar() {
         var p = dadosCompletos || prestador;
         if (!p) return;
@@ -3765,6 +4031,7 @@ function TelaPerfil(props) {
         
         mensagem += servicosTexto;
         mensagem += "⭐ Avaliação: " + (p.estrelas || 0).toFixed(1) + " (" + (p.avaliacoes || 0) + " avaliações)\n\n";
+        mensagem += "❤️ Curtidas: " + totalCurtidas + "\n\n";
         mensagem += "🔗 Acesse o perfil completo:\n";
         mensagem += perfilUrl;
         
@@ -3881,6 +4148,36 @@ function TelaPerfil(props) {
             ),
             
             React.createElement('div', { className: "flex items-center gap-2" },
+                // Botão de curtir
+                React.createElement('button', {
+                    onClick: handleCurtir,
+                    disabled: carregandoCurtida,
+                    className: cls(
+                        "px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-medium transition-all flex items-center gap-2",
+                        curtido 
+                            ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100" 
+                            : "bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100"
+                    )
+                },
+                    React.createElement('span', { className: "flex items-center gap-1" },
+                        React.createElement('svg', { 
+                            className: cls("w-5 h-5", curtido ? "text-red-500" : "text-slate-400"),
+                            fill: curtido ? "currentColor" : "none",
+                            stroke: "currentColor",
+                            viewBox: "0 0 24 24" 
+                        },
+                            React.createElement('path', { 
+                                strokeLinecap: "round", 
+                                strokeLinejoin: "round", 
+                                strokeWidth: 2,
+                                d: "M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
+                            })
+                        ),
+                        React.createElement('span', null, curtido ? 'Curtido' : 'Curtir')
+                    ),
+                    React.createElement('span', { className: "text-xs font-bold" }, totalCurtidas)
+                ),
+                
                 compartilhado && React.createElement('span', { className: "text-xs text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full" }, "Copiado!"),
                 React.createElement('button', {
                     onClick: handleCompartilhar,
@@ -4084,6 +4381,7 @@ function TelaPerfil(props) {
         )
     );
 }
+
        // ========== FUNÇÃO DE NAVEGAÇÃO (CORRIGIDA) ==========
 function navigate(path) {
     var fullPath = BASE_PATH + path;
@@ -4097,7 +4395,9 @@ function navigate(path) {
         window.appSetModo('cadastro');
     } else if (path === '/dashboard') {
         window.appSetModo('dashboard');
-    } else if (path.startsWith('/perfil/')) {  // CORRIGIDO: verificar se começa com /perfil/
+    } else if (path === '/dashboard-cliente') {
+        window.appSetModo('dashboard-cliente');
+    } else if (path.startsWith('/perfil/')) {
         window.appSetModo('perfil');
     } else if (path === '/esqueci-senha') {
         window.appSetModo('esqueci-senha');
@@ -4107,12 +4407,13 @@ function navigate(path) {
         window.appSetModo('busca');
     }
 }
+
         // ========== APP PRINCIPAL (CORRIGIDO) ==========
 function App() {
     var [modo, setModo] = useState('busca');
     var [usuario, setUsuario] = useState(null);
     var [prestadorSelecionado, setPrestadorSelecionado] = useState(null);
-    var [prestadorId, setPrestadorId] = useState(null); // NOVO: para ID da URL
+    var [prestadorId, setPrestadorId] = useState(null);
 
     window.appSetModo = setModo;
 
@@ -4128,12 +4429,14 @@ function App() {
             setModo('cadastro');
         } else if (path === '/dashboard') {
             setModo('dashboard');
-        } else if (path.startsWith('/perfil/')) { // CORRIGIDO: capturar ID
-            var id = path.split('/')[2]; // Pega o ID após /perfil/
+        } else if (path === '/dashboard-cliente') {
+            setModo('dashboard-cliente');
+        } else if (path.startsWith('/perfil/')) {
+            var id = path.split('/')[2];
             console.log('📌 ID do perfil da URL:', id);
             if (id) {
                 setPrestadorId(id);
-                setPrestadorSelecionado(null); // Limpar prestador da busca
+                setPrestadorSelecionado(null);
                 setModo('perfil');
             } else {
                 setModo('busca');
@@ -4154,7 +4457,10 @@ function App() {
             })
                 .then(function(response) { return response.json(); })
                 .then(function(data) {
-                    if (!data.error) setUsuario(data);
+                    if (!data.error) {
+                        setUsuario(data);
+                        localStorage.setItem('user', JSON.stringify(data));
+                    }
                 })
                 .catch(function(error) { console.error(error); });
         }
@@ -4170,11 +4476,20 @@ function App() {
         console.log('👤 App recebeu prestador para ver perfil:', prestador.nome);
         setPrestadorSelecionado(prestador);
         setPrestadorId(null);
-        navigate('/perfil/' + prestador._id); // Agora funcionará
+        navigate('/perfil/' + prestador._id);
     }
 
-    function handleLoginSuccess() {
-        navigate('/dashboard');
+    function handleLoginSuccess(userData, prestadorParaCurtir) {
+        setUsuario(userData);
+        
+        if (prestadorParaCurtir) {
+            // Se veio de uma intenção de curtir, redireciona de volta para o perfil
+            navigate('/perfil/' + prestadorParaCurtir);
+        } else if (userData.tipo === 'cliente') {
+            navigate('/dashboard-cliente');
+        } else {
+            navigate('/dashboard');
+        }
     }
 
     function handleCadastroSucesso() {
@@ -4182,8 +4497,9 @@ function App() {
     }
 
     function handleSair() {
-        localStorage.removeItem('token'); 
-        setUsuario(null); 
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setUsuario(null);
         navigate('/');
     }
 
@@ -4197,7 +4513,6 @@ function App() {
     if (modo === 'busca') {
         content = React.createElement(TelaBusca, { onVerPerfil: handleVerPerfil });
     } else if (modo === 'perfil') {
-        // CORRIGIDO: passar tanto prestador (da busca) quanto prestadorId (da URL)
         content = React.createElement(TelaPerfil, { 
             prestador: prestadorSelecionado, 
             prestadorId: prestadorId,
@@ -4209,6 +4524,12 @@ function App() {
         content = React.createElement(CadastroPrestador, { onCadastroSucesso: handleCadastroSucesso, onVoltar: voltarParaBusca });
     } else if (modo === 'dashboard') {
         content = React.createElement(DashboardPrestador, { usuario: usuario, onSair: handleSair });
+    } else if (modo === 'dashboard-cliente') {
+        content = React.createElement(DashboardCliente, { 
+            usuario: usuario, 
+            onSair: handleSair,
+            onVerPerfil: handleVerPerfil 
+        });
     } else if (modo === 'avaliar') {
         content = React.createElement(AvaliarServico);
     } else if (modo === 'esqueci-senha') {
