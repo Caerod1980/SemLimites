@@ -90,6 +90,11 @@
         .avatar-placeholder {
             background: linear-gradient(135deg, #e0efe0 0%, #fff1cf 100%);
         }
+
+        /* Smooth scrolling para toda a página */
+        html {
+            scroll-behavior: smooth;
+        }
     </style>
 </head>
 <body class="overflow-guard">
@@ -4773,6 +4778,291 @@ function Login(props) {
             );
         }
 
+        // ========== PÁGINA SOBRE NÓS ==========
+        function SobreNos(props) {
+            var onVoltar = props.onVoltar;
+
+            return React.createElement('div', { className: "max-w-5xl mx-auto px-4 py-8 md:py-12" },
+                React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-6 md:p-8 shadow-sm" },
+                    
+                    // Cabeçalho
+                    React.createElement('div', { className: "flex items-center justify-between mb-8" },
+                        React.createElement('h1', { className: "text-2xl md:text-3xl font-bold text-[#3d7a3d]" }, 
+                            "Sobre Nós"
+                        ),
+                        React.createElement('button', {
+                            onClick: onVoltar,
+                            className: "text-sm text-[#4a8a4a] hover:text-[#2d5a2d] flex items-center gap-1"
+                        },
+                            React.createElement('svg', { className: "w-4 h-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M10 19l-7-7m0 0l7-7m-7 7h18" })
+                            ),
+                            "Voltar"
+                        )
+                    ),
+
+                    React.createElement('p', { className: "text-lg md:text-xl text-slate-600 mb-8 text-center font-medium" },
+                        "Conectando pessoas a profissionais de confiança"
+                    ),
+
+                    // Nossa História
+                    React.createElement('div', { className: "mb-8" },
+                        React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 flex items-center gap-2" },
+                            React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" })
+                            ),
+                            "Nossa História"
+                        ),
+                        React.createElement('p', { className: "text-sm md:text-base text-slate-700 leading-relaxed mb-4" },
+                            "A ideia do ", React.createElement('span', { className: "font-semibold text-[#3d7a3d]" }, "SemLimites"), " nasceu de uma necessidade simples, mas extremamente comum: ", 
+                            React.createElement('span', { className: "font-medium" }, "encontrar profissionais de confiança para realizar serviços.")
+                        ),
+                        React.createElement('p', { className: "text-sm md:text-base text-slate-700 leading-relaxed mb-4" },
+                            "Quem nunca passou por situações como:"
+                        ),
+                        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 mb-4 border border-[#c0dfc0]" },
+                            React.createElement('p', { className: "text-sm md:text-base text-slate-600 italic mb-2" },
+                                "💬 \"Preciso de um eletricista urgente, mas não conheço nenhum de confiança.\""
+                            ),
+                            React.createElement('p', { className: "text-sm md:text-base text-slate-600 italic mb-2" },
+                                "💬 \"Meu encanador sumiu e agora? Como achar outro tão bom quanto?\""
+                            ),
+                            React.createElement('p', { className: "text-sm md:text-base text-slate-600 italic" },
+                                "💬 \"Contratei um profissional pelo Instagram, mas o serviço ficou péssimo e não tenho como reclamar ou avisar outras pessoas.\""
+                            )
+                        ),
+                        React.createElement('p', { className: "text-sm md:text-base text-slate-700 leading-relaxed" },
+                            "Foi pensando exatamente nesses dilemas diários que decidimos criar uma plataforma que ", 
+                            React.createElement('span', { className: "font-semibold text-[#3d7a3d]" }, "revolucionasse a forma como pessoas se conectam com prestadores de serviços.")
+                        )
+                    ),
+
+                    // O Problema
+                    React.createElement('div', { className: "mb-8" },
+                        React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 flex items-center gap-2" },
+                            React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" })
+                            ),
+                            "O Problema que Identificamos"
+                        ),
+                        React.createElement('p', { className: "text-sm md:text-base text-slate-700 leading-relaxed mb-4" },
+                            "No dia a dia, milhares de pessoas precisam de serviços como:"
+                        ),
+                        React.createElement('div', { className: "flex flex-wrap gap-2 mb-4" },
+                            React.createElement('span', { className: "px-3 py-1 bg-[#f0f7f0] text-[#2d5a2d] rounded-full text-sm border border-[#c0dfc0]" }, "🔧 Consertos e reparos domésticos"),
+                            React.createElement('span', { className: "px-3 py-1 bg-[#f0f7f0] text-[#2d5a2d] rounded-full text-sm border border-[#c0dfc0]" }, "🏠 Reformas e manutenções"),
+                            React.createElement('span', { className: "px-3 py-1 bg-[#f0f7f0] text-[#2d5a2d] rounded-full text-sm border border-[#c0dfc0]" }, "🧹 Serviços de limpeza"),
+                            React.createElement('span', { className: "px-3 py-1 bg-[#f0f7f0] text-[#2d5a2d] rounded-full text-sm border border-[#c0dfc0]" }, "📦 Montagem de móveis")
+                        ),
+                        
+                        React.createElement('div', { className: "overflow-x-auto mt-4" },
+                            React.createElement('table', { className: "min-w-full bg-white rounded-xl border border-[#c0dfc0]" },
+                                React.createElement('thead', { className: "bg-[#f0f7f0]" },
+                                    React.createElement('tr', null,
+                                        React.createElement('th', { className: "px-4 py-3 text-left text-sm font-semibold text-[#3d7a3d] border-b border-[#c0dfc0]" }, "Para quem contrata"),
+                                        React.createElement('th', { className: "px-4 py-3 text-left text-sm font-semibold text-[#3d7a3d] border-b border-[#c0dfc0]" }, "Para quem presta serviço")
+                                    )
+                                ),
+                                React.createElement('tbody', { className: "divide-y divide-[#c0dfc0]" },
+                                    React.createElement('tr', null,
+                                        React.createElement('td', { className: "px-4 py-2 text-sm text-slate-600" }, "Dificuldade em encontrar profissionais qualificados"),
+                                        React.createElement('td', { className: "px-4 py-2 text-sm text-slate-600" }, "Dificuldade em divulgar seu trabalho")
+                                    ),
+                                    React.createElement('tr', null,
+                                        React.createElement('td', { className: "px-4 py-2 text-sm text-slate-600" }, "Medo de contratar pessoas não confiáveis"),
+                                        React.createElement('td', { className: "px-4 py-2 text-sm text-slate-600" }, "Falta de um canal para mostrar credibilidade")
+                                    ),
+                                    React.createElement('tr', null,
+                                        React.createElement('td', { className: "px-4 py-2 text-sm text-slate-600" }, "Falta de referências sobre trabalhos anteriores"),
+                                        React.createElement('td', { className: "px-4 py-2 text-sm text-slate-600" }, "Necessidade de provar sua experiência")
+                                    ),
+                                    React.createElement('tr', null,
+                                        React.createElement('td', { className: "px-4 py-2 text-sm text-slate-600" }, "Processos inseguros e sem transparência"),
+                                        React.createElement('td', { className: "px-4 py-2 text-sm text-slate-600" }, "Dependência apenas do \"boca a boca\"")
+                                    )
+                                )
+                            )
+                        ),
+                        
+                        React.createElement('p', { className: "text-sm md:text-base text-slate-700 leading-relaxed mt-4" },
+                            "Foi diante desse cenário que percebemos: ", 
+                            React.createElement('span', { className: "font-semibold text-[#3d7a3d]" }, "faltava uma ponte segura e transparente entre quem precisa de serviços e quem tem talento para oferecê-los.")
+                        )
+                    ),
+
+                    // Nossa Solução
+                    React.createElement('div', { className: "mb-8" },
+                        React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 flex items-center gap-2" },
+                            React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" })
+                            ),
+                            "Nossa Solução"
+                        ),
+                        
+                        React.createElement('p', { className: "text-sm md:text-base text-slate-700 leading-relaxed mb-6" },
+                            "O ", React.createElement('span', { className: "font-semibold text-[#3d7a3d]" }, "SemLimites"), " nasceu para ser essa ponte. Uma plataforma completa que conecta pessoas a prestadores de serviços de forma ", 
+                            React.createElement('span', { className: "font-medium" }, "simples, segura e transparente.")
+                        ),
+                        
+                        // Para quem contrata
+                        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 mb-4 border border-[#c0dfc0]" },
+                            React.createElement('h3', { className: "font-semibold text-lg text-[#2d5a2d] mb-3" }, "✅ Para quem contrata:"),
+                            React.createElement('ul', { className: "space-y-2" },
+                                React.createElement('li', { className: "flex items-start gap-2 text-sm text-slate-700" },
+                                    React.createElement('span', { className: "text-emerald-600 font-bold" }, "✓"),
+                                    React.createElement('span', null, React.createElement('span', { className: "font-medium" }, "Encontre profissionais com facilidade"), " – Busque por categoria, cidade, especialidade ou palavras-chave.")
+                                ),
+                                React.createElement('li', { className: "flex items-start gap-2 text-sm text-slate-700" },
+                                    React.createElement('span', { className: "text-emerald-600 font-bold" }, "✓"),
+                                    React.createElement('span', null, React.createElement('span', { className: "font-medium" }, "Avaliações reais e públicas"), " – Cada serviço realizado pode ser avaliado pelo cliente.")
+                                ),
+                                React.createElement('li', { className: "flex items-start gap-2 text-sm text-slate-700" },
+                                    React.createElement('span', { className: "text-emerald-600 font-bold" }, "✓"),
+                                    React.createElement('span', null, React.createElement('span', { className: "font-medium" }, "Perfis completos e transparentes"), " – Veja fotos, descrições, especialidades e certificações.")
+                                ),
+                                React.createElement('li', { className: "flex items-start gap-2 text-sm text-slate-700" },
+                                    React.createElement('span', { className: "text-emerald-600 font-bold" }, "✓"),
+                                    React.createElement('span', null, React.createElement('span', { className: "font-medium" }, "Curtidas e favoritos"), " – Adicione profissionais aos favoritos e contrate novamente quando precisar.")
+                                ),
+                                React.createElement('li', { className: "flex items-start gap-2 text-sm text-slate-700" },
+                                    React.createElement('span', { className: "text-emerald-600 font-bold" }, "✓"),
+                                    React.createElement('span', null, React.createElement('span', { className: "font-medium" }, "Contato direto via WhatsApp"), " – Converse com o prestador com apenas um clique.")
+                                )
+                            )
+                        ),
+                        
+                        // Para quem presta serviço
+                        React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 mb-4 border border-[#FFE3A0]" },
+                            React.createElement('h3', { className: "font-semibold text-lg text-[#F09030] mb-3" }, "✅ Para quem presta serviço:"),
+                            React.createElement('ul', { className: "space-y-2" },
+                                React.createElement('li', { className: "flex items-start gap-2 text-sm text-slate-700" },
+                                    React.createElement('span', { className: "text-[#F09030] font-bold" }, "✓"),
+                                    React.createElement('span', null, React.createElement('span', { className: "font-medium" }, "Vitrine profissional completa"), " – Crie um perfil detalhado com suas especialidades e certificações.")
+                                ),
+                                React.createElement('li', { className: "flex items-start gap-2 text-sm text-slate-700" },
+                                    React.createElement('span', { className: "text-[#F09030] font-bold" }, "✓"),
+                                    React.createElement('span', null, React.createElement('span', { className: "font-medium" }, "Construção de reputação"), " – Cada serviço bem avaliado aumenta sua nota e atrai mais clientes.")
+                                ),
+                                React.createElement('li', { className: "flex items-start gap-2 text-sm text-slate-700" },
+                                    React.createElement('span', { className: "text-[#F09030] font-bold" }, "✓"),
+                                    React.createElement('span', null, React.createElement('span', { className: "font-medium" }, "Compartilhamento de currículo"), " – Seu perfil funciona como um currículo vivo.")
+                                ),
+                                React.createElement('li', { className: "flex items-start gap-2 text-sm text-slate-700" },
+                                    React.createElement('span', { className: "text-[#F09030] font-bold" }, "✓"),
+                                    React.createElement('span', null, React.createElement('span', { className: "font-medium" }, "Clientes fiéis"), " – Identifique clientes que já contrataram você mais de uma vez.")
+                                ),
+                                React.createElement('li', { className: "flex items-start gap-2 text-sm text-slate-700" },
+                                    React.createElement('span', { className: "text-[#F09030] font-bold" }, "✓"),
+                                    React.createElement('span', null, React.createElement('span', { className: "font-medium" }, "Gestão completa de serviços"), " – Cadastre cada trabalho realizado e gere links exclusivos para avaliação.")
+                                )
+                            )
+                        )
+                    ),
+
+                    // Nossos Diferenciais
+                    React.createElement('div', { className: "mb-8" },
+                        React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 flex items-center gap-2" },
+                            React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" })
+                            ),
+                            "Nossos Diferenciais"
+                        ),
+                        
+                        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
+                            React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                                React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "🔒 Segurança e Transparência"),
+                                React.createElement('p', { className: "text-sm text-slate-600" }, "Avaliações públicas e verificadas por e-mail, perfis detalhados e verificação de CNPJ para empresas.")
+                            ),
+                            React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                                React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "📱 Acesso Facilitado"),
+                                React.createElement('p', { className: "text-sm text-slate-600" }, "Totalmente responsivo, pode ser acessado de qualquer dispositivo – computador, tablet ou celular.")
+                            ),
+                            React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                                React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "⭐ Construção de Reputação"),
+                                React.createElement('p', { className: "text-sm text-slate-600" }, "Baseada em avaliações reais de clientes reais, criando um ciclo virtuoso de qualidade e confiança.")
+                            ),
+                            React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                                React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "💡 Valorização do Profissional"),
+                                React.createElement('p', { className: "text-sm text-slate-600" }, "Seu perfil é seu currículo, sua vitrine e sua principal ferramenta de divulgação.")
+                            )
+                        )
+                    ),
+
+                    // Missão, Visão e Valores
+                    React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-4 mb-8" },
+                        React.createElement('div', { className: "bg-gradient-to-br from-[#3d7a3d] to-[#60a060] text-white rounded-xl p-4 border border-[#c0dfc0]" },
+                            React.createElement('h3', { className: "font-semibold text-lg mb-2" }, "Nossa Missão"),
+                            React.createElement('p', { className: "text-sm leading-relaxed" },
+                                "\"Democratizar o acesso a serviços de qualidade, conectando pessoas a profissionais confiáveis e valorizando o trabalho bem feito.\""
+                            )
+                        ),
+                        React.createElement('div', { className: "bg-gradient-to-br from-[#FFB347] to-[#FFD966] text-white rounded-xl p-4 border border-[#FFE3A0]" },
+                            React.createElement('h3', { className: "font-semibold text-lg mb-2" }, "Nossa Visão"),
+                            React.createElement('p', { className: "text-sm leading-relaxed" },
+                                "Ser a maior e mais confiável plataforma de conexão entre clientes e prestadores de serviços do Brasil."
+                            )
+                        ),
+                        React.createElement('div', { className: "bg-gradient-to-br from-indigo-600 to-indigo-700 text-white rounded-xl p-4 border border-indigo-200" },
+                            React.createElement('h3', { className: "font-semibold text-lg mb-2" }, "Nossos Valores"),
+                            React.createElement('ul', { className: "text-sm space-y-1" },
+                                React.createElement('li', null, "🫱🏽‍🫲🏼 Confiança – Base de tudo"),
+                                React.createElement('li', null, "🔍 Transparência – Informações claras"),
+                                React.createElement('li', null, "⭐ Qualidade – Excelência nos serviços"),
+                                React.createElement('li', null, "🤝 Respeito – Dignidade para todos"),
+                                React.createElement('li', null, "📈 Inovação – Sempre evoluindo"),
+                                React.createElement('li', null, "🌟 Valorização – Destaque para o bom trabalho")
+                            )
+                        )
+                    ),
+
+                    // Por que "SemLimites"
+                    React.createElement('div', { className: "mb-8" },
+                        React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 flex items-center gap-2" },
+                            React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M13 10V3L4 14h7v7l9-11h-7z" })
+                            ),
+                            "Por que \"SemLimites\"?"
+                        ),
+                        React.createElement('p', { className: "text-sm md:text-base text-slate-700 leading-relaxed mb-2" },
+                            "O nome ", React.createElement('span', { className: "font-semibold text-[#3d7a3d]" }, "SemLimites"), " reflete nossa crença de que ", 
+                            React.createElement('span', { className: "font-medium" }, "o talento e a capacidade de realização não têm fronteiras.")
+                        ),
+                        React.createElement('p', { className: "text-sm md:text-base text-slate-700 leading-relaxed mt-2" },
+                            "Para os clientes: não há limites para encontrar o profissional ideal, não importa quão específica seja sua necessidade."
+                        ),
+                        React.createElement('p', { className: "text-sm md:text-base text-slate-700 leading-relaxed mt-2" },
+                            "Para os prestadores: não há limites para crescer, evoluir e conquistar novos clientes com base na qualidade do seu trabalho."
+                        ),
+                        React.createElement('p', { className: "text-sm md:text-base text-slate-700 leading-relaxed mt-4 font-medium" },
+                            "Juntos, podemos construir uma comunidade ", React.createElement('span', { className: "text-[#3d7a3d]" }, "sem limites para a confiança, a qualidade e as oportunidades.")
+                        )
+                    ),
+
+                    // Junte-se a Nós
+                    React.createElement('div', { className: "bg-gradient-to-r from-[#f0f7f0] to-[#fff8e7] rounded-xl p-6 border border-[#c0dfc0] text-center" },
+                        React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4" }, "Junte-se a Nós"),
+                        React.createElement('p', { className: "text-sm md:text-base text-slate-700 mb-4" },
+                            "Seja você um cliente em busca de serviços de qualidade ou um prestador querendo mostrar seu talento, o ", 
+                            React.createElement('span', { className: "font-semibold text-[#3d7a3d]" }, "SemLimites"), " é o seu lugar."
+                        ),
+                        React.createElement('div', { className: "flex flex-col sm:flex-row gap-4 justify-center mt-6" },
+                            React.createElement('button', {
+                                onClick: function() { navigate('/cadastro'); },
+                                className: "px-6 py-3 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white font-semibold rounded-xl hover:shadow-lg transition"
+                            }, "Quero ser Prestador"),
+                            React.createElement('button', {
+                                onClick: function() { navigate('/'); },
+                                className: "px-6 py-3 bg-gradient-to-r from-[#3d7a3d] to-[#60a060] text-white font-semibold rounded-xl hover:shadow-lg transition"
+                            }, "Buscar Profissionais")
+                        ),
+                        React.createElement('p', { className: "text-sm text-slate-500 mt-6" },
+                            "Vamos juntos transformar a forma como serviços são contratados e realizados no Brasil! 🇧🇷"
+                        )
+                    )
+                )
+            );
+        }
+
         // ========== PÁGINA SOBRE O DASHBOARD DO PRESTADOR ==========
         function SobreDashboardPrestador(props) {
             var onVoltar = props.onVoltar;
@@ -5152,6 +5442,12 @@ function Login(props) {
         function Rodape(props) {
             var onNavigate = props.onNavigate;
 
+            // Função para navegar e garantir rolagem ao topo
+            function handleNavigate(path) {
+                window.scrollTo(0, 0);
+                onNavigate(path);
+            }
+
             return React.createElement('footer', { className: "bg-white/90 backdrop-blur-md border-t border-neutral-200/60 mt-12" },
                 React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-8 md:py-12" },
                     
@@ -5169,19 +5465,19 @@ function Login(props) {
                             React.createElement('ul', { className: "space-y-2" },
                                 React.createElement('li', null,
                                     React.createElement('button', {
-                                        onClick: function() { onNavigate('/sobre'); },
+                                        onClick: function() { handleNavigate('/sobre'); },
                                         className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
                                     }, "Sobre Nós")
                                 ),
                                 React.createElement('li', null,
                                     React.createElement('button', {
-                                        onClick: function() { onNavigate('/como-funciona'); },
+                                        onClick: function() { handleNavigate('/como-funciona'); },
                                         className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
                                     }, "Como Funciona")
                                 ),
                                 React.createElement('li', null,
                                     React.createElement('button', {
-                                        onClick: function() { onNavigate('/contato'); },
+                                        onClick: function() { handleNavigate('/contato'); },
                                         className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
                                     }, "Contato / Suporte")
                                 )
@@ -5193,19 +5489,19 @@ function Login(props) {
                             React.createElement('ul', { className: "space-y-2" },
                                 React.createElement('li', null,
                                     React.createElement('button', {
-                                        onClick: function() { onNavigate('/termos'); },
+                                        onClick: function() { handleNavigate('/termos'); },
                                         className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
                                     }, "Termos de Uso")
                                 ),
                                 React.createElement('li', null,
                                     React.createElement('button', {
-                                        onClick: function() { onNavigate('/privacidade'); },
+                                        onClick: function() { handleNavigate('/privacidade'); },
                                         className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
                                     }, "Política de Privacidade")
                                 ),
                                 React.createElement('li', null,
                                     React.createElement('button', {
-                                        onClick: function() { onNavigate('/cookies'); },
+                                        onClick: function() { handleNavigate('/cookies'); },
                                         className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
                                     }, "Política de Cookies")
                                 )
@@ -5217,19 +5513,19 @@ function Login(props) {
                             React.createElement('ul', { className: "space-y-2" },
                                 React.createElement('li', null,
                                     React.createElement('button', {
-                                        onClick: function() { onNavigate('/cadastro'); },
+                                        onClick: function() { handleNavigate('/cadastro'); },
                                         className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
                                     }, "Quero ser Prestador")
                                 ),
                                 React.createElement('li', null,
                                     React.createElement('button', {
-                                        onClick: function() { onNavigate('/sobre-dashboard-prestador'); },
+                                        onClick: function() { handleNavigate('/sobre-dashboard-prestador'); },
                                         className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
                                     }, "Área do Prestador")
                                 ),
                                 React.createElement('li', null,
                                     React.createElement('button', {
-                                        onClick: function() { onNavigate('/faq-prestador'); },
+                                        onClick: function() { handleNavigate('/faq-prestador'); },
                                         className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
                                     }, "FAQ para Prestadores")
                                 )
@@ -5241,19 +5537,19 @@ function Login(props) {
                             React.createElement('ul', { className: "space-y-2" },
                                 React.createElement('li', null,
                                     React.createElement('button', {
-                                        onClick: function() { onNavigate('/'); },
+                                        onClick: function() { handleNavigate('/'); },
                                         className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
                                     }, "Buscar Profissionais")
                                 ),
                                 React.createElement('li', null,
                                     React.createElement('button', {
-                                        onClick: function() { onNavigate('/dashboard-cliente'); },
+                                        onClick: function() { handleNavigate('/dashboard-cliente'); },
                                         className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
                                     }, "Meus Favoritos")
                                 ),
                                 React.createElement('li', null,
                                     React.createElement('button', {
-                                        onClick: function() { onNavigate('/faq-cliente'); },
+                                        onClick: function() { handleNavigate('/faq-cliente'); },
                                         className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
                                     }, "FAQ para Clientes")
                                 )
@@ -5275,6 +5571,9 @@ function Login(props) {
 
         // ========== FUNÇÃO DE NAVEGAÇÃO ==========
         function navigate(path) {
+            // Rola a página para o topo
+            window.scrollTo(0, 0);
+            
             var fullPath = BASE_PATH + path;
             window.history.pushState({}, '', fullPath);
             
@@ -5395,6 +5694,7 @@ function Login(props) {
             }, []);
 
             function voltarParaBusca() {
+                window.scrollTo(0, 0);
                 navigate('/');
                 setPrestadorId(null);
                 setPrestadorSelecionado(null);
@@ -5475,9 +5775,11 @@ function Login(props) {
                 content = React.createElement(PoliticaPrivacidade, { onVoltar: voltarParaBusca });
             } else if (modo === 'cookies') {
                 content = React.createElement(PoliticaCookies, { onVoltar: voltarParaBusca });
+            } else if (modo === 'sobre') {
+                content = React.createElement(SobreNos, { onVoltar: voltarParaBusca });
             } else if (modo === 'sobre-dashboard-prestador') {
                 content = React.createElement(SobreDashboardPrestador, { onVoltar: voltarParaBusca });
-            } else if (modo === 'contato' || modo === 'sobre' || modo === 'como-funciona' || modo === 'faq-prestador' || modo === 'faq-cliente') {
+            } else if (modo === 'contato' || modo === 'como-funciona' || modo === 'faq-prestador' || modo === 'faq-cliente') {
                 setTimeout(function() { navigate('/'); }, 100);
                 content = React.createElement('div', { className: "text-center py-12" },
                     React.createElement('div', { className: "w-10 h-10 border-4 border-[#FFD966] border-t-[#FFB347] rounded-full animate-spin mx-auto mb-4" }),
