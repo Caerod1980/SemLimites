@@ -15,8 +15,8 @@ async function garantirIndices() {
     await Prestador.collection.createIndex({ cidade: 1, estado: 1 });
     await Prestador.collection.createIndex({ estado: 1 });
     await Prestador.collection.createIndex({ categoria: 1 });
-    await Prestador.collection.createIndex({ categoriaPrincipal: 1 }); // NOVO ÍNDICE
-    await Prestador.collection.createIndex({ servicos: 1 }); // NOVO ÍNDICE
+    await Prestador.collection.createIndex({ categoriaPrincipal: 1 });
+    await Prestador.collection.createIndex({ servicos: 1 });
     await Prestador.collection.createIndex({ estrelas: -1, avaliacoes: -1 });
     await Prestador.collection.createIndex({ avaliacoes: -1 });
     
@@ -78,9 +78,9 @@ router.get('/busca', async (req, res) => {
     const { 
       cidade, 
       estado,
-      categoria,      // Mantido para compatibilidade
-      categoriaPrincipal, // NOVO: ID da categoria principal
-      servico,        // NOVO: ID do serviço específico
+      categoria,
+      categoriaPrincipal,
+      servico,
       q, 
       apenasVerificados,
       ordenacao = 'reputacao',
@@ -90,40 +90,33 @@ router.get('/busca', async (req, res) => {
 
     let query = {};
 
-    // Filtro por cidade (case insensitive)
     if (cidade) {
       query.cidade = new RegExp(cidade, 'i');
     }
     
-    // Filtro por estado
     if (estado) {
       query.estado = estado;
     }
 
-    // FILTRO POR CATEGORIA PRINCIPAL (NOVO)
     if (categoriaPrincipal) {
       query.categoriaPrincipal = categoriaPrincipal;
       console.log(`🔍 Filtrando por categoriaPrincipal: ${categoriaPrincipal}`);
     } 
-    // Fallback para o campo antigo (caso ainda use)
     else if (categoria) {
       query.categoria = categoria;
       console.log(`🔍 Filtrando por categoria (antiga): ${categoria}`);
     }
 
-    // FILTRO POR SERVIÇO ESPECÍFICO (NOVO)
     if (servico) {
       query.servicos = servico;
       console.log(`🔍 Filtrando por servico: ${servico}`);
     }
 
-    // Filtro por texto (nome, descrição, etc)
     if (q && q.trim() !== '') {
       const termoBusca = q.trim();
       query.$text = { $search: termoBusca };
     }
 
-    // Filtro por verificado
     if (apenasVerificados === 'true') {
       query.verificado = true;
     }
@@ -153,8 +146,8 @@ router.get('/busca', async (req, res) => {
     }
 
     let prestadoresQuery = Prestador.find(query)
-      .populate('categoriaPrincipal', 'nome slug') // Popula a categoria principal
-      .populate('servicos', 'nome slug') // Popula os serviços
+      .populate('categoriaPrincipal', 'nome slug')
+      .populate('servicos', 'nome slug')
       .limit(parseInt(limit))
       .skip((parseInt(page) - 1) * parseInt(limit));
 
@@ -174,7 +167,6 @@ router.get('/busca', async (req, res) => {
       limit: parseInt(limit)
     });
 
-    // Log para debug dos resultados
     if (prestadores.length > 0) {
       console.log('📋 Primeiro prestador:', {
         nome: prestadores[0].nome,
@@ -215,7 +207,6 @@ router.get('/perfil', autenticar, async (req, res) => {
       return res.status(404).json({ error: 'Prestador não vinculado ao usuário' });
     }
 
-    // POPULATE ADICIONADO AQUI
     const prestador = await Prestador.findById(user.prestadorId)
       .populate('categoriaPrincipal', 'nome slug')
       .populate('servicos', 'nome slug');
@@ -283,7 +274,6 @@ router.put('/perfil', autenticar, async (req, res) => {
       cidade: req.body.cidade,
       estado: req.body.estado,
       categoria: req.body.categoria,
-      // NOVOS CAMPOS
       categoriaPrincipal: req.body.categoriaPrincipal || prestadorAtual.categoriaPrincipal,
       servicos: req.body.servicos || prestadorAtual.servicos,
       tags: tags,
@@ -312,6 +302,90 @@ router.put('/perfil', autenticar, async (req, res) => {
 
   } catch (error) {
     console.error('❌ Erro ao atualizar perfil:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========== NOVA ROTA: SALVAR URL DA FOTO DE PERFIL ==========
+router.post('/foto', autenticar, async (req, res) => {
+  try {
+    const { fotoUrl, blobName } = req.body;
+    
+    console.log('📸 Requisição para salvar foto recebida');
+    console.log('👤 Usuário:', req.user.userId);
+    
+    if (!fotoUrl) {
+      return res.status(400).json({ error: 'fotoUrl é obrigatório' });
+    }
+
+    // Buscar o usuário para obter o prestadorId
+    const user = await User.findById(req.user.userId);
+    
+    if (!user || !user.prestadorId) {
+      return res.status(404).json({ error: 'Prestador não encontrado' });
+    }
+
+    // Buscar o prestador pelo ID
+    const prestador = await Prestador.findById(user.prestadorId);
+    
+    if (!prestador) {
+      return res.status(404).json({ error: 'Prestador não encontrado' });
+    }
+
+    // Salvar URL da foto (campo 'foto' do modelo)
+    prestador.foto = fotoUrl;
+    
+    // Se quiser guardar o blobName para referência futura
+    // prestador.fotoBlobName = blobName; // ← Se adicionar este campo no modelo
+    
+    await prestador.save();
+
+    console.log(`✅ Foto salva para prestador: ${prestador.nome} (ID: ${prestador._id})`);
+    console.log(`📎 URL: ${fotoUrl}`);
+
+    res.json({ 
+      success: true, 
+      fotoUrl: prestador.foto,
+      message: 'Foto salva com sucesso' 
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao salvar foto:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========== NOVA ROTA: REMOVER FOTO DE PERFIL ==========
+router.delete('/foto', autenticar, async (req, res) => {
+  try {
+    console.log('🗑️ Requisição para remover foto recebida');
+    console.log('👤 Usuário:', req.user.userId);
+
+    const user = await User.findById(req.user.userId);
+    
+    if (!user || !user.prestadorId) {
+      return res.status(404).json({ error: 'Prestador não encontrado' });
+    }
+
+    const prestador = await Prestador.findById(user.prestadorId);
+    
+    if (!prestador) {
+      return res.status(404).json({ error: 'Prestador não encontrado' });
+    }
+
+    // Remover URL da foto
+    prestador.foto = null;
+    await prestador.save();
+
+    console.log(`✅ Foto removida para prestador: ${prestador.nome}`);
+
+    res.json({ 
+      success: true, 
+      message: 'Foto removida com sucesso' 
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao remover foto:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -365,7 +439,6 @@ router.delete('/perfil', autenticar, async (req, res) => {
 // ========== BUSCAR PRESTADOR POR SLUG ==========
 router.get('/:slug', async (req, res) => {
   try {
-    // POPULATE ADICIONADO AQUI
     const prestador = await Prestador.findOne({ slug: req.params.slug })
       .populate('categoriaPrincipal', 'nome slug')
       .populate('servicos', 'nome slug');
@@ -381,12 +454,11 @@ router.get('/:slug', async (req, res) => {
   }
 });
 
-// ========== BUSCAR PRESTADOR POR ID (CORRIGIDO COM POPULATE) ==========
+// ========== BUSCAR PRESTADOR POR ID ==========
 router.get('/id/:id', async (req, res) => {
   try {
     console.log(`🔍 Buscando prestador por ID: ${req.params.id}`);
     
-    // POPULATE ADICIONADO AQUI
     const prestador = await Prestador.findById(req.params.id)
       .populate('categoriaPrincipal', 'nome slug')
       .populate('servicos', 'nome slug');
@@ -398,6 +470,7 @@ router.get('/id/:id', async (req, res) => {
     console.log(`✅ Prestador encontrado: ${prestador.nome}`);
     console.log(`📦 Categoria Principal:`, prestador.categoriaPrincipal);
     console.log(`📦 Serviços (${prestador.servicos?.length || 0}):`, prestador.servicos);
+    console.log(`📸 Foto:`, prestador.foto || 'Sem foto');
 
     res.json(prestador);
   } catch (error) {
@@ -409,8 +482,6 @@ router.get('/id/:id', async (req, res) => {
 // ========== CRIAR NOVO PRESTADOR ==========
 router.post('/', async (req, res) => {
   try {
-    // Não verificamos mais unicidade de CNPJ para permitir múltiplos perfis
-    
     if (req.body.email) {
       const existe = await Prestador.findOne({ email: req.body.email });
       if (existe) {
@@ -455,7 +526,8 @@ router.post('/', async (req, res) => {
       estrelas: 0,
       avaliacoes: 0,
       servicosRealizados: 0,
-      clientesFieis: 0
+      clientesFieis: 0,
+      foto: null // Inicializa sem foto
     };
 
     const prestador = new Prestador(dadosPrestador);
@@ -473,7 +545,8 @@ router.post('/', async (req, res) => {
         categoria: prestador.categoria,
         cidade: prestador.cidade,
         estado: prestador.estado,
-        verificado: prestador.verificado || false
+        verificado: prestador.verificado || false,
+        foto: prestador.foto
       }
     });
   } catch (error) {
