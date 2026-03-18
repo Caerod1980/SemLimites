@@ -12,7 +12,12 @@ const reviewSchema = new mongoose.Schema({
 const prestadorSchema = new mongoose.Schema({
   nome: { type: String, required: true },
   slug: { type: String, required: true, unique: true },
-  foto: String,
+  
+  // ===== FOTO DE PERFIL (ARMAZENA URL DO AZURE) =====
+  foto: { type: String, default: null }, // ← JÁ EXISTE, VAMOS USAR PARA URL DO AZURE
+  
+  // Alias para clareza (opcional - não afeta o banco)
+  // fotoPerfilUrl: { type: String, default: null }, // Se quiser criar alias, mas não necessário
   
   // ===== CAMPOS PARA CPF/CNPJ =====
   tipoPessoa: { 
@@ -43,34 +48,33 @@ const prestadorSchema = new mongoose.Schema({
     telefone: String
   },
   
-  // ===== NOVOS CAMPOS PARA CATEGORIAS HIERÁRQUICAS =====
+  // ===== CATEGORIAS HIERÁRQUICAS =====
   categoriaPrincipal: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Categoria',
-    required: false // Temporariamente opcional para migração
+    required: false
   },
   servicos: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Categoria'
-  }], // Múltiplos serviços específicos (nível 3)
+  }],
   
-  // ===== NOVO CAMPO PARA CURTIDAS =====
+  // ===== CURTIDAS =====
   totalCurtidas: {
     type: Number,
     default: 0
   },
   
-  // ===== CAMPOS PROFISSIONAIS (MANTIDOS PARA COMPATIBILIDADE) =====
-  categoria: { type: String }, // Mantido para compatibilidade com dados existentes
+  // ===== CAMPOS PROFISSIONAIS =====
+  categoria: { type: String }, // Mantido para compatibilidade
   cidade: { type: String, required: true },
   regioes: [String],
   descricao: { type: String, required: true },
   sobre: String,
   tags: [String],
   
-  // Campos já existentes
   experiencia: { type: String, default: '' },
-  especialidades: { type: [String], default: [] }, // Mantido para compatibilidade
+  especialidades: { type: [String], default: [] },
   
   // Contato
   whatsapp: String,
@@ -103,9 +107,9 @@ const prestadorSchema = new mongoose.Schema({
   
 }, { timestamps: true });
 
-// ===== ÍNDICES ATUALIZADOS =====
+// ===== ÍNDICES =====
 prestadorSchema.index({ cidade: 1, categoriaPrincipal: 1 });
-prestadorSchema.index({ cidade: 1, categoria: 1 }); // Mantido para compatibilidade
+prestadorSchema.index({ cidade: 1, categoria: 1 });
 prestadorSchema.index({ estrelas: -1, avaliacoes: -1 });
 prestadorSchema.index({ verificado: 1 });
 prestadorSchema.index({ experiencia: -1 });
@@ -113,9 +117,8 @@ prestadorSchema.index({ especialidades: 1 });
 prestadorSchema.index({ tipoPessoa: 1 });
 prestadorSchema.index({ cpf: 1 });
 prestadorSchema.index({ cnpj: 1 });
-
-// Índices para busca por serviços
 prestadorSchema.index({ servicos: 1 });
+prestadorSchema.index({ totalCurtidas: -1 });
 
 // Índice composto para busca avançada
 prestadorSchema.index({ 
@@ -123,9 +126,6 @@ prestadorSchema.index({
   cidade: 1, 
   estrelas: -1 
 });
-
-// ===== ÍNDICE PARA CURTIDAS =====
-prestadorSchema.index({ totalCurtidas: -1 });
 
 // ===== MIDDLEWARE PARA CRIAR SLUG =====
 prestadorSchema.pre('save', function(next) {
