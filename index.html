@@ -4485,8 +4485,8 @@ function Login(props) {
             );
         }
 
-        // ========== NOVA PÁGINA: COMO FUNCIONA ==========
-        function ComoFunciona(props) {
+        // ========== NOVA PÁGINA: MEUS FAVORITOS ==========
+        function MeusFavoritos(props) {
             var onVoltar = props.onVoltar;
 
             return React.createElement('div', { className: "max-w-5xl mx-auto px-4 py-8 md:py-12" },
@@ -4494,7 +4494,10 @@ function Login(props) {
                     
                     // Cabeçalho
                     React.createElement('div', { className: "flex items-center justify-between mb-8" },
-                        React.createElement('h1', { className: "text-2xl md:text-3xl font-bold text-[#3d7a3d]" }, "Como Funciona"),
+                        React.createElement('h1', { className: "text-2xl md:text-3xl font-bold text-[#3d7a3d]" }, 
+                            React.createElement('span', { className: "mr-2" }, "❤️"),
+                            "Meus Favoritos"
+                        ),
                         React.createElement('button', {
                             onClick: onVoltar,
                             className: "text-sm text-[#4a8a4a] hover:text-[#2d5a2d] flex items-center gap-1"
@@ -4508,171 +4511,208 @@ function Login(props) {
 
                     // Subtítulo
                     React.createElement('p', { className: "text-lg md:text-xl text-slate-600 mb-8 text-center" },
-                        "Sua jornada para encontrar o profissional ideal"
+                        "Sua coleção pessoal de profissionais de confiança"
                     ),
 
-                    // ===== SEÇÃO PARA QUEM CONTRATA =====
+                    // ===== SEÇÃO PARA CLIENTES =====
                     React.createElement('div', { className: "mb-12 border-b border-[#c0dfc0] pb-8" },
                         React.createElement('h2', { className: "text-xl md:text-2xl font-bold text-[#3d7a3d] mb-6 flex items-center gap-2" },
                             React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" })
+                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" })
                             ),
                             "Para Quem Contrata Serviços"
                         ),
-                        React.createElement('p', { className: "text-sm md:text-base text-slate-600 mb-6" },
-                            "Encontrar um profissional de confiança nunca foi tão simples! O Sem Limites foi desenvolvido para tornar essa busca rápida, transparente e totalmente gratuita para você."
+
+                        // Por que usar os favoritos
+                        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 mb-6 border border-[#c0dfc0]" },
+                            React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-3" }, "Por que usar os Favoritos?"),
+                            React.createElement('p', { className: "text-sm md:text-base text-slate-600 mb-2" },
+                                "Imagine a seguinte situação: você finalmente encontrou um eletricista maravilhoso, que resolveu todos os problemas da sua casa com excelência. Passam-se alguns meses e você precisa novamente de um serviço elétrico. Onde está o contato daquele profissional?"
+                            ),
+                            React.createElement('p', { className: "text-sm md:text-base text-slate-600 font-medium mt-2" },
+                                "Com os favoritos do SemLimites, isso nunca mais será um problema!"
+                            )
                         ),
 
-                        // Passo a Passo Cliente
-                        React.createElement('h3', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-4" }, "Passo a Passo para Clientes"),
+                        // Benefícios
+                        React.createElement('h3', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-4" }, "Benefícios de Usar os Favoritos"),
                         
-                        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" },
-                            React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                React.createElement('span', { className: "text-2xl font-bold text-[#3d7a3d] block mb-2" }, "1️⃣"),
-                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Acesse a Página Inicial"),
-                                React.createElement('p', { className: "text-xs md:text-sm text-slate-600" }, "Ao entrar no Sem Limites, você já está pronto para começar sua busca. Interface intuitiva e direta.")
-                            ),
-                            React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                React.createElement('span', { className: "text-2xl font-bold text-[#3d7a3d] block mb-2" }, "2️⃣"),
-                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Utilize os Filtros de Busca"),
-                                React.createElement('p', { className: "text-xs md:text-sm text-slate-600" }, "Cidade, categoria, serviço específico ou palavra-chave. Refine sua procura.")
-                            ),
-                            React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                React.createElement('span', { className: "text-2xl font-bold text-[#3d7a3d] block mb-2" }, "3️⃣"),
-                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Explore os Perfis"),
-                                React.createElement('p', { className: "text-xs md:text-sm text-slate-600" }, "Analise avaliações, certificações, descrições e informações de contato.")
-                            )
-                        ),
-
-                        // Tabela de Filtros
-                        React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0] mb-6" },
-                            React.createElement('h4', { className: "font-semibold text-[#F09030] mb-3" }, "Filtros Inteligentes"),
-                            React.createElement('div', { className: "overflow-x-auto" },
-                                React.createElement('table', { className: "min-w-full" },
-                                    React.createElement('thead', { className: "bg-[#FFF1CF]" },
-                                        React.createElement('tr', null,
-                                            React.createElement('th', { className: "px-4 py-2 text-left text-xs font-semibold text-[#F09030] border-b border-[#FFE3A0]" }, "Filtro"),
-                                            React.createElement('th', { className: "px-4 py-2 text-left text-xs font-semibold text-[#F09030] border-b border-[#FFE3A0]" }, "O que faz")
-                                        )
-                                    ),
-                                    React.createElement('tbody', { className: "divide-y divide-[#FFE3A0]" },
-                                        React.createElement('tr', null,
-                                            React.createElement('td', { className: "px-4 py-2 text-xs font-medium text-slate-700" }, "Cidade"),
-                                            React.createElement('td', { className: "px-4 py-2 text-xs text-slate-600" }, "Encontre profissionais próximos a você")
-                                        ),
-                                        React.createElement('tr', null,
-                                            React.createElement('td', { className: "px-4 py-2 text-xs font-medium text-slate-700" }, "Categoria"),
-                                            React.createElement('td', { className: "px-4 py-2 text-xs text-slate-600" }, "Selecione o tipo de serviço desejado")
-                                        ),
-                                        React.createElement('tr', null,
-                                            React.createElement('td', { className: "px-4 py-2 text-xs font-medium text-slate-700" }, "Serviço Específico"),
-                                            React.createElement('td', { className: "px-4 py-2 text-xs text-slate-600" }, "Refine ainda mais após escolher a categoria")
-                                        ),
-                                        React.createElement('tr', null,
-                                            React.createElement('td', { className: "px-4 py-2 text-xs font-medium text-slate-700" }, "Nome ou Palavra-chave"),
-                                            React.createElement('td', { className: "px-4 py-2 text-xs text-slate-600" }, "Busque diretamente por um profissional ou especialidade")
-                                        )
-                                    )
-                                )
-                            )
-                        ),
-
-                        // Exemplo prático
-                        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0] mb-6" },
-                            React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "💡 Exemplo prático"),
-                            React.createElement('p', { className: "text-xs md:text-sm text-slate-600" },
-                                "Você precisa de um eletricista em São Paulo. Basta selecionar \"São Paulo\" no filtro de cidade, escolher \"Eletricista\" na categoria e pronto! Uma lista com os melhores profissionais aparecerá para você."
-                            )
-                        ),
-
-                        // O que ver no perfil
-                        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0] mb-6" },
-                            React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-3" }, "📋 Ao explorar um perfil, você encontra:"),
-                            React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-3" },
-                                React.createElement('div', { className: "flex items-start gap-2" },
-                                    React.createElement('span', { className: "text-emerald-600" }, "📸"),
-                                    React.createElement('div', null,
-                                        React.createElement('span', { className: "font-medium text-xs" }, "Foto de Perfil"),
-                                        React.createElement('p', { className: "text-[10px] text-slate-500" }, "Conexão e confiança")
-                                    )
-                                ),
-                                React.createElement('div', { className: "flex items-start gap-2" },
-                                    React.createElement('span', { className: "text-emerald-600" }, "📋"),
-                                    React.createElement('div', null,
-                                        React.createElement('span', { className: "font-medium text-xs" }, "Descrição Detalhada"),
-                                        React.createElement('p', { className: "text-[10px] text-slate-500" }, "Trajetória e experiência")
-                                    )
-                                ),
-                                React.createElement('div', { className: "flex items-start gap-2" },
-                                    React.createElement('span', { className: "text-emerald-600" }, "🛠️"),
-                                    React.createElement('div', null,
-                                        React.createElement('span', { className: "font-medium text-xs" }, "Especialidades"),
-                                        React.createElement('p', { className: "text-[10px] text-slate-500" }, "Habilidades específicas")
-                                    )
-                                ),
-                                React.createElement('div', { className: "flex items-start gap-2" },
-                                    React.createElement('span', { className: "text-emerald-600" }, "📜"),
-                                    React.createElement('div', null,
-                                        React.createElement('span', { className: "font-medium text-xs" }, "Certificações"),
-                                        React.createElement('p', { className: "text-[10px] text-slate-500" }, "Qualificações profissionais")
-                                    )
-                                ),
-                                React.createElement('div', { className: "flex items-start gap-2 md:col-span-2" },
-                                    React.createElement('span', { className: "text-emerald-600" }, "⭐"),
-                                    React.createElement('div', null,
-                                        React.createElement('span', { className: "font-medium text-xs" }, "Avaliações de Serviços Prestados"),
-                                        React.createElement('p', { className: "text-[10px] text-slate-500" }, "Notas e comentários de clientes reais")
-                                    )
-                                )
-                            ),
-                            React.createElement('div', { className: "mt-3 p-3 bg-[#FFF1CF] rounded-lg border border-[#FFE3A0]" },
-                                React.createElement('p', { className: "text-xs text-[#F09030]" },
-                                    "⭐⭐⭐⭐⭐ (5.0) \"Profissional pontual, educado e resolveu o problema com excelência. Instalou toda a fiação do meu escritório em apenas um dia. Super recomendo!\""
-                                ),
-                                React.createElement('p', { className: "text-[10px] text-[#b86b1f] mt-1" }, "Cliente: Carlos Silva • 15/03/2026")
-                            )
-                        ),
-
-                        // Vantagens
                         React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" },
                             React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "✅ Sem Taxas ou Comissões"),
-                                React.createElement('p', { className: "text-xs text-slate-600" }, "100% gratuito para clientes. A contratação e o acerto financeiro são feitos diretamente entre você e o prestador.")
+                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2 flex items-center gap-2" },
+                                    React.createElement('span', { className: "text-emerald-600" }, "✅"),
+                                    "Localização Rápida e Fácil"
+                                ),
+                                React.createElement('p', { className: "text-xs text-slate-600" }, "Todos os profissionais que você curtir ficam armazenados em um único lugar, organizados e prontos para serem acessados com apenas um clique.")
                             ),
                             React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "🔍 Transparência Total"),
-                                React.createElement('p', { className: "text-xs text-slate-600" }, "Avaliações públicas e verificadas, construídas por clientes reais.")
+                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2 flex items-center gap-2" },
+                                    React.createElement('span', { className: "text-emerald-600" }, "✅"),
+                                    "Nunca Mais Perder o Contato"
+                                ),
+                                React.createElement('p', { className: "text-xs text-slate-600" }, "Seus favoritos ficam salvos na nuvem. Acesse de qualquer dispositivo e encontre seus profissionais preferidos a qualquer momento.")
                             ),
                             React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "🤝 Conexão Direta"),
-                                React.createElement('p', { className: "text-xs text-slate-600" }, "Fale diretamente com o profissional via WhatsApp, negocie valores e combine detalhes.")
+                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2 flex items-center gap-2" },
+                                    React.createElement('span', { className: "text-emerald-600" }, "✅"),
+                                    "Organização Pessoal"
+                                ),
+                                React.createElement('p', { className: "text-xs text-slate-600" }, "Crie sua própria lista de prestadores de confiança, compare perfis e tenha acesso rápido a todas as informações.")
                             ),
                             React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "📱 Acesso Facilitado"),
-                                React.createElement('p', { className: "text-xs text-slate-600" }, "Plataforma responsiva, funciona perfeitamente em computadores, tablets e celulares.")
+                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2 flex items-center gap-2" },
+                                    React.createElement('span', { className: "text-emerald-600" }, "✅"),
+                                    "Incentivo ao Profissional Competente"
+                                ),
+                                React.createElement('p', { className: "text-xs text-slate-600" }, "Cada curtida é um reconhecimento público. Você ajuda a destacar profissionais de qualidade na plataforma.")
+                            ),
+                            React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0] md:col-span-2" },
+                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2 flex items-center gap-2" },
+                                    React.createElement('span', { className: "text-emerald-600" }, "✅"),
+                                    "Compartilhamento com Quem Você Confia"
+                                ),
+                                React.createElement('p', { className: "text-xs text-slate-600" }, "Encontrou um profissional incrível? Compartilhe o perfil dele com amigos, familiares e grupos de WhatsApp diretamente da sua lista de favoritos.")
+                            )
+                        ),
+
+                        // Passo a Passo
+                        React.createElement('h3', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-4" }, "Passo a Passo - Como Usar os Favoritos"),
+                        
+                        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" },
+                            React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0]" },
+                                React.createElement('span', { className: "text-2xl font-bold text-[#F09030] block mb-2" }, "1️⃣"),
+                                React.createElement('h4', { className: "font-semibold text-[#b86b1f] mb-2" }, "Encontre um Profissional"),
+                                React.createElement('p', { className: "text-xs text-slate-600" }, "Busque e encontre um prestador com boas avaliações e que pareça confiável.")
+                            ),
+                            React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0]" },
+                                React.createElement('span', { className: "text-2xl font-bold text-[#F09030] block mb-2" }, "2️⃣"),
+                                React.createElement('h4', { className: "font-semibold text-[#b86b1f] mb-2" }, "Curta o Perfil"),
+                                React.createElement('p', { className: "text-xs text-slate-600" }, "No perfil público, clique no botão ❤️ Curtir. Ele será automaticamente adicionado à sua lista.")
+                            ),
+                            React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0]" },
+                                React.createElement('span', { className: "text-2xl font-bold text-[#F09030] block mb-2" }, "3️⃣"),
+                                React.createElement('h4', { className: "font-semibold text-[#b86b1f] mb-2" }, "Acesse o Dashboard"),
+                                React.createElement('p', { className: "text-xs text-slate-600" }, "Clique em 'Favoritos ❤️' no cabeçalho para ver e gerenciar sua lista.")
+                            )
+                        ),
+
+                        // Gerenciamento
+                        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0] mb-6" },
+                            React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-3" }, "No Dashboard do Cliente, você pode:"),
+                            React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-2" },
+                                React.createElement('p', { className: "text-xs text-slate-600 flex items-center gap-2" },
+                                    React.createElement('span', { className: "text-emerald-600" }, "👀"),
+                                    "Visualizar todos os profissionais curtidos"
+                                ),
+                                React.createElement('p', { className: "text-xs text-slate-600 flex items-center gap-2" },
+                                    React.createElement('span', { className: "text-emerald-600" }, "🔍"),
+                                    "Filtrar e encontrar rapidamente"
+                                ),
+                                React.createElement('p', { className: "text-xs text-slate-600 flex items-center gap-2" },
+                                    React.createElement('span', { className: "text-emerald-600" }, "❌"),
+                                    "Remover profissionais da lista"
+                                ),
+                                React.createElement('p', { className: "text-xs text-slate-600 flex items-center gap-2" },
+                                    React.createElement('span', { className: "text-emerald-600" }, "📱"),
+                                    "Acessar perfil completo e WhatsApp"
+                                )
                             )
                         ),
 
                         // Jornada do Cliente
-                        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                            React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "📌 Exemplo Prático de Jornada do Cliente"),
+                        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0] mb-6" },
+                            React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "📌 Exemplo Prático - Jornada do Cliente com Favoritos"),
                             React.createElement('div', { className: "text-xs text-slate-600 space-y-1" },
-                                React.createElement('p', null, "1️⃣ Maria precisa de um encanador urgente em sua casa no Rio de Janeiro."),
-                                React.createElement('p', null, "2️⃣ Ela acessa o SemLimites, seleciona 'Rio de Janeiro' no filtro de cidade e 'Encanador' na categoria."),
-                                React.createElement('p', null, "3️⃣ Vários perfis aparecem. Ela analisa as avaliações, fotos e descrições."),
-                                React.createElement('p', null, "4️⃣ Encontra o João, um encanador com 47 avaliações positivas, média 4.9 estrelas, especializado em vazamentos."),
-                                React.createElement('p', null, "5️⃣ Clica em 'Ver Perfil', lê os comentários de clientes anteriores e fica tranquila."),
-                                React.createElement('p', null, "6️⃣ Com um clique, inicia uma conversa no WhatsApp com João, tira dúvidas e combinam um orçamento."),
-                                React.createElement('p', null, "7️⃣ João realiza o serviço, Maria fica satisfeita e volta à plataforma para avaliar o trabalho.")
+                                React.createElement('p', null, "1️⃣ 🏠 Maria precisa de um pintor para seu apartamento."),
+                                React.createElement('p', null, "2️⃣ 🔍 Ela acessa o SemLimites e encontra o Carlos, um pintor com ótimas avaliações."),
+                                React.createElement('p', null, "3️⃣ ❤️ Maria curte o perfil do Carlos e ele vai para 'Meus Favoritos'."),
+                                React.createElement('p', null, "4️⃣ 🎨 Carlos faz um trabalho excelente e Maria fica super satisfeita."),
+                                React.createElement('p', null, "5️⃣ ☕ Seis meses depois, Maria precisa pintar outro cômodo."),
+                                React.createElement('p', null, "6️⃣ ⭐ Ela entra no SemLimites, clica em 'Favoritos' e lá está o perfil do Carlos."),
+                                React.createElement('p', null, "7️⃣ 📞 Com um clique, ela chama Carlos no WhatsApp e agenda o novo serviço."),
+                                React.createElement('p', null, "8️⃣ 👍 Maria recomenda o perfil do Carlos para três amigas que também precisam de pintor.")
+                            )
+                        ),
+
+                        // Tabela Resumo
+                        React.createElement('div', { className: "overflow-x-auto mb-6" },
+                            React.createElement('h4', { className: "font-semibold text-[#3d7a3d] mb-2" }, "Tabela Resumo - Funcionalidades dos Favoritos"),
+                            React.createElement('table', { className: "min-w-full bg-white rounded-xl border border-[#c0dfc0]" },
+                                React.createElement('thead', { className: "bg-[#f0f7f0]" },
+                                    React.createElement('tr', null,
+                                        React.createElement('th', { className: "px-4 py-2 text-left text-xs font-semibold text-[#3d7a3d]" }, "Funcionalidade"),
+                                        React.createElement('th', { className: "px-4 py-2 text-left text-xs font-semibold text-[#3d7a3d]" }, "Como Ajuda Você")
+                                    )
+                                ),
+                                React.createElement('tbody', { className: "divide-y divide-[#c0dfc0]" },
+                                    React.createElement('tr', null,
+                                        React.createElement('td', { className: "px-4 py-2 text-xs font-medium" }, "❤️ Curtir profissional"),
+                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "Demonstra reconhecimento e salva automaticamente")
+                                    ),
+                                    React.createElement('tr', null,
+                                        React.createElement('td', { className: "px-4 py-2 text-xs font-medium" }, "📋 Lista organizada"),
+                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "Todos os profissionais em um só lugar")
+                                    ),
+                                    React.createElement('tr', null,
+                                        React.createElement('td', { className: "px-4 py-2 text-xs font-medium" }, "🔍 Busca rápida"),
+                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "Encontre qualquer favorito em segundos")
+                                    ),
+                                    React.createElement('tr', null,
+                                        React.createElement('td', { className: "px-4 py-2 text-xs font-medium" }, "📱 Contato direto"),
+                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "Acesse WhatsApp com um clique")
+                                    ),
+                                    React.createElement('tr', null,
+                                        React.createElement('td', { className: "px-4 py-2 text-xs font-medium" }, "📤 Compartilhar"),
+                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "Envie perfis para amigos e familiares")
+                                    ),
+                                    React.createElement('tr', null,
+                                        React.createElement('td', { className: "px-4 py-2 text-xs font-medium" }, "❌ Remover"),
+                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "Mantenha sua lista sempre atualizada")
+                                    )
+                                )
+                            )
+                        ),
+
+                        // Dúvidas Frequentes
+                        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0] mb-6" },
+                            React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-3" }, "❓ Dúvidas Frequentes"),
+                            React.createElement('div', { className: "space-y-3" },
+                                React.createElement('div', null,
+                                    React.createElement('p', { className: "text-xs font-medium text-[#2d5a2d]" }, "Preciso estar logado para usar os favoritos?"),
+                                    React.createElement('p', { className: "text-xs text-slate-600" }, "Sim! Você precisa ter uma conta de cliente no SemLimites e estar logado para curtir e gerenciar seus favoritos. É gratuito e rápido criar sua conta.")
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('p', { className: "text-xs font-medium text-[#2d5a2d]" }, "Os profissionais sabem que eu curti?"),
+                                    React.createElement('p', { className: "text-xs text-slate-600" }, "Sim! O profissional vê o total de curtidas em seu perfil, o que serve como um incentivo e reconhecimento público pela qualidade do trabalho.")
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('p', { className: "text-xs font-medium text-[#2d5a2d]" }, "Posso favoritar um profissional sem contratá-lo?"),
+                                    React.createElement('p', { className: "text-xs text-slate-600" }, "Claro! Se você gostou do perfil, das avaliações e quer guardar para uma contratação futura, pode curtir à vontade.")
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('p', { className: "text-xs font-medium text-[#2d5a2d]" }, "Quantos profissionais posso favoritar?"),
+                                    React.createElement('p', { className: "text-xs text-slate-600" }, "Não há limite! Crie sua lista personalizada com quantos prestadores desejar.")
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('p', { className: "text-xs font-medium text-[#2d5a2d]" }, "Perco meus favoritos se limpar os dados do navegador?"),
+                                    React.createElement('p', { className: "text-xs text-slate-600" }, "Não! Seus favoritos ficam salvos em sua conta na nuvem. Basta fazer login em qualquer dispositivo que sua lista estará lá.")
+                                )
                             )
                         ),
 
                         // Botão de ação
                         React.createElement('div', { className: "mt-6 text-center" },
                             React.createElement('button', {
-                                onClick: function() { navigate('/'); },
+                                onClick: function() { 
+                                    var token = localStorage.getItem('token');
+                                    if (token) {
+                                        navigate('/dashboard-cliente');
+                                    } else {
+                                        navigate('/login');
+                                    }
+                                },
                                 className: "px-6 py-3 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white font-semibold rounded-xl hover:shadow-lg transition"
-                            }, "Comece agora sua busca 🔍✨")
+                            }, "Acessar meus favoritos agora →")
                         )
                     ),
 
@@ -4685,147 +4725,85 @@ function Login(props) {
                             "Para Prestadores de Serviço"
                         ),
                         React.createElement('p', { className: "text-sm md:text-base text-slate-600 mb-6" },
-                            "Sua Carreira Profissional no Mundo Digital. O SemLimites foi criado para valorizar o profissional que entrega qualidade."
+                            "Por que as Curtidas são Importantes para Você?"
                         ),
 
-                        // Passo a Passo Prestador
-                        React.createElement('h3', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-4" }, "Passo a Passo para Prestadores"),
-                        
-                        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" },
-                            React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0]" },
-                                React.createElement('span', { className: "text-2xl font-bold text-[#F09030] block mb-2" }, "1️⃣"),
-                                React.createElement('h4', { className: "font-semibold text-[#b86b1f] mb-2" }, "Acesse e Faça seu Cadastro"),
-                                React.createElement('p', { className: "text-xs text-slate-600" }, "Clique em 'Sou Prestador' e preencha o formulário com seus dados profissionais.")
-                            ),
-                            React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0]" },
-                                React.createElement('span', { className: "text-2xl font-bold text-[#F09030] block mb-2" }, "2️⃣"),
-                                React.createElement('h4', { className: "font-semibold text-[#b86b1f] mb-2" }, "Confirme os Dados"),
-                                React.createElement('p', { className: "text-xs text-slate-600" }, "Após o cadastro, confirme seus dados e realize o ingresso no programa de mensalidades.")
-                            )
-                        ),
-
-                        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0] mb-6" },
-                            React.createElement('p', { className: "text-xs text-slate-600 font-medium" },
-                                "Importante: O Sem Limites cobra uma mensalidade mínima e acessível para você manter seu perfil ativo e gerenciar seus serviços."
-                            )
-                        ),
-
-                        // Painel do Prestador
-                        React.createElement('h3', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-4" }, "O Painel do Prestador - Sua Central de Controle"),
-                        
+                        // Importância das curtidas
                         React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" },
                             React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "📊 Visão Geral do Desempenho"),
-                                React.createElement('ul', { className: "list-disc pl-5 text-xs text-slate-600 space-y-1" },
-                                    React.createElement('li', null, "⭐ Sua reputação – média de avaliações"),
-                                    React.createElement('li', null, "✅ Serviços realizados – total de trabalhos"),
-                                    React.createElement('li', null, "❤️ Curtidas – favoritos dos clientes"),
-                                    React.createElement('li', null, "🔄 Clientes fiéis – percentual de retorno"),
-                                    React.createElement('li', null, "⏳ Serviços pendentes")
-                                )
+                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "🌟 Reconhecimento Público"),
+                                React.createElement('p', { className: "text-xs text-slate-600" }, "Cada curtida é um voto de confiança. Clientes que curtem seu perfil estão dizendo: 'Eu confio neste profissional e quero tê-lo por perto'.")
                             ),
                             React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "👤 Perfil Profissional - Sua Vitrine"),
-                                React.createElement('ul', { className: "list-disc pl-5 text-xs text-slate-600 space-y-1" },
-                                    React.createElement('li', null, "Foto profissional"),
-                                    React.createElement('li', null, "Dados básicos e localização"),
-                                    React.createElement('li', null, "Contato (WhatsApp e telefone)"),
-                                    React.createElement('li', null, "Categoria e serviços"),
-                                    React.createElement('li', null, "Especialidades, certificações e tags")
-                                )
+                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "📈 Mais Visibilidade na Plataforma"),
+                                React.createElement('p', { className: "text-xs text-slate-600" }, "Profissionais com muitas curtidas tendem a aparecer melhor nos resultados de busca. É nosso algoritmo reconhecendo que você é uma referência.")
                             ),
                             React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "📝 Gestão de Serviços"),
-                                React.createElement('p', { className: "text-xs text-slate-600 mb-2" }, "Cadastre cada serviço e gere links exclusivos de avaliação:"),
-                                React.createElement('ul', { className: "list-disc pl-5 text-xs text-slate-600 space-y-1" },
-                                    React.createElement('li', null, "⏳ Aguardando (link válido por 30 dias)"),
-                                    React.createElement('li', null, "✅ Avaliado"),
-                                    React.createElement('li', null, "⌛ Expirado"),
-                                    React.createElement('li', null, "📋 Copiar link / 📱 Enviar via WhatsApp")
-                                )
+                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "🤝 Construção de Relacionamento"),
+                                React.createElement('p', { className: "text-xs text-slate-600" }, "Clientes que curtem seu perfil são potenciais clientes recorrentes. Eles já demonstraram interesse e confiança no seu trabalho.")
                             ),
                             React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "⭐ Avaliações Recebidas"),
-                                React.createElement('p', { className: "text-xs text-slate-600 mb-2" }, "Cada avaliação constrói sua reputação:"),
-                                React.createElement('ul', { className: "list-disc pl-5 text-xs text-slate-600 space-y-1" },
-                                    React.createElement('li', null, "Nota de 1 a 5 estrelas"),
-                                    React.createElement('li', null, "Comentário do cliente"),
-                                    React.createElement('li', null, "Nome e data da avaliação"),
-                                    React.createElement('li', null, "Título do serviço avaliado")
-                                )
-                            )
-                        ),
-
-                        // Estatísticas
-                        React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0] mb-6" },
-                            React.createElement('h4', { className: "font-semibold text-[#F09030] mb-2" }, "📈 Estatísticas e Métricas"),
-                            React.createElement('div', { className: "grid grid-cols-2 gap-3" },
-                                React.createElement('div', null,
-                                    React.createElement('span', { className: "text-xs text-[#F09030] block" }, "Reputação"),
-                                    React.createElement('span', { className: "text-sm font-bold text-[#b86b1f]" }, "4.8 (23 avaliações)")
-                                ),
-                                React.createElement('div', null,
-                                    React.createElement('span', { className: "text-xs text-[#F09030] block" }, "Taxa de Aprovação"),
-                                    React.createElement('span', { className: "text-sm font-bold text-[#b86b1f]" }, "96%")
-                                ),
-                                React.createElement('div', null,
-                                    React.createElement('span', { className: "text-xs text-[#F09030] block" }, "Clientes Fiéis"),
-                                    React.createElement('span', { className: "text-sm font-bold text-[#b86b1f]" }, "67%")
-                                ),
-                                React.createElement('div', null,
-                                    React.createElement('span', { className: "text-xs text-[#F09030] block" }, "Total de Curtidas"),
-                                    React.createElement('span', { className: "text-sm font-bold text-[#b86b1f]" }, "42")
-                                )
-                            )
-                        ),
-
-                        // Vantagens Prestador
-                        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" },
-                            React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "✅ Ferramenta Completa"),
-                                React.createElement('p', { className: "text-xs text-slate-600" }, "Crie e mantenha um perfil detalhado, gerencie serviços, colete avaliações e acompanhe métricas.")
+                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "💪 Motivação e Orgulho"),
+                                React.createElement('p', { className: "text-xs text-slate-600" }, "Ver o número de curtidas crescendo é gratificante e mostra que seu esforço e dedicação estão sendo reconhecidos pela comunidade.")
                             ),
-                            React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "📱 Presença Digital Organizada"),
-                                React.createElement('p', { className: "text-xs text-slate-600" }, "Seu perfil funciona como vitrine, currículo vivo e portfólio.")
-                            ),
-                            React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "🔄 Feedback Contínuo"),
-                                React.createElement('p', { className: "text-xs text-slate-600" }, "Identifique pontos fortes, reavalie seu profissionalismo e destaque-se.")
-                            ),
-                            React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "🌟 Recompensa pelo Trabalho"),
-                                React.createElement('p', { className: "text-xs text-slate-600" }, "Aumente sua reputação, atraia mais clientes e construa uma carteira fiel.")
-                            )
-                        ),
-
-                        // Oportunidades de Crescimento
-                        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0] mb-6" },
-                            React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "🚀 Oportunidades de Crescimento"),
-                            React.createElement('ul', { className: "list-disc pl-5 text-xs text-slate-600 space-y-1" },
-                                React.createElement('li', null, "🔝 Mais Visibilidade – perfis completos aparecem mais nas buscas"),
-                                React.createElement('li', null, "👥 Clientes Recorrentes – sistema identifica relacionamentos duradouros"),
-                                React.createElement('li', null, "📢 Compartilhamento Facilitado – link exclusivo para redes sociais e WhatsApp")
+                            React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0] md:col-span-2" },
+                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "📊 Métrica de Sucesso"),
+                                React.createElement('p', { className: "text-xs text-slate-600" }, "No seu dashboard de prestador, você pode acompanhar o total de curtidas e entender melhor como os clientes estão interagindo com seu perfil.")
                             )
                         ),
 
                         // Jornada do Prestador
                         React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0] mb-6" },
-                            React.createElement('h4', { className: "font-semibold text-[#F09030] mb-2" }, "📌 Exemplo Prático de Jornada do Prestador"),
+                            React.createElement('h4', { className: "font-semibold text-[#F09030] mb-2" }, "📌 Exemplo Prático - Impacto das Curtidas para o Prestador"),
                             React.createElement('div', { className: "text-xs text-slate-600 space-y-1" },
-                                React.createElement('p', null, "1️⃣ João, eletricista há 15 anos, descobre o SemLimites e faz seu cadastro, preenchendo todo seu perfil."),
-                                React.createElement('p', null, "2️⃣ Após cada serviço, João cadastra o trabalho no painel e envia o link de avaliação para seus clientes."),
-                                React.createElement('p', null, "3️⃣ Maria, uma cliente satisfeita, avalia o serviço com 5 estrelas e um comentário elogioso."),
-                                React.createElement('p', null, "4️⃣ A reputação de João sobe para 4.9 estrelas. Ele começa a aparecer nas primeiras posições das buscas."),
-                                React.createElement('p', null, "5️⃣ Novos clientes encontram João, contratam seus serviços e também avaliam positivamente."),
-                                React.createElement('p', null, "6️⃣ João identifica que 70% de seus clientes são recorrentes."),
-                                React.createElement('p', null, "7️⃣ Ele compartilha o link do seu perfil em suas redes sociais e começa a receber contatos de novos clientes.")
+                                React.createElement('p', null, "1️⃣ 👨‍🔧 João é encanador e tem um perfil completo no SemLimites."),
+                                React.createElement('p', null, "2️⃣ ❤️ Maria curte o perfil de João após um ótimo serviço."),
+                                React.createElement('p', null, "3️⃣ 📈 João vê sua contagem de curtidas aumentar para 15."),
+                                React.createElement('p', null, "4️⃣ 🔍 Novos clientes veem que João tem 15 curtidas e pensam: 'Se tantas pessoas curtiram, ele deve ser realmente bom!'"),
+                                React.createElement('p', null, "5️⃣ 📞 Mais clientes entram em contato com João."),
+                                React.createElement('p', null, "6️⃣ 🔄 Clientes que curtiram anteriormente voltam a contratar João."),
+                                React.createElement('p', null, "7️⃣ ⭐ João mantém a qualidade, recebe mais curtidas e seu negócio cresce.")
+                            )
+                        ),
+
+                        // Tabela comparativa
+                        React.createElement('div', { className: "overflow-x-auto mb-6" },
+                            React.createElement('h4', { className: "font-semibold text-[#3d7a3d] mb-2" }, "Vantagens Exclusivas dos Favoritos"),
+                            React.createElement('table', { className: "min-w-full bg-white rounded-xl border border-[#c0dfc0]" },
+                                React.createElement('thead', { className: "bg-[#f0f7f0]" },
+                                    React.createElement('tr', null,
+                                        React.createElement('th', { className: "px-4 py-2 text-left text-xs font-semibold text-[#3d7a3d]" }, "Para Clientes"),
+                                        React.createElement('th', { className: "px-4 py-2 text-left text-xs font-semibold text-[#3d7a3d]" }, "Para Prestadores")
+                                    )
+                                ),
+                                React.createElement('tbody', { className: "divide-y divide-[#c0dfc0]" },
+                                    React.createElement('tr', null,
+                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "✅ Localização rápida de profissionais"),
+                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "✅ Reconhecimento público do trabalho")
+                                    ),
+                                    React.createElement('tr', null,
+                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "✅ Organização pessoal"),
+                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "✅ Incentivo à qualidade")
+                                    ),
+                                    React.createElement('tr', null,
+                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "✅ Compartilhamento facilitado"),
+                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "✅ Mais visibilidade na plataforma")
+                                    ),
+                                    React.createElement('tr', null,
+                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "✅ Histórico de profissionais confiáveis"),
+                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "✅ Construção de relacionamento")
+                                    ),
+                                    React.createElement('tr', null,
+                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "✅ Acesso 24/7 de qualquer dispositivo"),
+                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "✅ Métrica de sucesso profissional")
+                                    )
+                                )
                             )
                         ),
 
                         // Resumo Rápido
                         React.createElement('div', { className: "overflow-x-auto mb-6" },
-                            React.createElement('h4', { className: "font-semibold text-[#3d7a3d] mb-2" }, "Resumo Rápido para Prestadores"),
+                            React.createElement('h4', { className: "font-semibold text-[#3d7a3d] mb-2" }, "Resumo Rápido"),
                             React.createElement('table', { className: "min-w-full bg-white rounded-xl border border-[#c0dfc0]" },
                                 React.createElement('thead', { className: "bg-[#f0f7f0]" },
                                     React.createElement('tr', null,
@@ -4836,38 +4814,63 @@ function Login(props) {
                                 React.createElement('tbody', { className: "divide-y divide-[#c0dfc0]" },
                                     React.createElement('tr', null,
                                         React.createElement('td', { className: "px-4 py-2 text-xs font-medium" }, "1️⃣"),
-                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "Cadastre-se e complete seu perfil")
+                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "Encontre um profissional que gostou")
                                     ),
                                     React.createElement('tr', null,
                                         React.createElement('td', { className: "px-4 py-2 text-xs font-medium" }, "2️⃣"),
-                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "Comece a cadastrar seus serviços realizados")
+                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "Clique em Curtir ❤️ no perfil dele")
                                     ),
                                     React.createElement('tr', null,
                                         React.createElement('td', { className: "px-4 py-2 text-xs font-medium" }, "3️⃣"),
-                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "Envie links de avaliação para seus clientes")
+                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "O profissional vai automaticamente para Meus Favoritos")
                                     ),
                                     React.createElement('tr', null,
                                         React.createElement('td', { className: "px-4 py-2 text-xs font-medium" }, "4️⃣"),
-                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "Colete feedbacks e construa sua reputação")
+                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "Acesse o Dashboard do Cliente para ver todos")
                                     ),
                                     React.createElement('tr', null,
                                         React.createElement('td', { className: "px-4 py-2 text-xs font-medium" }, "5️⃣"),
-                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "Acompanhe métricas e identifique oportunidades")
+                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "Gerencie, compartilhe e contrate quando precisar")
                                     ),
                                     React.createElement('tr', null,
                                         React.createElement('td', { className: "px-4 py-2 text-xs font-medium" }, "6️⃣"),
-                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "Compartilhe seu perfil e conquiste novos clientes")
+                                        React.createElement('td', { className: "px-4 py-2 text-xs" }, "Quanto mais você curte, mais fortalece a comunidade")
                                     )
                                 )
                             )
                         ),
 
-                        // Botão de ação
-                        React.createElement('div', { className: "text-center" },
+                        // Mensagem final
+                        React.createElement('div', { className: "bg-gradient-to-r from-[#f0f7f0] to-[#fff8e7] rounded-xl p-6 border border-[#c0dfc0] text-center mb-6" },
+                            React.createElement('p', { className: "text-sm md:text-base text-slate-700 font-medium mb-4" },
+                                "⭐ Lembre-se: Curtir não é apenas um clique. É um reconhecimento. É uma recomendação. É a construção de uma comunidade mais forte e confiável."
+                            ),
+                            React.createElement('p', { className: "text-sm md:text-base text-slate-700" },
+                                "No ", React.createElement('span', { className: "font-semibold text-[#3d7a3d]" }, "SemLimites"), ", valorizamos quem faz bem feito. E você, cliente, tem o poder de destacar esses profissionais."
+                            )
+                        ),
+
+                        // Botões de ação
+                        React.createElement('div', { className: "flex flex-col sm:flex-row gap-4 justify-center mt-6" },
                             React.createElement('button', {
-                                onClick: function() { navigate('/cadastro'); },
+                                onClick: function() { navigate('/'); },
                                 className: "px-6 py-3 bg-gradient-to-r from-[#3d7a3d] to-[#60a060] text-white font-semibold rounded-xl hover:shadow-lg transition"
-                            }, "Cadastre-se e leve sua carreira para o próximo nível! 🚀")
+                            }, "Buscar profissionais agora"),
+                            React.createElement('button', {
+                                onClick: function() { 
+                                    var token = localStorage.getItem('token');
+                                    if (token) {
+                                        navigate('/dashboard-cliente');
+                                    } else {
+                                        navigate('/login');
+                                    }
+                                },
+                                className: "px-6 py-3 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white font-semibold rounded-xl hover:shadow-lg transition"
+                            }, "Criar minha conta de cliente")
+                        ),
+
+                        React.createElement('p', { className: "text-xs text-slate-500 text-center mt-6" },
+                            "Juntos, podemos criar uma rede sem limites para a qualidade e a confiança! 💚🧡"
                         )
                     )
                 )
@@ -5932,7 +5935,7 @@ function Login(props) {
                                 ),
                                 React.createElement('li', null,
                                     React.createElement('button', {
-                                        onClick: function() { handleNavigate('/dashboard-cliente'); },
+                                        onClick: function() { handleNavigate('/meus-favoritos'); },
                                         className: "text-xs md:text-sm text-slate-600 hover:text-[#3d7a3d] transition"
                                     }, "Meus Favoritos")
                                 ),
@@ -6001,6 +6004,8 @@ function Login(props) {
                 window.appSetModo('faq-cliente');
             } else if (path === '/sobre-dashboard-prestador') {
                 window.appSetModo('sobre-dashboard-prestador');
+            } else if (path === '/meus-favoritos') {
+                window.appSetModo('meus-favoritos');
             } else {
                 window.appSetModo('busca');
             }
@@ -6062,6 +6067,8 @@ function Login(props) {
                     setModo('faq-cliente');
                 } else if (path === '/sobre-dashboard-prestador') {
                     setModo('sobre-dashboard-prestador');
+                } else if (path === '/meus-favoritos') {
+                    setModo('meus-favoritos');
                 } else {
                     setModo('busca');
                 }
@@ -6170,6 +6177,8 @@ function Login(props) {
                 content = React.createElement(SobreDashboardPrestador, { onVoltar: voltarParaBusca });
             } else if (modo === 'como-funciona') {
                 content = React.createElement(ComoFunciona, { onVoltar: voltarParaBusca });
+            } else if (modo === 'meus-favoritos') {
+                content = React.createElement(MeusFavoritos, { onVoltar: voltarParaBusca });
             } else if (modo === 'contato' || modo === 'faq-prestador' || modo === 'faq-cliente') {
                 setTimeout(function() { navigate('/'); }, 100);
                 content = React.createElement('div', { className: "text-center py-12" },
