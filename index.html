@@ -3326,7 +3326,7 @@ function Login(props) {
             );
         }
 
-        // ========== DASHBOARD DO PRESTADOR ==========
+               // ========== DASHBOARD DO PRESTADOR ==========
         function DashboardPrestador(props) {
             var usuario = props.usuario;
             var onSair = props.onSair;
@@ -3740,6 +3740,13 @@ function Login(props) {
                                     }
                                 }) :
                                 React.createElement('div', { className: "space-y-4" },
+                                    // ===== EXIBIÇÃO DA FOTO DE PERFIL ADICIONADA =====
+                                    prestador.foto && React.createElement('div', { className: "flex justify-center mb-4" },
+                                        React.createElement('img', {
+                                            src: prestador.foto,
+                                            className: "w-24 h-24 md:w-32 md:h-32 rounded-2xl object-cover border-4 border-indigo-100 shadow-md"
+                                        })
+                                    ),
                                     React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
                                         React.createElement('div', { className: "p-3 md:p-4 bg-[#f0f7f0] rounded-xl border border-[#c0dfc0]" },
                                             React.createElement('span', { className: "text-[10px] md:text-xs text-[#4a8a4a] block" }, "Nome"),
@@ -4011,7 +4018,7 @@ function Login(props) {
             );
         }
 
-        // ========== TELA DE PERFIL PÚBLICO ==========
+              // ========== TELA DE PERFIL PÚBLICO - CORRIGIDA ==========
         function TelaPerfil(props) {
             var prestador = props.prestador;
             var prestadorId = props.prestadorId;
@@ -4371,7 +4378,7 @@ function Login(props) {
                     },
                         React.createElement('div', { className: "flex flex-col sm:flex-row items-center gap-4 md:gap-6 text-center sm:text-left" },
                             React.createElement(Avatar, { 
-                                src: p.fotoPerfilUrl, 
+                                src: p.foto || p.fotoPerfilUrl || null,  // ← LINHA CORRIGIDA: usa p.foto primeiro
                                 name: p.nome, 
                                 size: window.innerWidth < 640 ? "xl" : "xxl" 
                             }),
