@@ -1198,7 +1198,7 @@ function MeusServicos() {
             );
         }
 
-        // ========== COMPONENTE DE PERFIL (EDIÇÃO) ==========
+              // ========== COMPONENTE DE PERFIL (EDIÇÃO) ==========
         function EditarPerfil(props) {
             var prestador = props.prestador;
             var onSalvo = props.onSalvo;
@@ -1296,50 +1296,120 @@ function MeusServicos() {
                 setFormData({ ...formData, servicos: novosServicos });
             }
 
+            // ===== NOVAS FUNÇÕES DE UPLOAD PARA AZURE BLOB STORAGE =====
             function handleFotoChange(e) {
                 var file = e.target.files[0];
-                if (file) {
-                    setFotoPerfil(file);
-                    var reader = new FileReader();
-                    reader.onloadend = function() {
-                        setFotoPreview(reader.result);
-                    };
-                    reader.readAsDataURL(file);
+                if (!file) return;
+
+                // Validar tipo do arquivo (apenas imagens)
+                if (!file.type.startsWith('image/')) {
+                    setErro('Por favor, selecione apenas arquivos de imagem (JPEG, PNG, GIF)');
+                    return;
                 }
+
+                // Validar tamanho (máximo 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    setErro('A imagem deve ter no máximo 5MB');
+                    return;
+                }
+
+                setFotoPerfil(file);
+                setErro('');
+
+                // Criar preview local para visualização imediata
+                var reader = new FileReader();
+                reader.onloadend = function() {
+                    setFotoPreview(reader.result);
+                };
+                reader.readAsDataURL(file);
             }
 
             function handleUploadFoto() {
                 if (!fotoPerfil) return Promise.resolve();
 
                 setUploading(true);
-                var formDataObj = new FormData();
-                formDataObj.append('foto', fotoPerfil);
+                setErro('');
 
-                return fetch(API_URL + '/prestadores/foto', {
+                // 1. Solicitar SAS token da API
+                return fetch(API_URL + '/upload/sas-token', {
                     method: 'POST',
                     headers: {
+                        'Content-Type': 'application/json',
                         'Authorization': 'Bearer ' + localStorage.getItem('token')
                     },
-                    body: formDataObj
+                    body: JSON.stringify({
+                        filename: fotoPerfil.name,
+                        userId: prestador._id,
+                        fileType: fotoPerfil.type
+                    })
                 })
-                    .then(function(response) { return response.json(); })
-                    .then(function(data) {
-                        if (data.error) {
-                            throw new Error(data.error);
+                .then(function(response) {
+                    if (!response.ok) {
+                        return response.json().then(function(err) {
+                            throw new Error(err.error || 'Erro ao obter token de upload');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    var sasUrl = data.sasUrl;
+                    var blobName = data.blobName;
+
+                    // 2. Upload direto para Azure Blob Storage usando o SAS token
+                    return fetch(sasUrl, {
+                        method: 'PUT',
+                        body: fotoPerfil,
+                        headers: {
+                            'x-ms-blob-type': 'BlockBlob',
+                            'Content-Type': fotoPerfil.type
                         }
-                        setFotoPerfil(null);
                     })
-                    .catch(function(error) {
-                        setErro(error.message);
-                        throw error;
-                    })
-                    .finally(function() {
-                        setUploading(false);
+                    .then(function(uploadResponse) {
+                        if (!uploadResponse.ok) {
+                            throw new Error('Erro no upload da foto para o Azure');
+                        }
+
+                        // 3. Extrair URL base (sem o SAS token) para salvar no MongoDB
+                        var fotoUrl = sasUrl.split('?')[0];
+
+                        // 4. Salvar URL no MongoDB através da API
+                        return fetch(API_URL + '/prestadores/foto', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + localStorage.getItem('token')
+                            },
+                            body: JSON.stringify({ 
+                                fotoUrl: fotoUrl,
+                                blobName: blobName 
+                            })
+                        });
                     });
+                })
+                .then(function(response) {
+                    if (!response.ok) {
+                        return response.json().then(function(err) {
+                            throw new Error(err.error || 'Erro ao salvar URL da foto');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    console.log('✅ Foto atualizada com sucesso:', data);
+                    setFotoPerfil(null); // Limpar arquivo após upload bem-sucedido
+                })
+                .catch(function(error) {
+                    console.error('❌ Erro no upload:', error);
+                    setErro(error.message);
+                    throw error; // Re-lançar para o handleSubmit capturar
+                })
+                .finally(function() {
+                    setUploading(false);
+                });
             }
 
             function handleRemoverFoto() {
-                if (!window.confirm('Remover foto de perfil?')) return;
+                if (!window.confirm('Tem certeza que deseja remover sua foto de perfil?')) return;
 
                 setLoading(true);
                 setErro('');
@@ -1357,7 +1427,7 @@ function MeusServicos() {
                         }
                         setFotoPreview(null);
                         setFotoPerfil(null);
-                        alert('✅ Foto removida!');
+                        alert('✅ Foto removida com sucesso!');
                         setLoading(false);
                     })
                     .catch(function(error) {
@@ -1403,6 +1473,7 @@ function MeusServicos() {
 
                 console.log('📤 Enviando dados do perfil:', dadosEnvio);
 
+                // Primeiro atualiza os dados do perfil
                 fetch(API_URL + '/prestadores/perfil', {
                     method: 'PUT',
                     headers: {
@@ -1417,12 +1488,14 @@ function MeusServicos() {
                             throw new Error(data.error);
                         }
                         
+                        // Se tiver uma nova foto para upload, faz o upload
                         if (fotoPerfil) {
                             return handleUploadFoto().then(function() {
                                 alert('✅ Perfil atualizado com sucesso!');
                                 onSalvo();
                             });
                         } else {
+                            // Se não tiver nova foto, apenas conclui
                             alert('✅ Perfil atualizado com sucesso!');
                             onSalvo();
                         }
@@ -1439,6 +1512,9 @@ function MeusServicos() {
                     React.createElement('p', { className: "text-sm text-red-600" }, erro)
                 );
             }
+
+            var uploadStatusText = uploading ? '🔄 Enviando...' : '📸 Enviar foto';
+            var uploadDisabled = uploading || loading;
 
             return React.createElement('div', { className: "space-y-6" },
                 React.createElement('h2', { className: "text-xl md:text-2xl font-bold text-slate-900" }, "Editar Perfil"),
@@ -1469,20 +1545,24 @@ function MeusServicos() {
                                         type: "file",
                                         accept: "image/*",
                                         onChange: handleFotoChange,
-                                        className: "hidden"
+                                        className: "hidden",
+                                        disabled: uploadDisabled
                                     }),
-                                    React.createElement('span', { className: "px-3 md:px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs md:text-sm hover:bg-indigo-700 cursor-pointer inline-block w-full sm:w-auto text-center" },
+                                    React.createElement('span', { className: "px-3 md:px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs md:text-sm hover:bg-indigo-700 cursor-pointer inline-block w-full sm:w-auto text-center" + (uploadDisabled ? ' opacity-50 cursor-not-allowed' : '') },
                                         "Escolher foto"
                                     )
                                 ),
                                 fotoPreview && React.createElement('button', {
                                     onClick: handleRemoverFoto,
-                                    disabled: loading,
+                                    disabled: uploadDisabled,
                                     className: "px-3 md:px-4 py-2 border border-red-200 text-red-600 rounded-xl text-xs md:text-sm hover:bg-red-50 disabled:opacity-50 w-full sm:w-auto"
                                 }, "Remover")
                             ),
                             React.createElement('p', { className: "text-[10px] md:text-xs text-slate-500" },
                                 "Formatos: JPG, PNG, GIF (max. 5MB)"
+                            ),
+                            uploading && React.createElement('p', { className: "text-xs text-indigo-600 font-medium animate-pulse" },
+                                "⏳ Enviando foto para o servidor..."
                             )
                         )
                     )
