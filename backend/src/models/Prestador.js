@@ -1,3 +1,4 @@
+// ========== MODELO PRESTADOR.JS CORRIGIDO ==========
 import mongoose from 'mongoose';
 
 const reviewSchema = new mongoose.Schema({
@@ -12,12 +13,7 @@ const reviewSchema = new mongoose.Schema({
 const prestadorSchema = new mongoose.Schema({
   nome: { type: String, required: true },
   slug: { type: String, required: true, unique: true },
-  
-  // ===== FOTO DE PERFIL (ARMAZENA URL DO AZURE) =====
-  foto: { type: String, default: null }, // ← JÁ EXISTE, VAMOS USAR PARA URL DO AZURE
-  
-  // Alias para clareza (opcional - não afeta o banco)
-  // fotoPerfilUrl: { type: String, default: null }, // Se quiser criar alias, mas não necessário
+  foto: { type: String, default: null },
   
   // ===== CAMPOS PARA CPF/CNPJ =====
   tipoPessoa: { 
@@ -38,17 +34,38 @@ const prestadorSchema = new mongoose.Schema({
   },
   verificado: { type: Boolean, default: false },
   dataVerificacaoCNPJ: Date,
+  
+  // ===== CORREÇÃO: dadosCNPJ com endereço como objeto aninhado =====
   dadosCNPJ: {
     razaoSocial: String,
     nomeFantasia: String,
     dataAbertura: String,
     situacao: String,
     atividadePrincipal: String,
-    endereco: String,
-    telefone: String
+    // Endereço como objeto (não como string)
+    endereco: {
+      logradouro: String,
+      numero: String,
+      complemento: String,
+      bairro: String,
+      cep: String,
+      municipio: String,
+      uf: String
+    },
+    telefone: String,
+    email: String,
+    capitalSocial: String,
+    porte: String,
+    naturezaJuridica: String,
+    simples: {
+      optante: Boolean,
+      dataOpcao: String,
+      dataExclusao: String
+    },
+    mei: Boolean
   },
   
-  // ===== CATEGORIAS HIERÁRQUICAS =====
+  // ===== NOVOS CAMPOS PARA CATEGORIAS HIERÁRQUICAS =====
   categoriaPrincipal: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Categoria',
@@ -59,14 +76,14 @@ const prestadorSchema = new mongoose.Schema({
     ref: 'Categoria'
   }],
   
-  // ===== CURTIDAS =====
+  // ===== NOVO CAMPO PARA CURTIDAS =====
   totalCurtidas: {
     type: Number,
     default: 0
   },
   
   // ===== CAMPOS PROFISSIONAIS =====
-  categoria: { type: String }, // Mantido para compatibilidade
+  categoria: { type: String },
   cidade: { type: String, required: true },
   regioes: [String],
   descricao: { type: String, required: true },
@@ -141,31 +158,18 @@ prestadorSchema.pre('save', function(next) {
 });
 
 // ===== MÉTODOS DE INSTÂNCIA =====
-
-/**
- * Buscar detalhes completos da categoria principal
- */
 prestadorSchema.methods.getCategoriaPrincipal = async function() {
   if (!this.categoriaPrincipal) return null;
-  
   const Categoria = mongoose.model('Categoria');
   return await Categoria.findById(this.categoriaPrincipal);
 };
 
-/**
- * Buscar detalhes completos dos serviços
- */
 prestadorSchema.methods.getServicosDetalhados = async function() {
   if (!this.servicos || this.servicos.length === 0) return [];
-  
   const Categoria = mongoose.model('Categoria');
   return await Categoria.find({ _id: { $in: this.servicos } });
 };
 
-/**
- * Verificar se prestador oferece um serviço específico
- * @param {string} servicoId - ID do serviço
- */
 prestadorSchema.methods.ofereceServico = function(servicoId) {
   return this.servicos && this.servicos.some(
     s => s.toString() === servicoId.toString()
@@ -173,12 +177,6 @@ prestadorSchema.methods.ofereceServico = function(servicoId) {
 };
 
 // ===== MÉTODOS ESTÁTICOS =====
-
-/**
- * Buscar prestadores por serviço específico
- * @param {string} servicoId - ID do serviço
- * @param {Object} filtros - Filtros adicionais (cidade, etc)
- */
 prestadorSchema.statics.buscarPorServico = async function(servicoId, filtros = {}) {
   const query = { servicos: servicoId, ...filtros };
   return await this.find(query)
@@ -186,21 +184,12 @@ prestadorSchema.statics.buscarPorServico = async function(servicoId, filtros = {
     .limit(20);
 };
 
-/**
- * Buscar prestadores por categoria principal
- * @param {string} categoriaId - ID da categoria principal
- * @param {Object} filtros - Filtros adicionais
- */
 prestadorSchema.statics.buscarPorCategoria = async function(categoriaId, filtros = {}) {
   const query = { categoriaPrincipal: categoriaId, ...filtros };
   return await this.find(query)
     .sort({ estrelas: -1, avaliacoes: -1, totalCurtidas: -1 });
 };
 
-/**
- * Busca avançada combinando múltiplos critérios
- * @param {Object} params - Parâmetros de busca
- */
 prestadorSchema.statics.buscaAvancada = async function(params) {
   const {
     servicoId,
