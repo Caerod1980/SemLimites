@@ -3399,7 +3399,7 @@ function Login(props) {
             );
         }
 
-               // ========== DASHBOARD DO PRESTADOR ==========
+                     // ========== DASHBOARD DO PRESTADOR CORRIGIDO ==========
         function DashboardPrestador(props) {
             var usuario = props.usuario;
             var onSair = props.onSair;
@@ -3813,11 +3813,11 @@ function Login(props) {
                                     }
                                 }) :
                                 React.createElement('div', { className: "space-y-4" },
-                                    // ===== EXIBIÇÃO DA FOTO DE PERFIL ADICIONADA =====
-                                    prestador.foto && React.createElement('div', { className: "flex justify-center mb-4" },
-                                        React.createElement('img', {
-                                            src: prestador.foto,
-                                            className: "w-24 h-24 md:w-32 md:h-32 rounded-2xl object-cover border-4 border-indigo-100 shadow-md"
+                                    // ===== FOTO DE PERFIL CORRIGIDA - USANDO COMPONENTE AVATAR =====
+                                    React.createElement('div', { className: "flex justify-center mb-4" },
+                                        React.createElement(Avatar, { 
+                                            src: prestador.foto || null,
+                                            size: "xl"
                                         })
                                     ),
                                     React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
