@@ -1,13 +1,16 @@
 // /src/routes/upload.js
-const express = require('express');
+import express from 'express';
+import { BlobServiceClient, generateBlobSASQueryParameters, BlobSASPermissions } from '@azure/storage-blob';
+import authMiddleware from '../middlewares/auth.js'; // Ajuste o caminho se necessário
+
 const router = express.Router();
-const { BlobServiceClient, generateBlobSASQueryParameters, BlobSASPermissions } = require('@azure/storage-blob');
-const authMiddleware = require('../middlewares/auth'); // Ajuste o caminho se necessário
 
 // Rota para gerar SAS token para upload
 router.post('/sas-token', authMiddleware, async (req, res) => {
     try {
-        // Verificar se é prestador (opcional, depende da sua lógica)
+        console.log('📸 Requisição de SAS token recebida');
+        
+        // Verificar se é prestador
         if (req.usuario.tipo !== 'prestador') {
             return res.status(403).json({ error: 'Apenas prestadores podem fazer upload' });
         }
@@ -22,6 +25,7 @@ router.post('/sas-token', authMiddleware, async (req, res) => {
         // Configurações do Azure
         const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
         if (!connectionString) {
+            console.error('❌ AZURE_STORAGE_CONNECTION_STRING não configurada');
             return res.status(500).json({ error: 'Configuração de storage não encontrada' });
         }
 
@@ -30,6 +34,9 @@ router.post('/sas-token', authMiddleware, async (req, res) => {
         // Criar cliente do Azure
         const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
         const containerClient = blobServiceClient.getContainerClient(containerName);
+
+        // Verificar se o container existe (opcional)
+        await containerClient.createIfNotExists();
 
         // Criar nome único para o arquivo
         const timestamp = Date.now();
@@ -49,6 +56,8 @@ router.post('/sas-token', authMiddleware, async (req, res) => {
         const sasToken = generateBlobSASQueryParameters(sasOptions, blobServiceClient.credential).toString();
         const sasUrl = `${blockBlobClient.url}?${sasToken}`;
 
+        console.log(`✅ SAS token gerado para: ${blobName}`);
+
         res.json({
             sasUrl,
             blobName,
@@ -56,9 +65,9 @@ router.post('/sas-token', authMiddleware, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Erro ao gerar SAS token:', error);
+        console.error('❌ Erro ao gerar SAS token:', error);
         res.status(500).json({ error: error.message || 'Erro interno ao gerar token' });
     }
 });
 
-module.exports = router;
+export default router; // ← EXPORTAÇÃO CORRETA PARA ES MODULES
