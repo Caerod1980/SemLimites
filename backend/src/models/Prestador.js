@@ -1,4 +1,4 @@
-// ========== MODELO PRESTADOR.JS CORRIGIDO ==========
+// /src/models/Prestador.js - VERSÃO COM MIXED TYPE
 import mongoose from 'mongoose';
 
 const reviewSchema = new mongoose.Schema({
@@ -35,34 +35,10 @@ const prestadorSchema = new mongoose.Schema({
   verificado: { type: Boolean, default: false },
   dataVerificacaoCNPJ: Date,
   
-  // ===== CORREÇÃO: dadosCNPJ com endereço como objeto aninhado =====
+  // ===== SOLUÇÃO: USAR MIXED TYPE PARA ACEITAR QUALQUER OBJETO =====
   dadosCNPJ: {
-    razaoSocial: String,
-    nomeFantasia: String,
-    dataAbertura: String,
-    situacao: String,
-    atividadePrincipal: String,
-    // Endereço como objeto (não como string)
-    endereco: {
-      logradouro: String,
-      numero: String,
-      complemento: String,
-      bairro: String,
-      cep: String,
-      municipio: String,
-      uf: String
-    },
-    telefone: String,
-    email: String,
-    capitalSocial: String,
-    porte: String,
-    naturezaJuridica: String,
-    simples: {
-      optante: Boolean,
-      dataOpcao: String,
-      dataExclusao: String
-    },
-    mei: Boolean
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
   },
   
   // ===== NOVOS CAMPOS PARA CATEGORIAS HIERÁRQUICAS =====
@@ -156,80 +132,6 @@ prestadorSchema.pre('save', function(next) {
   }
   next();
 });
-
-// ===== MÉTODOS DE INSTÂNCIA =====
-prestadorSchema.methods.getCategoriaPrincipal = async function() {
-  if (!this.categoriaPrincipal) return null;
-  const Categoria = mongoose.model('Categoria');
-  return await Categoria.findById(this.categoriaPrincipal);
-};
-
-prestadorSchema.methods.getServicosDetalhados = async function() {
-  if (!this.servicos || this.servicos.length === 0) return [];
-  const Categoria = mongoose.model('Categoria');
-  return await Categoria.find({ _id: { $in: this.servicos } });
-};
-
-prestadorSchema.methods.ofereceServico = function(servicoId) {
-  return this.servicos && this.servicos.some(
-    s => s.toString() === servicoId.toString()
-  );
-};
-
-// ===== MÉTODOS ESTÁTICOS =====
-prestadorSchema.statics.buscarPorServico = async function(servicoId, filtros = {}) {
-  const query = { servicos: servicoId, ...filtros };
-  return await this.find(query)
-    .sort({ estrelas: -1, avaliacoes: -1, totalCurtidas: -1 })
-    .limit(20);
-};
-
-prestadorSchema.statics.buscarPorCategoria = async function(categoriaId, filtros = {}) {
-  const query = { categoriaPrincipal: categoriaId, ...filtros };
-  return await this.find(query)
-    .sort({ estrelas: -1, avaliacoes: -1, totalCurtidas: -1 });
-};
-
-prestadorSchema.statics.buscaAvancada = async function(params) {
-  const {
-    servicoId,
-    categoriaId,
-    cidade,
-    texto,
-    page = 1,
-    limit = 12
-  } = params;
-
-  let query = {};
-
-  if (servicoId) {
-    query.servicos = servicoId;
-  } else if (categoriaId) {
-    query.categoriaPrincipal = categoriaId;
-  }
-
-  if (cidade) {
-    query.cidade = new RegExp(cidade, 'i');
-  }
-
-  if (texto) {
-    query.$text = { $search: texto };
-  }
-
-  const prestadores = await this.find(query)
-    .sort({ estrelas: -1, avaliacoes: -1, totalCurtidas: -1 })
-    .limit(parseInt(limit))
-    .skip((parseInt(page) - 1) * parseInt(limit));
-
-  const total = await this.countDocuments(query);
-
-  return {
-    prestadores,
-    total,
-    page: parseInt(page),
-    totalPages: Math.ceil(total / parseInt(limit))
-  };
-};
 
 const Prestador = mongoose.model('Prestador', prestadorSchema);
 
