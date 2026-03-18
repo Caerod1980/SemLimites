@@ -1,7 +1,7 @@
 // /src/routes/upload.js
 import express from 'express';
 import { BlobServiceClient, generateBlobSASQueryParameters, BlobSASPermissions } from '@azure/storage-blob';
-import authMiddleware from '../middlewares/auth.js'; // Ajuste o caminho se necessário
+import authMiddleware from '../middlewares/auth.js';
 
 const router = express.Router();
 
@@ -9,17 +9,28 @@ const router = express.Router();
 router.post('/sas-token', authMiddleware, async (req, res) => {
     try {
         console.log('📸 Requisição de SAS token recebida');
+        console.log('👤 Usuário autenticado:', req.usuario.email, 'Tipo:', req.usuario.tipo);
         
         // Verificar se é prestador
         if (req.usuario.tipo !== 'prestador') {
-            return res.status(403).json({ error: 'Apenas prestadores podem fazer upload' });
+            return res.status(403).json({ error: 'Apenas prestadores podem fazer upload de fotos' });
         }
 
         const { filename } = req.body;
-        const userId = req.usuario.id; // Pega o ID do usuário logado
+        const userId = req.usuario.id; // ID do usuário logado
 
         if (!filename) {
             return res.status(400).json({ error: 'filename é obrigatório' });
+        }
+
+        // Validar extensão do arquivo
+        const extensao = filename.split('.').pop().toLowerCase();
+        const extensoesPermitidas = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        
+        if (!extensoesPermitidas.includes(extensao)) {
+            return res.status(400).json({ 
+                error: 'Tipo de arquivo não permitido. Use: JPG, JPEG, PNG, GIF, WEBP' 
+            });
         }
 
         // Configurações do Azure
@@ -35,7 +46,7 @@ router.post('/sas-token', authMiddleware, async (req, res) => {
         const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
         const containerClient = blobServiceClient.getContainerClient(containerName);
 
-        // Verificar se o container existe (opcional)
+        // Garantir que o container existe
         await containerClient.createIfNotExists();
 
         // Criar nome único para o arquivo
@@ -70,4 +81,4 @@ router.post('/sas-token', authMiddleware, async (req, res) => {
     }
 });
 
-export default router; // ← EXPORTAÇÃO CORRETA PARA ES MODULES
+export default router;
