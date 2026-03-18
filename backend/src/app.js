@@ -1,4 +1,4 @@
-// app.js - VERSÃO CORRIGIDA
+// app.js - VERSÃO CORRIGIDA COM UPLOAD
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -7,8 +7,9 @@ import prestadoresRoutes from './routes/prestadores.js';
 import authRoutes from './routes/auth.js';
 import servicosRoutes from './routes/servicos.js';
 import categoriasRoutes from './routes/categorias.js';
-import favoritosRoutes from './routes/favoritos.js'; // ADICIONADO
+import favoritosRoutes from './routes/favoritos.js';
 import usuarioRoutes from './routes/usuarios.js';
+import uploadRoutes from './routes/upload.js'; // ← NOVA ROTA ADICIONADA
 
 dotenv.config();
 
@@ -60,15 +61,17 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // Aumentar limite para upload de fotos
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Rotas
 app.use('/api/prestadores', prestadoresRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/servicos', servicosRoutes);
 app.use('/api/categorias', categoriasRoutes);
-app.use('/api/favoritos', favoritosRoutes); // ADICIONADO
+app.use('/api/favoritos', favoritosRoutes);
 app.use('/api/usuarios', usuarioRoutes);
+app.use('/api/upload', uploadRoutes); // ← NOVA ROTA ADICIONADA
 
 // Health check
 app.get('/health', (req, res) => {
@@ -76,7 +79,8 @@ app.get('/health', (req, res) => {
     status: 'ok', 
     timestamp: new Date(),
     mongodb: 'connected',
-    cors: 'enabled'
+    cors: 'enabled',
+    upload: 'enabled' // Indicador que upload está configurado
   });
 });
 
@@ -89,12 +93,22 @@ app.get('/test-cors', (req, res) => {
   });
 });
 
+// Rota de teste para verificar variável de ambiente do Azure Storage
+app.get('/test-storage-config', (req, res) => {
+  const hasConnectionString = !!process.env.AZURE_STORAGE_CONNECTION_STRING;
+  res.json({
+    storage_configured: hasConnectionString,
+    message: hasConnectionString ? 'Storage configurado' : 'Storage NÃO configurado'
+  });
+});
+
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
   console.log(`🚀 Backend rodando na porta ${PORT}`);
   console.log(`🔓 CORS permitido para:`, allowedOrigins);
   console.log(`🌐 URL: http://localhost:${PORT}`);
+  console.log(`📸 Upload configurado: ${process.env.AZURE_STORAGE_CONNECTION_STRING ? '✅' : '❌'}`);
 });
 
 export default app;
