@@ -207,6 +207,7 @@ router.post('/register', async (req, res) => {
       categoriaPrincipal, // NOVO
       servicos, // NOVO
       cidade,
+      estado,
       descricao,
       whatsapp,
       telefone,
@@ -235,16 +236,23 @@ router.post('/register', async (req, res) => {
     // Se for prestador, criar o registro
     if (tipo === 'prestador') {
       // Validar campos obrigatórios do prestador
-      if (!nome || !cidade) {
+      if (!nome || !cidade || !estado) {
         return res.status(400).json({ 
-          error: 'Nome e cidade são obrigatórios para prestador' 
+          error: 'Nome, cidade e estado são obrigatórios para prestador' 
         });
       }
 
-      // Validar categoria (nova ou antiga)
+      // Validar categoria
       if (!categoriaPrincipal && !req.body.categoria) {
         return res.status(400).json({ 
           error: 'Categoria é obrigatória para prestador' 
+        });
+      }
+
+      // Validar serviços
+      if (!servicos || servicos.length === 0) {
+        return res.status(400).json({ 
+          error: 'Pelo menos um serviço é obrigatório' 
         });
       }
 
@@ -268,6 +276,15 @@ router.post('/register', async (req, res) => {
         if (cnpjLimpo.length !== 14) {
           return res.status(400).json({ error: 'CNPJ inválido' });
         }
+
+        if (!responsavel) {
+          return res.status(400).json({ error: 'Responsável é obrigatório para pessoa jurídica' });
+        }
+      }
+
+      // Validar WhatsApp
+      if (!whatsapp) {
+        return res.status(400).json({ error: 'WhatsApp é obrigatório' });
       }
 
       // Criar slug
@@ -278,13 +295,21 @@ router.post('/register', async (req, res) => {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '');
 
+      // Verificar se slug já existe e gerar único
+      let slugFinal = slug;
+      let contador = 1;
+      while (await Prestador.findOne({ slug: slugFinal })) {
+        slugFinal = `${slug}-${contador}`;
+        contador++;
+      }
+
       // Processar tags
-      const tagsArray = tags ? (Array.isArray(tags) ? tags : []) : [];
+      const tagsArray = tags ? (Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim()).filter(t => t)) : [];
 
       // Criar o prestador com todos os campos
       const prestadorData = {
         nome,
-        slug,
+        slug: slugFinal,
         email,
         tipoPessoa: tipoPessoa || 'juridica',
         // NOVOS CAMPOS
@@ -293,13 +318,17 @@ router.post('/register', async (req, res) => {
         // Campo antigo para compatibilidade
         categoria: req.body.categoria || null,
         cidade,
+        estado,
         descricao: descricao || `Profissional em ${cidade}`,
         whatsapp: whatsapp ? whatsapp.replace(/\D/g, '') : null,
         telefone: telefone ? telefone.replace(/\D/g, '') : null,
         tags: tagsArray,
         verificado: verificado || false,
         dadosCNPJ: dadosCNPJ || null,
-        dataVerificacaoCNPJ: dataVerificacaoCNPJ || null
+        dataVerificacaoCNPJ: dataVerificacaoCNPJ || null,
+        estrelas: 0,
+        avaliacoes: 0,
+        totalCurtidas: 0
       };
 
       // Adicionar campos específicos
@@ -327,8 +356,21 @@ router.post('/register', async (req, res) => {
 
     console.log('✅ Usuário criado:', user._id);
 
+    // Gerar token JWT
+    const token = jwt.sign(
+      { 
+        userId: user._id, 
+        email: user.email, 
+        tipo: user.tipo,
+        prestadorId: prestadorId
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
     res.status(201).json({
       message: 'Usuário criado com sucesso',
+      token: token, // <-- TOKEN RETORNADO!
       user: { 
         id: user._id, 
         email: user.email, 
@@ -346,6 +388,13 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ 
         error: 'Erro de validação', 
         details: messages 
+      });
+    }
+    
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({ 
+        error: `${field === 'cnpj' ? 'CNPJ' : field} já está cadastrado` 
       });
     }
     
@@ -381,7 +430,8 @@ router.post('/login', async (req, res) => {
       { 
         userId: user._id, 
         email: user.email, 
-        tipo: user.tipo 
+        tipo: user.tipo,
+        prestadorId: user.prestadorId
       },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
@@ -441,6 +491,46 @@ router.get('/me', async (req, res) => {
   } catch (error) {
     console.error('❌ Erro ao validar token:', error);
     res.status(401).json({ error: 'Token inválido' });
+  }
+});
+
+// ========== VERIFICAR SE EMAIL JÁ EXISTE ==========
+router.get('/verificar-email', async (req, res) => {
+  try {
+    const { email } = req.query;
+    
+    if (!email) {
+      return res.status(400).json({ error: 'Email é obrigatório' });
+    }
+    
+    const user = await User.findOne({ email });
+    
+    res.json({ existe: !!user });
+    
+  } catch (error) {
+    console.error('Erro ao verificar email:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========== VERIFICAR SE CNPJ JÁ EXISTE ==========
+router.get('/verificar-cnpj', async (req, res) => {
+  try {
+    const { cnpj } = req.query;
+    
+    if (!cnpj) {
+      return res.status(400).json({ error: 'CNPJ é obrigatório' });
+    }
+    
+    const cnpjLimpo = cnpj.replace(/\D/g, '');
+    
+    const prestador = await Prestador.findOne({ cnpj: cnpjLimpo });
+    
+    res.json({ existe: !!prestador });
+    
+  } catch (error) {
+    console.error('Erro ao verificar CNPJ:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -525,7 +615,7 @@ router.get('/resetar-senha/:token', async (req, res) => {
     }
 
     console.log('✅ Token válido para:', user.email);
-    res.json({ valid: true });
+    res.json({ valid: true, email: user.email });
 
   } catch (error) {
     console.error('❌ Erro ao verificar token:', error);
