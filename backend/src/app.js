@@ -10,6 +10,7 @@ import categoriasRoutes from './routes/categorias.js';
 import favoritosRoutes from './routes/favoritos.js';
 import usuarioRoutes from './routes/usuarios.js';
 import uploadRoutes from './routes/upload.js';
+import empresaRoutes from './routes/empresa.js';
 
 // ===== NOVAS IMPORTAÇÕES PARA ASSINATURAS =====
 import assinaturaRoutes from './routes/assinatura.js';
@@ -76,6 +77,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // 1. Primeiro, rotas públicas (NÃO aplicam verificação de assinatura)
 app.use('/api/auth', authRoutes);
 app.use('/api/categorias', categoriasRoutes);
+app.use('/api/empresa', empresaRoutes);
 
 // 2. Rotas de assinatura (algumas públicas, outras privadas)
 // As rotas públicas dentro de assinaturaRoutes virão primeiro
