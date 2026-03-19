@@ -2738,7 +2738,7 @@ function Login(props) {
             );
         }
 
-                       // ========== TELA DE CADASTRO COM PAGAMENTO ==========
+                     // ========== TELA DE CADASTRO COM PAGAMENTO ==========
         function CadastroPrestador(props) {
             var onCadastroSucesso = props.onCadastroSucesso;
             var onVoltar = props.onVoltar;
@@ -2779,12 +2779,46 @@ function Login(props) {
             var [mp, setMp] = useState(null);
             var [carregandoMP, setCarregandoMP] = useState(false);
 
-            // ===== VARIÁVEL erroElement - ADICIONADA AQUI =====
+            // ===== VARIÁVEL erroElement =====
             var erroElement = null;
             if (erro) {
                 erroElement = React.createElement('div', { className: "mb-4 p-3 rounded-lg bg-red-50 border border-red-200" },
                     React.createElement('p', { className: "text-sm text-red-600" }, erro)
                 );
+            }
+
+            // ===== FUNÇÕES PARA VERIFICAR DUPLICATAS =====
+            function verificarEmail() {
+                if (!formData.email || formData.email.length < 5) return;
+                
+                fetch(API_URL + '/auth/verificar-email?email=' + encodeURIComponent(formData.email))
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        if (data.existe) {
+                            setErro('Este e-mail já está cadastrado. Use outro e-mail ou faça login.');
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Erro ao verificar e-mail:', error);
+                    });
+            }
+
+            function verificarCNPJExistente() {
+                if (!formData.cnpj || formData.tipoPessoa !== 'juridica') return;
+                
+                var cnpjNumeros = formData.cnpj.replace(/\D/g, '');
+                if (cnpjNumeros.length !== 14) return;
+                
+                fetch(API_URL + '/auth/verificar-cnpj?cnpj=' + cnpjNumeros)
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        if (data.existe) {
+                            setErro('Este CNPJ já está cadastrado no sistema.');
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Erro ao verificar CNPJ:', error);
+                    });
             }
 
             // ===== CARREGAR CATEGORIAS =====
@@ -2867,7 +2901,7 @@ function Login(props) {
                         await bricksBuilder.create('wallet', 'paymentBrick_container', {
                             initialization: {
                                 preferenceId: prefId,
-                                redirectMode: 'self' // Pagamento na própria página
+                                redirectMode: 'self'
                             },
                             customization: {
                                 texts: {
@@ -2917,9 +2951,8 @@ function Login(props) {
                     } catch (error) {
                         console.error('Erro ao verificar status:', error);
                     }
-                }, 3000); // Verificar a cada 3 segundos
+                }, 3000);
                 
-                // Parar após 5 minutos
                 setTimeout(function() { clearInterval(interval); }, 300000);
             }
 
@@ -2974,19 +3007,37 @@ function Login(props) {
                 setErro('');
                 setVerificacaoCNPJ('verificando');
 
-                // Simulação de verificação (substituir pela chamada real à API)
-                setTimeout(function() {
-                    // Aqui você faria a chamada real à API de verificação de CNPJ
-                    // Por enquanto, vamos simular uma verificação bem-sucedida
-                    setVerificacaoCNPJ({
-                        status: 'ativo',
-                        razaoSocial: formData.nome || 'Razão Social verificada',
-                        cnpj: formData.cnpj
+                // Chamada à API de verificação de CNPJ
+                fetch(API_URL + '/empresa/consultar-cnpj/' + cnpjNumeros)
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        if (data.status === 'OK' && data.situacao === 'Ativa') {
+                            setVerificacaoCNPJ({
+                                status: 'ativo',
+                                razaoSocial: data.razao_social || data.nome,
+                                cnpj: formData.cnpj
+                            });
+                            // Preencher automaticamente a razão social
+                            setFormData(function(prev) {
+                                return { ...prev, nome: data.razao_social || data.nome || prev.nome };
+                            });
+                        } else {
+                            setVerificacaoCNPJ({
+                                status: 'inativo',
+                                mensagem: data.situacao || 'CNPJ com situação irregular'
+                            });
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Erro ao verificar CNPJ:', error);
+                        setVerificacaoCNPJ({
+                            status: 'erro',
+                            mensagem: 'Erro ao verificar CNPJ'
+                        });
                     });
-                }, 1500);
             }
 
-            // ===== FUNÇÃO handleSubmit MODIFICADA =====
+            // ===== FUNÇÃO handleSubmit CORRIGIDA =====
             function handleSubmit(e) {
                 e.preventDefault();
                 
@@ -3082,7 +3133,14 @@ function Login(props) {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(dadosEnvio)
                 })
-                    .then(function(response) { return response.json(); })
+                    .then(function(response) { 
+                        if (!response.ok) {
+                            return response.json().then(function(err) { 
+                                throw new Error(err.error || 'Erro no cadastro'); 
+                            });
+                        }
+                        return response.json(); 
+                    })
                     .then(function(registerData) {
                         if (registerData.error) {
                             throw new Error(registerData.error);
@@ -3100,6 +3158,7 @@ function Login(props) {
                         // Criar assinatura
                         setEtapa('processando');
                         
+                        // USAR O TOKEN QUE ACABOU DE SER RECEBIDO!
                         return fetch(API_URL + '/assinatura/criar', {
                             method: 'POST',
                             headers: { 
@@ -3115,7 +3174,14 @@ function Login(props) {
                             })
                         });
                     })
-                    .then(function(response) { return response.json(); })
+                    .then(function(response) { 
+                        if (!response.ok) {
+                            return response.json().then(function(err) { 
+                                throw new Error(err.error || 'Erro ao criar assinatura'); 
+                            });
+                        }
+                        return response.json(); 
+                    })
                     .then(function(pagamentoData) {
                         if (pagamentoData.success) {
                             console.log('✅ Assinatura criada:', pagamentoData);
@@ -3188,19 +3254,16 @@ function Login(props) {
                             )
                         ),
 
-                        // Container do brick de pagamento
                         React.createElement('div', { 
                             id: "paymentBrick_container",
                             className: "min-h-[200px] mb-4"
                         }),
 
-                        // Indicador de carregamento do Mercado Pago
                         carregandoMP && React.createElement('div', { className: "text-center py-4" },
                             React.createElement('div', { className: "w-8 h-8 border-4 border-[#FFD966] border-t-[#FFB347] rounded-full animate-spin mx-auto mb-2" }),
                             React.createElement('p', { className: "text-xs text-[#4a8a4a]" }, "Carregando opções de pagamento...")
                         ),
 
-                        // Fallback com link direto
                         linkPagamento && React.createElement('div', { className: "text-center mt-4" },
                             React.createElement('p', { className: "text-xs text-slate-500 mb-2" },
                                 "Se o pagamento não carregar, clique no link abaixo:"
@@ -3231,7 +3294,7 @@ function Login(props) {
                 );
             }
 
-            // ===== FORMULÁRIO DE CADASTRO ORIGINAL =====
+            // ===== FORMULÁRIO DE CADASTRO =====
             return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-8" },
                 React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-4 md:p-8 shadow-sm" },
                     React.createElement('div', { className: "flex items-center justify-between mb-6" },
@@ -3300,6 +3363,7 @@ function Login(props) {
                                             name: "cnpj",
                                             value: formData.cnpj,
                                             onChange: handleChange,
+                                            onBlur: verificarCNPJExistente,
                                             required: true,
                                             placeholder: "00.000.000/0000-00",
                                             className: "flex-1 px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
@@ -3321,7 +3385,9 @@ function Login(props) {
                                             "CNPJ verificado: " + (verificacaoCNPJ.razaoSocial || '')
                                         ),
                                     verificacaoCNPJ && verificacaoCNPJ.status === 'inativo' && 
-                                        React.createElement('p', { className: "text-xs text-red-600 mt-1" }, "CNPJ com situação irregular")
+                                        React.createElement('p', { className: "text-xs text-red-600 mt-1" }, "CNPJ com situação irregular"),
+                                    verificacaoCNPJ && verificacaoCNPJ.status === 'erro' && 
+                                        React.createElement('p', { className: "text-xs text-red-600 mt-1" }, "Erro ao verificar CNPJ")
                                 ),
                                 React.createElement('div', null,
                                     React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Responsável *"),
@@ -3361,6 +3427,7 @@ function Login(props) {
                                     name: "email",
                                     value: formData.email,
                                     onChange: handleChange,
+                                    onBlur: verificarEmail,
                                     required: true,
                                     className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
                                 })
@@ -3456,7 +3523,7 @@ function Login(props) {
                                 value: categoriaSelecionada,
                                 onChange: function(e) { 
                                     setCategoriaSelecionada(e.target.value);
-                                    setServicosSelecionados([]); // Limpar serviços selecionados ao mudar categoria
+                                    setServicosSelecionados([]);
                                 },
                                 required: true,
                                 className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm bg-white"
