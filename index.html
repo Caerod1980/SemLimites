@@ -2738,7 +2738,7 @@ function Login(props) {
             );
         }
 
-                     // ========== TELA DE CADASTRO COM PAGAMENTO ==========
+                        // ========== TELA DE CADASTRO COM PAGAMENTO ==========
         function CadastroPrestador(props) {
             var onCadastroSucesso = props.onCadastroSucesso;
             var onVoltar = props.onVoltar;
@@ -2765,7 +2765,7 @@ function Login(props) {
                 tags: ''
             });
             
-            var [etapa, setEtapa] = useState('form'); // 'form', 'verificando', 'verificado', 'processando', 'pagamento', 'sucesso'
+            var [etapa, setEtapa] = useState('form'); // 'form', 'processando', 'pagamento', 'sucesso'
             var [verificacaoCNPJ, setVerificacaoCNPJ] = useState(null);
             var [loading, setLoading] = useState(false);
             var [erro, setErro] = useState('');
@@ -2796,6 +2796,8 @@ function Login(props) {
                     .then(function(data) {
                         if (data.existe) {
                             setErro('Este e-mail já está cadastrado. Use outro e-mail ou faça login.');
+                        } else {
+                            setErro('');
                         }
                     })
                     .catch(function(error) {
@@ -2814,6 +2816,8 @@ function Login(props) {
                     .then(function(data) {
                         if (data.existe) {
                             setErro('Este CNPJ já está cadastrado no sistema.');
+                        } else {
+                            setErro('');
                         }
                     })
                     .catch(function(error) {
@@ -2840,18 +2844,20 @@ function Login(props) {
                         .then(function(response) { return response.json(); })
                         .then(function(data) {
                             setServicos(data);
+                            setServicosSelecionados([]); // Limpar seleção ao mudar categoria
                         })
                         .catch(function(err) {
                             console.error('Erro ao carregar serviços:', err);
                         });
                 } else {
                     setServicos([]);
+                    setServicosSelecionados([]);
                 }
             }, [categoriaSelecionada]);
 
             // ===== INICIALIZAR MERCADO PAGO =====
             useEffect(function() {
-                if (etapa === 'pagamento' && window.MercadoPago && !mp && !carregandoMP) {
+                if (etapa === 'pagamento' && window.MercadoPago && !mp && !carregandoMP && preferenceId) {
                     setCarregandoMP(true);
                     
                     // Buscar a chave pública da API
@@ -2868,12 +2874,10 @@ function Login(props) {
                                 const mpInstance = new window.MercadoPago(data.publicKey);
                                 setMp(mpInstance);
                                 
-                                // Renderizar brick de pagamento quando tiver preferenceId
-                                if (preferenceId) {
-                                    setTimeout(function() {
-                                        renderBrickPagamento(mpInstance, preferenceId);
-                                    }, 500);
-                                }
+                                // Renderizar brick de pagamento
+                                setTimeout(function() {
+                                    renderBrickPagamento(mpInstance, preferenceId);
+                                }, 500);
                             } else {
                                 console.error('❌ Chave pública não encontrada');
                                 setErro('Erro ao configurar pagamento. Tente novamente.');
@@ -2901,7 +2905,7 @@ function Login(props) {
                         await bricksBuilder.create('wallet', 'paymentBrick_container', {
                             initialization: {
                                 preferenceId: prefId,
-                                redirectMode: 'self'
+                                redirectMode: 'blank' // Abre em nova aba para não perder o contexto
                             },
                             customization: {
                                 texts: {
@@ -2936,12 +2940,21 @@ function Login(props) {
             function verificarStatusPagamento() {
                 if (!prestadorIdCadastrado) return;
                 
+                console.log('🔍 Iniciando monitoramento de pagamento para:', prestadorIdCadastrado);
+                
                 const interval = setInterval(async () => {
                     try {
-                        const response = await fetch(API_URL + '/assinatura/status-prestador/' + prestadorIdCadastrado);
+                        const response = await fetch(API_URL + '/assinatura/status-prestador/' + prestadorIdCadastrado, {
+                            headers: {
+                                'Authorization': 'Bearer ' + localStorage.getItem('token')
+                            }
+                        });
                         const data = await response.json();
                         
+                        console.log('📊 Status do pagamento:', data);
+                        
                         if (data.planoStatus === 'ativo') {
+                            console.log('✅ Pagamento confirmado!');
                             clearInterval(interval);
                             setEtapa('sucesso');
                             setTimeout(function() {
@@ -2951,9 +2964,10 @@ function Login(props) {
                     } catch (error) {
                         console.error('Erro ao verificar status:', error);
                     }
-                }, 3000);
+                }, 5000); // Verificar a cada 5 segundos
                 
-                setTimeout(function() { clearInterval(interval); }, 300000);
+                // Parar após 10 minutos
+                setTimeout(function() { clearInterval(interval); }, 600000);
             }
 
             // ===== FUNÇÕES DE FORMATAÇÃO =====
@@ -2996,7 +3010,7 @@ function Login(props) {
                 }
             }
 
-            // ===== FUNÇÃO PARA VERIFICAR CNPJ =====
+            // ===== FUNÇÃO PARA VERIFICAR CNPJ NA RECEITA =====
             function verificarCNPJ() {
                 var cnpjNumeros = formData.cnpj.replace(/\D/g, '');
                 if (cnpjNumeros.length !== 14) {
@@ -3037,7 +3051,7 @@ function Login(props) {
                     });
             }
 
-            // ===== FUNÇÃO handleSubmit CORRIGIDA =====
+            // ===== FUNÇÃO handleSubmit CORRIGIDA (FLUXO COMPLETO) =====
             function handleSubmit(e) {
                 e.preventDefault();
                 
@@ -3082,6 +3096,23 @@ function Login(props) {
                     return;
                 }
 
+                // ===== VALIDAÇÕES DE DOCUMENTO =====
+                if (formData.tipoPessoa === 'fisica') {
+                    var cpfNumeros = formData.cpf.replace(/\D/g, '');
+                    if (cpfNumeros.length !== 11) {
+                        setErro('CPF inválido');
+                        setLoading(false);
+                        return;
+                    }
+                } else {
+                    var cnpjNumeros = formData.cnpj.replace(/\D/g, '');
+                    if (cnpjNumeros.length !== 14) {
+                        setErro('CNPJ inválido');
+                        setLoading(false);
+                        return;
+                    }
+                }
+
                 // ===== DADOS PARA ENVIO =====
                 var dadosEnvio = {
                     nome: formData.nome,
@@ -3101,24 +3132,11 @@ function Login(props) {
                 };
 
                 if (formData.tipoPessoa === 'fisica') {
-                    var cpfNumeros = formData.cpf.replace(/\D/g, '');
-                    if (cpfNumeros.length !== 11) {
-                        setErro('CPF inválido');
-                        setLoading(false);
-                        return;
-                    }
-                    dadosEnvio.cpf = cpfNumeros;
+                    dadosEnvio.cpf = formData.cpf.replace(/\D/g, '');
                 } else {
-                    var cnpjNumeros = formData.cnpj.replace(/\D/g, '');
-                    if (cnpjNumeros.length !== 14) {
-                        setErro('CNPJ inválido');
-                        setLoading(false);
-                        return;
-                    }
-                    dadosEnvio.cnpj = cnpjNumeros;
+                    dadosEnvio.cnpj = formData.cnpj.replace(/\D/g, '');
                     dadosEnvio.responsavel = formData.responsavel;
                     
-                    // Adicionar status da verificação do CNPJ
                     if (verificacaoCNPJ && verificacaoCNPJ.status === 'ativo') {
                         dadosEnvio.cnpjVerificado = true;
                         dadosEnvio.razaoSocialVerificada = verificacaoCNPJ.razaoSocial;
@@ -3127,12 +3145,45 @@ function Login(props) {
 
                 console.log('📤 Enviando dados de cadastro:', dadosEnvio);
 
-                // ===== CADASTRO DO PRESTADOR =====
-                fetch(API_URL + '/auth/register', {
+                // ===== PASSO 1: CRIAR A PREFERÊNCIA DE PAGAMENTO =====
+                setEtapa('processando');
+                
+                fetch(API_URL + '/assinatura/criar-preferencia', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(dadosEnvio)
+                    body: JSON.stringify({
+                        email: formData.email,
+                        nome: formData.nome,
+                        plano: 'mensal',
+                        valor: 29.90
+                    })
                 })
+                    .then(function(response) { 
+                        if (!response.ok) {
+                            return response.json().then(function(err) { 
+                                throw new Error(err.error || 'Erro ao criar preferência de pagamento'); 
+                            });
+                        }
+                        return response.json(); 
+                    })
+                    .then(function(pagamentoData) {
+                        if (pagamentoData.success) {
+                            console.log('✅ Preferência de pagamento criada:', pagamentoData);
+                            
+                            // Salvar os dados da preferência
+                            setLinkPagamento(pagamentoData.initPoint);
+                            setPreferenceId(pagamentoData.preferenceId);
+                            
+                            // ===== PASSO 2: CADASTRAR O PRESTADOR =====
+                            return fetch(API_URL + '/auth/register', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(dadosEnvio)
+                            });
+                        } else {
+                            throw new Error(pagamentoData.error || 'Erro ao criar pagamento');
+                        }
+                    })
                     .then(function(response) { 
                         if (!response.ok) {
                             return response.json().then(function(err) { 
@@ -3155,11 +3206,8 @@ function Login(props) {
                         // Salvar o ID do prestador
                         setPrestadorIdCadastrado(registerData.prestadorId);
                         
-                        // Criar assinatura
-                        setEtapa('processando');
-                        
-                        // USAR O TOKEN QUE ACABOU DE SER RECEBIDO!
-                        return fetch(API_URL + '/assinatura/criar', {
+                        // ===== PASSO 3: ASSOCIAR A ASSINATURA AO PRESTADOR =====
+                        return fetch(API_URL + '/assinatura/associar', {
                             method: 'POST',
                             headers: { 
                                 'Content-Type': 'application/json',
@@ -3167,6 +3215,7 @@ function Login(props) {
                             },
                             body: JSON.stringify({
                                 prestadorId: registerData.prestadorId,
+                                preferenceId: preferenceId,
                                 email: formData.email,
                                 nome: formData.nome,
                                 plano: 'mensal',
@@ -3177,24 +3226,20 @@ function Login(props) {
                     .then(function(response) { 
                         if (!response.ok) {
                             return response.json().then(function(err) { 
-                                throw new Error(err.error || 'Erro ao criar assinatura'); 
+                                throw new Error(err.error || 'Erro ao associar assinatura'); 
                             });
                         }
                         return response.json(); 
                     })
-                    .then(function(pagamentoData) {
-                        if (pagamentoData.success) {
-                            console.log('✅ Assinatura criada:', pagamentoData);
-                            setLinkPagamento(pagamentoData.initPoint);
-                            setPreferenceId(pagamentoData.preferenceId);
-                            setEtapa('pagamento');
-                            
-                            // Iniciar monitoramento do pagamento
-                            verificarStatusPagamento();
-                        } else {
-                            throw new Error(pagamentoData.error || 'Erro ao criar pagamento');
-                        }
+                    .then(function(associarData) {
+                        console.log('✅ Assinatura associada:', associarData);
+                        
+                        // Ir para a tela de pagamento
+                        setEtapa('pagamento');
                         setLoading(false);
+                        
+                        // Iniciar monitoramento do pagamento
+                        verificarStatusPagamento();
                     })
                     .catch(function(error) {
                         console.error('❌ Erro no cadastro:', error);
@@ -3204,9 +3249,7 @@ function Login(props) {
                     });
             }
 
-            // ===== NOVAS TELAS DE PAGAMENTO =====
-            
-            // Tela de sucesso
+            // ===== TELA DE SUCESSO =====
             if (etapa === 'sucesso') {
                 return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-8" },
                     React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-8 shadow-sm text-center" },
@@ -3224,7 +3267,7 @@ function Login(props) {
                 );
             }
 
-            // Tela de pagamento
+            // ===== TELA DE PAGAMENTO =====
             if (etapa === 'pagamento') {
                 return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-8" },
                     React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-8 shadow-sm" },
@@ -3254,16 +3297,19 @@ function Login(props) {
                             )
                         ),
 
+                        // Container do brick de pagamento
                         React.createElement('div', { 
                             id: "paymentBrick_container",
                             className: "min-h-[200px] mb-4"
                         }),
 
+                        // Indicador de carregamento do Mercado Pago
                         carregandoMP && React.createElement('div', { className: "text-center py-4" },
                             React.createElement('div', { className: "w-8 h-8 border-4 border-[#FFD966] border-t-[#FFB347] rounded-full animate-spin mx-auto mb-2" }),
                             React.createElement('p', { className: "text-xs text-[#4a8a4a]" }, "Carregando opções de pagamento...")
                         ),
 
+                        // Fallback com link direto
                         linkPagamento && React.createElement('div', { className: "text-center mt-4" },
                             React.createElement('p', { className: "text-xs text-slate-500 mb-2" },
                                 "Se o pagamento não carregar, clique no link abaixo:"
@@ -3283,12 +3329,12 @@ function Login(props) {
                 );
             }
 
-            // Tela de processamento
+            // ===== TELA DE PROCESSAMENTO =====
             if (etapa === 'processando') {
                 return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-8" },
                     React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-8 shadow-sm text-center" },
                         React.createElement('div', { className: "w-12 h-12 md:w-16 md:h-16 border-4 border-[#FFD966] border-t-[#FFB347] rounded-full animate-spin mx-auto mb-4" }),
-                        React.createElement('h2', { className: "text-xl font-semibold text-[#3d7a3d] mb-2" }, "Preparando seu pagamento..."),
+                        React.createElement('h2', { className: "text-xl font-semibold text-[#3d7a3d] mb-2" }, "Preparando seu cadastro..."),
                         React.createElement('p', { className: "text-[#4a8a4a]" }, "Aguarde um instante.")
                     )
                 );
@@ -3523,7 +3569,6 @@ function Login(props) {
                                 value: categoriaSelecionada,
                                 onChange: function(e) { 
                                     setCategoriaSelecionada(e.target.value);
-                                    setServicosSelecionados([]);
                                 },
                                 required: true,
                                 className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm bg-white"
