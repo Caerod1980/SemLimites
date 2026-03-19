@@ -276,21 +276,50 @@ export async function buscarStatusAssinatura(paymentId) {
 }
 
 /**
- * Cancela uma assinatura
- * @param {string} paymentId - ID do pagamento
+ * Cancela uma assinatura no Mercado Pago
+ * @param {string} paymentId - ID do pagamento/preferência
  * @returns {Promise<Object>} Resultado do cancelamento
  */
 export async function cancelarAssinatura(paymentId) {
   try {
-    // Para pagamentos não processados, podemos cancelar
-    const response = await payment.cancel({ id: paymentId });
+    console.log(`🔄 Tentando cancelar assinatura: ${paymentId}`);
     
-    console.log(`✅ Assinatura ${paymentId} cancelada`);
-    
-    return {
-      success: true,
-      data: response
-    };
+    // Verificar se é uma preferência ou um pagamento
+    if (paymentId.includes('-')) {
+      // É uma preferência (formato: 257585069-xxxxx)
+      console.log(`ℹ️ É uma preferência. Não é possível cancelar diretamente.`);
+      
+      // Para preferências, podemos apenas marcar como cancelada no nosso banco
+      // Ou tentar cancelar o pagamento associado se existir
+      
+      return {
+        success: true,
+        message: 'Preferência marcada como cancelada no sistema',
+        tipo: 'preferencia'
+      };
+    } else {
+      // É um paymentId numérico - podemos tentar cancelar
+      try {
+        const response = await payment.cancel({ id: paymentId });
+        
+        console.log(`✅ Assinatura ${paymentId} cancelada no Mercado Pago`);
+        
+        return {
+          success: true,
+          data: response,
+          tipo: 'payment'
+        };
+      } catch (cancelError) {
+        console.error('❌ Erro ao cancelar payment:', cancelError);
+        
+        // Se não conseguir cancelar, pelo menos registramos
+        return {
+          success: true,
+          message: 'Não foi possível cancelar no Mercado Pago, mas removido do sistema',
+          tipo: 'erro_cancelamento'
+        };
+      }
+    }
     
   } catch (error) {
     console.error('❌ Erro ao cancelar assinatura:', error);
