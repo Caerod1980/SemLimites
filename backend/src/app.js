@@ -1,4 +1,4 @@
-// app.js - VERSÃO CORRIGIDA COM CORS PRIORITÁRIO
+// app.js - VERSÃO CORRIGIDA COM FLUXO DE ASSINATURAS
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -13,7 +13,8 @@ import uploadRoutes from './routes/upload.js';
 
 // ===== NOVAS IMPORTAÇÕES PARA ASSINATURAS =====
 import assinaturaRoutes from './routes/assinatura.js';
-import webhooksRoutes from './routes/webhooks.js';
+// REMOVA ou comente esta linha se não existir o arquivo webhooks.js
+// import webhooksRoutes from './routes/webhooks.js';
 import { verificarAssinatura } from './middlewares/assinatura.js';
 
 dotenv.config();
@@ -34,25 +35,20 @@ const allowedOrigins = [
 // Configuração CORS permissiva para desenvolvimento
 app.use(cors({
   origin: function(origin, callback) {
-    // Permitir requisições sem origem (Postman, apps mobile, etc)
     if (!origin) return callback(null, true);
-    
-    // Verificar se a origem está na lista OU se é do GitHub Pages
     if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('github.io') || origin.includes('caerod1980')) {
       callback(null, true);
     } else {
       console.log('⚠️ Origem bloqueada por CORS:', origin);
-      // Em produção, descomente a linha abaixo para bloquear origens não autorizadas
       // callback(new Error('Não permitido por CORS'));
-      // Por enquanto, permitimos para teste
-      callback(null, true);
+      callback(null, true); // Permitindo para teste
     }
   },
   credentials: true,
   optionsSuccessStatus: 200
 }));
 
-// Middleware adicional para garantir headers CORS em todas as respostas
+// Middleware adicional para headers CORS
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
@@ -60,7 +56,6 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Expose-Headers', 'Content-Length, Content-Range');
   
-  // Responder imediatamente às requisições OPTIONS (preflight)
   if (req.method === 'OPTIONS') {
     console.log('📡 Respondendo OPTIONS com CORS headers');
     return res.sendStatus(200);
@@ -69,7 +64,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Middleware para log de requisições (opcional, ajuda no debug)
+// Middleware para log de requisições
 app.use((req, res, next) => {
   console.log(`📨 ${req.method} ${req.path} - Origin: ${req.headers.origin || 'sem origem'}`);
   next();
@@ -78,22 +73,24 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ===== MIDDLEWARE DE ASSINATURA =====
-// Aplicar depois da autenticação, mas antes das rotas protegidas
+// ===== ORDEM CORRETA DAS ROTAS =====
+// 1. Primeiro, rotas públicas (NÃO aplicam verificação de assinatura)
+app.use('/api/auth', authRoutes);
+app.use('/api/categorias', categoriasRoutes);
+app.use('/api/webhooks', webhooksRoutes); // Só se existir
+
+// 2. Rotas de assinatura (algumas públicas, outras privadas)
+app.use('/api/assinatura', assinaturaRoutes);
+
+// 3. Middleware de verificação de assinatura (APÓS rotas públicas)
 app.use(verificarAssinatura);
 
-// Rotas existentes
+// 4. Rotas protegidas que exigem assinatura
 app.use('/api/prestadores', prestadoresRoutes);
-app.use('/api/auth', authRoutes);
 app.use('/api/servicos', servicosRoutes);
-app.use('/api/categorias', categoriasRoutes);
 app.use('/api/favoritos', favoritosRoutes);
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/upload', uploadRoutes);
-
-// ===== NOVAS ROTAS PARA ASSINATURAS =====
-app.use('/api/assinatura', assinaturaRoutes);
-app.use('/api/webhooks', webhooksRoutes);
 
 // Health check (público)
 app.get('/health', (req, res) => {
@@ -108,7 +105,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Rota de teste CORS (pública)
+// Rota de teste CORS
 app.get('/test-cors', (req, res) => {
   res.json({
     message: 'CORS está funcionando!',
@@ -141,7 +138,7 @@ app.get('/test-mercado-pago-config', (req, res) => {
   });
 });
 
-// Rota de teste assinatura
+// Rota de teste assinatura (pública para teste)
 app.get('/test-assinatura-status/:prestadorId', async (req, res) => {
   try {
     const Prestador = (await import('./models/Prestador.js')).default;
@@ -166,7 +163,7 @@ app.get('/test-assinatura-status/:prestadorId', async (req, res) => {
   }
 });
 
-// Middleware para rotas não encontradas (404)
+// Rota 404
 app.use((req, res) => {
   res.status(404).json({ error: 'Rota não encontrada' });
 });
@@ -190,6 +187,15 @@ app.listen(PORT, () => {
   console.log(`💳 Mercado Pago: ${process.env.MERCADO_PAGO_ACCESS_TOKEN ? '✅' : '❌'}`);
   console.log(`🔐 Webhook Secret: ${process.env.MERCADO_PAGO_WEBHOOK_SECRET ? '✅' : '❌'}`);
   console.log(`🏷️ Ambiente: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Mostrar rotas de assinatura disponíveis
+  console.log(`📋 Rotas de assinatura:`);
+  console.log(`   - POST /api/assinatura/criar-preferencia (pública)`);
+  console.log(`   - POST /api/assinatura/criar (privada)`);
+  console.log(`   - POST /api/assinatura/associar (privada)`);
+  console.log(`   - GET /api/assinatura/status/:paymentId (privada)`);
+  console.log(`   - GET /api/assinatura/status-prestador/:prestadorId (privada)`);
+  console.log(`   - GET /api/mercadopago/public-key (pública)`);
 });
 
 export default app;
