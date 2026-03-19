@@ -1271,7 +1271,7 @@ function MeusServicos() {
             );
         }
 
-              // ========== COMPONENTE DE PERFIL (EDIÇÃO) ==========
+                            // ========== COMPONENTE DE PERFIL (EDIÇÃO) - CORRIGIDO ==========
         function EditarPerfil(props) {
             var prestador = props.prestador;
             var onSalvo = props.onSalvo;
@@ -1307,7 +1307,7 @@ function MeusServicos() {
             }, [prestador]);
             
             var [fotoPerfil, setFotoPerfil] = useState(null);
-            var [fotoPreview, setFotoPreview] = useState(prestador.fotoPerfilUrl || null);
+            var [fotoPreview, setFotoPreview] = useState(prestador.foto || prestador.fotoPerfilUrl || null);
             var [uploading, setUploading] = useState(false);
             var [loading, setLoading] = useState(false);
             var [erro, setErro] = useState('');
@@ -1621,7 +1621,8 @@ function MeusServicos() {
                                         className: "hidden",
                                         disabled: uploadDisabled
                                     }),
-                                    React.createElement('span', { className: "px-3 md:px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs md:text-sm hover:bg-indigo-700 cursor-pointer inline-block w-full sm:w-auto text-center" + (uploadDisabled ? ' opacity-50 cursor-not-allowed' : '') },
+                                    // ===== BOTÃO "ESCOLHER FOTO" CORRIGIDO PARA VERDE =====
+                                    React.createElement('span', { className: "px-3 md:px-4 py-2 bg-gradient-to-r from-[#3d7a3d] to-[#60a060] text-white rounded-xl text-xs md:text-sm hover:shadow-md transition-all cursor-pointer inline-block w-full sm:w-auto text-center" + (uploadDisabled ? ' opacity-50 cursor-not-allowed' : '') },
                                         "Escolher foto"
                                     )
                                 ),
@@ -1863,10 +1864,11 @@ function MeusServicos() {
                     ),
 
                     React.createElement('div', { className: "flex gap-3 pt-4" },
+                        // ===== BOTÃO "SALVAR ALTERAÇÕES" CORRIGIDO PARA VERDE =====
                         React.createElement('button', {
                             type: "submit",
                             disabled: loading || uploading,
-                            className: "flex-1 px-4 md:px-6 py-2.5 md:py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-xl hover:shadow-lg disabled:opacity-50 text-sm md:text-base"
+                            className: "flex-1 px-4 md:px-6 py-2.5 md:py-3 bg-gradient-to-r from-[#3d7a3d] to-[#60a060] text-white font-semibold rounded-xl hover:shadow-lg disabled:opacity-50 transition text-sm md:text-base"
                         }, 
                             (loading || uploading) ? 'Salvando...' : 'Salvar alterações'
                         )
@@ -1874,7 +1876,6 @@ function MeusServicos() {
                 )
             );
         }
-
         // ========== COMPONENTE DE SERVIÇOS DO PRESTADOR ==========
         function ServicosPrestador(props) {
             var prestadorId = props.prestadorId;
