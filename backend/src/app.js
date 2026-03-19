@@ -1,4 +1,4 @@
-// app.js - VERSÃO COMPLETA COM UPLOAD E ASSINATURAS
+// app.js - VERSÃO CORRIGIDA COM CORS PRIORITÁRIO
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -20,18 +20,18 @@ dotenv.config();
 
 const app = express();
 
-// Conectar ao MongoDB
-connectDB();
+// Conectar ao MongoDB (não bloqueante)
+connectDB().catch(err => console.error('Erro no MongoDB:', err));
 
-// CORS - CONFIGURAÇÃO CORRIGIDA
+// ===== CONFIGURAÇÃO CORS - DEVE SER O PRIMEIRO MIDDLEWARE =====
 const allowedOrigins = [
   'https://caerod1980.github.io',
   'http://localhost:3000',
   'http://127.0.0.1:3000',
-  'https://semlimites.com.br' // Se tiver domínio próprio
+  'https://semlimites.com.br'
 ];
 
-// Configuração mais permissiva para resolver o erro
+// Configuração CORS permissiva para desenvolvimento
 app.use(cors({
   origin: function(origin, callback) {
     // Permitir requisições sem origem (Postman, apps mobile, etc)
@@ -42,9 +42,10 @@ app.use(cors({
       callback(null, true);
     } else {
       console.log('⚠️ Origem bloqueada por CORS:', origin);
-      // Por enquanto, vamos permitir todas para teste (remover em produção)
-      callback(null, true);
+      // Em produção, descomente a linha abaixo para bloquear origens não autorizadas
       // callback(new Error('Não permitido por CORS'));
+      // Por enquanto, permitimos para teste
+      callback(null, true);
     }
   },
   credentials: true,
@@ -54,24 +55,31 @@ app.use(cors({
 // Middleware adicional para garantir headers CORS em todas as respostas
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-ms-blob-type');
   res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Expose-Headers', 'Content-Length, Content-Range');
   
   // Responder imediatamente às requisições OPTIONS (preflight)
   if (req.method === 'OPTIONS') {
+    console.log('📡 Respondendo OPTIONS com CORS headers');
     return res.sendStatus(200);
   }
   
   next();
 });
 
-app.use(express.json({ limit: '10mb' })); // Aumentar limite para upload de fotos
+// Middleware para log de requisições (opcional, ajuda no debug)
+app.use((req, res, next) => {
+  console.log(`📨 ${req.method} ${req.path} - Origin: ${req.headers.origin || 'sem origem'}`);
+  next();
+});
+
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ===== MIDDLEWARE DE ASSINATURA =====
 // Aplicar depois da autenticação, mas antes das rotas protegidas
-// Este middleware verifica se o prestador tem assinatura ativa
 app.use(verificarAssinatura);
 
 // Rotas existentes
@@ -87,7 +95,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/assinatura', assinaturaRoutes);
 app.use('/api/webhooks', webhooksRoutes);
 
-// Health check
+// Health check (público)
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
@@ -95,12 +103,12 @@ app.get('/health', (req, res) => {
     mongodb: 'connected',
     cors: 'enabled',
     upload: 'enabled',
-    assinaturas: 'enabled', // Indicador que assinaturas estão configuradas
+    assinaturas: 'enabled',
     ambiente: process.env.NODE_ENV || 'development'
   });
 });
 
-// Rota de teste para verificar CORS
+// Rota de teste CORS (pública)
 app.get('/test-cors', (req, res) => {
   res.json({
     message: 'CORS está funcionando!',
@@ -109,7 +117,7 @@ app.get('/test-cors', (req, res) => {
   });
 });
 
-// Rota de teste para verificar variável de ambiente do Azure Storage
+// Rota de teste storage
 app.get('/test-storage-config', (req, res) => {
   const hasConnectionString = !!process.env.AZURE_STORAGE_CONNECTION_STRING;
   res.json({
@@ -118,7 +126,7 @@ app.get('/test-storage-config', (req, res) => {
   });
 });
 
-// ===== NOVA ROTA: VERIFICAR CONFIGURAÇÃO DO MERCADO PAGO =====
+// Rota de teste Mercado Pago
 app.get('/test-mercado-pago-config', (req, res) => {
   const hasAccessToken = !!process.env.MERCADO_PAGO_ACCESS_TOKEN;
   const hasPublicKey = !!process.env.MERCADO_PAGO_PUBLIC_KEY;
@@ -133,7 +141,7 @@ app.get('/test-mercado-pago-config', (req, res) => {
   });
 });
 
-// ===== NOVA ROTA: VERIFICAR STATUS DE ASSINATURA DE UM PRESTADOR =====
+// Rota de teste assinatura
 app.get('/test-assinatura-status/:prestadorId', async (req, res) => {
   try {
     const Prestador = (await import('./models/Prestador.js')).default;
@@ -150,12 +158,26 @@ app.get('/test-assinatura-status/:prestadorId', async (req, res) => {
       planoStatus: prestador.planoStatus,
       planoExpiracao: prestador.planoExpiracao,
       planoId: prestador.planoId,
-      historico: prestador.planoHistorico?.slice(-5) // Últimos 5 eventos
+      historico: prestador.planoHistorico?.slice(-5)
     });
     
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// Middleware para rotas não encontradas (404)
+app.use((req, res) => {
+  res.status(404).json({ error: 'Rota não encontrada' });
+});
+
+// Middleware de erro global
+app.use((err, req, res, next) => {
+  console.error('❌ Erro global:', err);
+  res.status(500).json({ 
+    error: 'Erro interno no servidor',
+    message: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
 });
 
 const PORT = process.env.PORT || 3001;
