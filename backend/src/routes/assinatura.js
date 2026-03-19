@@ -70,11 +70,26 @@ router.post('/criar-preferencia', async (req, res) => {
 router.post('/associar', authMiddleware, async (req, res) => {
   try {
     console.log('📝 Associando preferência ao prestador');
+    console.log('👤 Usuário autenticado:', req.usuario);
     
     const { prestadorId, preferenceId, email, nome, plano, valor } = req.body;
     
-    // Verificar se é o mesmo usuário
-    if (req.usuario.prestadorId !== prestadorId && req.usuario.id !== prestadorId) {
+    // Converter IDs para string para comparação segura
+    const usuarioId = req.usuario.id?.toString();
+    const usuarioPrestadorId = req.usuario.prestadorId?.toString();
+    const prestadorIdStr = prestadorId?.toString();
+    
+    // Verificar se é o mesmo usuário (aceitar tanto id do usuário quanto prestadorId)
+    const autorizado = 
+      (usuarioId && usuarioId === prestadorIdStr) || 
+      (usuarioPrestadorId && usuarioPrestadorId === prestadorIdStr);
+    
+    if (!autorizado) {
+      console.log('❌ Acesso negado:', {
+        usuarioId,
+        usuarioPrestadorId,
+        prestadorId: prestadorIdStr
+      });
       return res.status(403).json({ 
         success: false, 
         error: 'Não autorizado' 
@@ -91,6 +106,14 @@ router.post('/associar', authMiddleware, async (req, res) => {
       });
     }
     
+    // Verificar se já tem uma assinatura ativa
+    if (prestador.planoStatus === 'ativo') {
+      return res.status(400).json({
+        success: false,
+        error: 'Prestador já possui assinatura ativa'
+      });
+    }
+    
     // Atualizar status do prestador
     prestador.planoStatus = 'pendente';
     prestador.planoId = preferenceId;
@@ -103,9 +126,12 @@ router.post('/associar', authMiddleware, async (req, res) => {
     
     await prestador.save();
     
+    console.log(`✅ Preferência ${preferenceId} associada ao prestador ${prestadorId}`);
+    
     res.json({
       success: true,
-      message: 'Preferência associada com sucesso'
+      message: 'Preferência associada com sucesso',
+      planoStatus: 'pendente'
     });
     
   } catch (error) {
@@ -118,6 +144,60 @@ router.post('/associar', authMiddleware, async (req, res) => {
 });
 
 /**
+ * @route   POST /api/assinatura/webhooks/mercadopago
+ * @desc    Webhook para receber notificações do Mercado Pago
+ * @access  Public
+ */
+router.post('/webhooks/mercadopago', async (req, res) => {
+  try {
+    console.log('📨 Webhook recebido em /assinatura/webhooks/mercadopago');
+    console.log('📦 Body:', JSON.stringify(req.body, null, 2));
+    
+    const resultado = await processarNotificacao(req.body);
+    
+    if (resultado.success && resultado.prestadorId) {
+      console.log(`✅ Webhook processado para prestador: ${resultado.prestadorId}`);
+      
+      // Atualizar status do prestador
+      const prestador = await Prestador.findById(resultado.prestadorId);
+      
+      if (prestador) {
+        const statusAnterior = prestador.planoStatus;
+        
+        if (resultado.status === 'approved') {
+          prestador.planoStatus = 'ativo';
+          prestador.planoAtivo = true;
+          prestador.assinaturaAtivadaEm = new Date();
+        } else if (resultado.status === 'rejected' || resultado.status === 'cancelled') {
+          prestador.planoStatus = 'falhou';
+        } else if (resultado.status === 'pending') {
+          prestador.planoStatus = 'pendente';
+        }
+        
+        prestador.planoHistorico = prestador.planoHistorico || [];
+        prestador.planoHistorico.push({
+          data: new Date(),
+          evento: `webhook_${resultado.status}`,
+          detalhes: `Payment ID: ${resultado.paymentId}`
+        });
+        
+        await prestador.save();
+        
+        console.log(`📊 Status do prestador ${resultado.prestadorId}: ${statusAnterior} -> ${prestador.planoStatus}`);
+      }
+    }
+    
+    // Sempre retornar 200 para o Mercado Pago
+    res.status(200).json({ message: 'OK' });
+    
+  } catch (error) {
+    console.error('❌ Erro no webhook:', error);
+    // Mesmo com erro, retornar 200 para não bloquear o webhook
+    res.status(200).json({ message: 'OK' });
+  }
+});
+
+/**
  * @route   GET /api/assinatura/status-prestador/:prestadorId
  * @desc    Buscar status da assinatura de um prestador
  * @access  Private
@@ -126,8 +206,17 @@ router.get('/status-prestador/:prestadorId', authMiddleware, async (req, res) =>
   try {
     const { prestadorId } = req.params;
     
+    // Converter IDs para string para comparação segura
+    const usuarioId = req.usuario.id?.toString();
+    const usuarioPrestadorId = req.usuario.prestadorId?.toString();
+    const prestadorIdStr = prestadorId?.toString();
+    
     // Verificar se é o mesmo usuário
-    if (req.usuario.prestadorId !== prestadorId && req.usuario.id !== prestadorId) {
+    const autorizado = 
+      (usuarioId && usuarioId === prestadorIdStr) || 
+      (usuarioPrestadorId && usuarioPrestadorId === prestadorIdStr);
+    
+    if (!autorizado) {
       return res.status(403).json({ 
         success: false, 
         error: 'Não autorizado' 
@@ -166,9 +255,17 @@ router.get('/status-prestador/:prestadorId', authMiddleware, async (req, res) =>
  */
 router.get('/public-key', async (req, res) => {
   try {
-    res.json({ 
-      publicKey: process.env.MERCADO_PAGO_PUBLIC_KEY 
-    });
+    const publicKey = process.env.MERCADO_PAGO_PUBLIC_KEY;
+    
+    if (!publicKey) {
+      console.error('❌ MERCADO_PAGO_PUBLIC_KEY não configurada');
+      return res.status(500).json({ 
+        error: 'Chave pública do Mercado Pago não configurada' 
+      });
+    }
+    
+    res.json({ publicKey });
+    
   } catch (error) {
     console.error('❌ Erro ao obter chave pública:', error);
     res.status(500).json({ error: error.message });
