@@ -34,7 +34,7 @@ router.post('/criar-preferencia', async (req, res) => {
       email,
       nome,
       plano: plano || 'mensal',
-      valor: valor || 29.90
+      valor: valor || 9.90
     });
     
     if (!resultado.success) {
