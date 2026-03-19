@@ -1,4 +1,4 @@
-// app.js - VERSÃO CORRIGIDA COM FLUXO DE ASSINATURAS
+// app.js - VERSÃO CORRIGIDA
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -13,7 +13,7 @@ import uploadRoutes from './routes/upload.js';
 
 // ===== NOVAS IMPORTAÇÕES PARA ASSINATURAS =====
 import assinaturaRoutes from './routes/assinatura.js';
-// REMOVA ou comente esta linha se não existir o arquivo webhooks.js
+// REMOVA esta linha - webhooksRoutes não existe
 // import webhooksRoutes from './routes/webhooks.js';
 import { verificarAssinatura } from './middlewares/assinatura.js';
 
@@ -40,7 +40,6 @@ app.use(cors({
       callback(null, true);
     } else {
       console.log('⚠️ Origem bloqueada por CORS:', origin);
-      // callback(new Error('Não permitido por CORS'));
       callback(null, true); // Permitindo para teste
     }
   },
@@ -77,15 +76,17 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // 1. Primeiro, rotas públicas (NÃO aplicam verificação de assinatura)
 app.use('/api/auth', authRoutes);
 app.use('/api/categorias', categoriasRoutes);
-app.use('/api/webhooks', webhooksRoutes); // Só se existir
 
 // 2. Rotas de assinatura (algumas públicas, outras privadas)
+// As rotas públicas dentro de assinaturaRoutes virão primeiro
 app.use('/api/assinatura', assinaturaRoutes);
 
-// 3. Middleware de verificação de assinatura (APÓS rotas públicas)
+// 3. Rota pública para chave do Mercado Pago (pode estar dentro de assinaturaRoutes)
+
+// 4. Middleware de verificação de assinatura (APÓS rotas públicas)
 app.use(verificarAssinatura);
 
-// 4. Rotas protegidas que exigem assinatura
+// 5. Rotas protegidas que exigem assinatura
 app.use('/api/prestadores', prestadoresRoutes);
 app.use('/api/servicos', servicosRoutes);
 app.use('/api/favoritos', favoritosRoutes);
@@ -127,12 +128,10 @@ app.get('/test-storage-config', (req, res) => {
 app.get('/test-mercado-pago-config', (req, res) => {
   const hasAccessToken = !!process.env.MERCADO_PAGO_ACCESS_TOKEN;
   const hasPublicKey = !!process.env.MERCADO_PAGO_PUBLIC_KEY;
-  const hasWebhookSecret = !!process.env.MERCADO_PAGO_WEBHOOK_SECRET;
   
   res.json({
     access_token_configured: hasAccessToken,
     public_key_configured: hasPublicKey,
-    webhook_secret_configured: hasWebhookSecret,
     environment: process.env.NODE_ENV || 'development',
     message: hasAccessToken && hasPublicKey ? 'Mercado Pago configurado' : 'Mercado Pago NÃO configurado completamente'
   });
@@ -163,6 +162,9 @@ app.get('/test-assinatura-status/:prestadorId', async (req, res) => {
   }
 });
 
+// Webhook do Mercado Pago (deve ser público e estar dentro de assinaturaRoutes)
+// Se precisar de um webhook separado, crie o arquivo ou use a rota dentro de assinaturaRoutes
+
 // Rota 404
 app.use((req, res) => {
   res.status(404).json({ error: 'Rota não encontrada' });
@@ -184,18 +186,15 @@ app.listen(PORT, () => {
   console.log(`🔓 CORS permitido para:`, allowedOrigins);
   console.log(`🌐 URL: http://localhost:${PORT}`);
   console.log(`📸 Upload configurado: ${process.env.AZURE_STORAGE_CONNECTION_STRING ? '✅' : '❌'}`);
-  console.log(`💳 Mercado Pago: ${process.env.MERCADO_PAGO_ACCESS_TOKEN ? '✅' : '❌'}`);
-  console.log(`🔐 Webhook Secret: ${process.env.MERCADO_PAGO_WEBHOOK_SECRET ? '✅' : '❌'}`);
+  console.log(`💳 Mercado Pago Access Token: ${process.env.MERCADO_PAGO_ACCESS_TOKEN ? '✅' : '❌'}`);
+  console.log(`🔐 Mercado Pago Public Key: ${process.env.MERCADO_PAGO_PUBLIC_KEY ? '✅' : '❌'}`);
   console.log(`🏷️ Ambiente: ${process.env.NODE_ENV || 'development'}`);
   
   // Mostrar rotas de assinatura disponíveis
   console.log(`📋 Rotas de assinatura:`);
   console.log(`   - POST /api/assinatura/criar-preferencia (pública)`);
-  console.log(`   - POST /api/assinatura/criar (privada)`);
   console.log(`   - POST /api/assinatura/associar (privada)`);
-  console.log(`   - GET /api/assinatura/status/:paymentId (privada)`);
   console.log(`   - GET /api/assinatura/status-prestador/:prestadorId (privada)`);
   console.log(`   - GET /api/mercadopago/public-key (pública)`);
+  console.log(`   - POST /api/assinatura/webhooks/mercadopago (pública)`);
 });
-
-export default app;
