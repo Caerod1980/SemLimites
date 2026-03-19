@@ -2738,7 +2738,7 @@ function Login(props) {
             );
         }
 
-                   // ========== TELA DE CADASTRO COM PAGAMENTO ==========
+                          // ========== TELA DE CADASTRO COM PAGAMENTO ==========
         function CadastroPrestador(props) {
             var onCadastroSucesso = props.onCadastroSucesso;
             var onVoltar = props.onVoltar;
@@ -2865,7 +2865,6 @@ function Login(props) {
                 if (etapa === 'pagamento' && window.MercadoPago && !mp && !carregandoMP && preferenceId) {
                     setCarregandoMP(true);
                     
-                    // Buscar a chave pública da API
                     fetch(API_URL + '/mercadopago/public-key')
                         .then(function(response) { 
                             if (!response.ok) {
@@ -2879,7 +2878,6 @@ function Login(props) {
                                 const mpInstance = new window.MercadoPago(data.publicKey);
                                 setMp(mpInstance);
                                 
-                                // Renderizar brick de pagamento
                                 setTimeout(function() {
                                     renderBrickPagamento(mpInstance, preferenceId);
                                 }, 500);
@@ -3150,6 +3148,9 @@ function Login(props) {
                 // ===== PASSO 1: CRIAR PREFERÊNCIA DE PAGAMENTO =====
                 setEtapa('processando');
                 
+                // Variável local para guardar o preferenceId
+                let preferenceIdTemp = null;
+                
                 fetch(API_URL + '/assinatura/criar-preferencia', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -3172,6 +3173,8 @@ function Login(props) {
                         if (pagamentoData.success) {
                             console.log('✅ Preferência de pagamento criada:', pagamentoData);
                             
+                            // Guardar o preferenceId na variável local e no estado
+                            preferenceIdTemp = pagamentoData.preferenceId;
                             setLinkPagamento(pagamentoData.initPoint);
                             setPreferenceId(pagamentoData.preferenceId);
                             
@@ -3199,11 +3202,23 @@ function Login(props) {
                         }
                         
                         console.log('✅ Prestador cadastrado:', registerData);
+                        console.log('🔑 Token recebido:', registerData.token);
                         
+                        // Verificar se o token foi recebido
+                        if (!registerData.token) {
+                            throw new Error('Token não foi gerado pelo servidor');
+                        }
+                        
+                        // Salvar token e usuário
                         localStorage.setItem('token', registerData.token);
                         localStorage.setItem('user', JSON.stringify(registerData.user));
                         
                         setPrestadorIdCadastrado(registerData.prestadorId);
+                        
+                        // Verificar se temos o preferenceId
+                        if (!preferenceIdTemp) {
+                            throw new Error('Preference ID não encontrado');
+                        }
                         
                         // ===== PASSO 3: ASSOCIAR ASSINATURA =====
                         return fetch(API_URL + '/assinatura/associar', {
@@ -3214,7 +3229,7 @@ function Login(props) {
                             },
                             body: JSON.stringify({
                                 prestadorId: registerData.prestadorId,
-                                preferenceId: preferenceId,
+                                preferenceId: preferenceIdTemp,
                                 email: formData.email,
                                 nome: formData.nome,
                                 plano: 'mensal',
