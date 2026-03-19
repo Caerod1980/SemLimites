@@ -20,31 +20,45 @@ const authMiddleware = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     // Buscar usuário no banco para garantir que ainda existe
-    const user = await User.findById(decoded.userId).select('-senha');
+    const user = await User.findById(decoded.userId || decoded.id).select('-senha');
     
     if (!user) {
       return res.status(401).json({ error: 'Usuário não encontrado' });
     }
 
-    // Anexar usuário à requisição
+    // Anexar usuário à requisição com todos os campos necessários
     req.usuario = {
       id: user._id,
       userId: user._id, // Para compatibilidade
       email: user.email,
       tipo: user.tipo,
-      prestadorId: user.prestadorId
+      prestadorId: user.prestadorId || decoded.prestadorId, // Garantir que o prestadorId esteja presente
+      // Adicionar também o ID decodificado para casos de fallback
+      decodedId: decoded.userId || decoded.id
     };
+
+    // Log para debug (opcional - remover em produção)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ Usuário autenticado:', {
+        id: user._id,
+        email: user.email,
+        tipo: user.tipo,
+        prestadorId: user.prestadorId
+      });
+    }
 
     next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
+      console.error('❌ Token inválido:', error.message);
       return res.status(401).json({ error: 'Token inválido' });
     }
     if (error.name === 'TokenExpiredError') {
+      console.error('❌ Token expirado:', error.message);
       return res.status(401).json({ error: 'Token expirado' });
     }
     
-    console.error('Erro no middleware de autenticação:', error);
+    console.error('❌ Erro no middleware de autenticação:', error);
     return res.status(500).json({ error: 'Erro interno no servidor' });
   }
 };
