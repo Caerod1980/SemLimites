@@ -2738,7 +2738,7 @@ function Login(props) {
             );
         }
 
-                      // ========== TELA DE CADASTRO COM PAGAMENTO ==========
+                       // ========== TELA DE CADASTRO COM PAGAMENTO ==========
         function CadastroPrestador(props) {
             var onCadastroSucesso = props.onCadastroSucesso;
             var onVoltar = props.onVoltar;
@@ -2963,9 +2963,44 @@ function Login(props) {
                 }
             }
 
+            // ===== FUNÇÃO PARA VERIFICAR CNPJ =====
+            function verificarCNPJ() {
+                var cnpjNumeros = formData.cnpj.replace(/\D/g, '');
+                if (cnpjNumeros.length !== 14) {
+                    setErro('CNPJ inválido. Deve conter 14 dígitos.');
+                    return;
+                }
+
+                setErro('');
+                setVerificacaoCNPJ('verificando');
+
+                // Simulação de verificação (substituir pela chamada real à API)
+                setTimeout(function() {
+                    // Aqui você faria a chamada real à API de verificação de CNPJ
+                    // Por enquanto, vamos simular uma verificação bem-sucedida
+                    setVerificacaoCNPJ({
+                        status: 'ativo',
+                        razaoSocial: formData.nome || 'Razão Social verificada',
+                        cnpj: formData.cnpj
+                    });
+                }, 1500);
+            }
+
             // ===== FUNÇÃO handleSubmit MODIFICADA =====
             function handleSubmit(e) {
                 e.preventDefault();
+                
+                // ===== VERIFICAÇÃO DA CATEGORIA =====
+                if (!categoriaSelecionada) {
+                    setErro('Selecione uma categoria principal');
+                    return;
+                }
+
+                // ===== VERIFICAÇÃO DOS SERVIÇOS =====
+                if (servicosSelecionados.length === 0) {
+                    setErro('Selecione pelo menos um serviço');
+                    return;
+                }
                 
                 // ===== VERIFICAÇÃO DOS TERMOS =====
                 if (!aceitouTermos) {
@@ -3009,6 +3044,8 @@ function Login(props) {
                     telefone: formData.telefone,
                     descricao: formData.descricao || '',
                     tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
+                    categoriaPrincipal: categoriaSelecionada,
+                    servicos: servicosSelecionados,
                     aceitouTermos: true
                 };
 
@@ -3029,6 +3066,12 @@ function Login(props) {
                     }
                     dadosEnvio.cnpj = cnpjNumeros;
                     dadosEnvio.responsavel = formData.responsavel;
+                    
+                    // Adicionar status da verificação do CNPJ
+                    if (verificacaoCNPJ && verificacaoCNPJ.status === 'ativo') {
+                        dadosEnvio.cnpjVerificado = true;
+                        dadosEnvio.razaoSocialVerificada = verificacaoCNPJ.razaoSocial;
+                    }
                 }
 
                 console.log('📤 Enviando dados de cadastro:', dadosEnvio);
@@ -3251,15 +3294,34 @@ function Login(props) {
                             React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-4" },
                                 React.createElement('div', null,
                                     React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "CNPJ *"),
-                                    React.createElement('input', {
-                                        type: "text",
-                                        name: "cnpj",
-                                        value: formData.cnpj,
-                                        onChange: handleChange,
-                                        required: true,
-                                        placeholder: "00.000.000/0000-00",
-                                        className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
-                                    })
+                                    React.createElement('div', { className: "flex gap-2" },
+                                        React.createElement('input', {
+                                            type: "text",
+                                            name: "cnpj",
+                                            value: formData.cnpj,
+                                            onChange: handleChange,
+                                            required: true,
+                                            placeholder: "00.000.000/0000-00",
+                                            className: "flex-1 px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
+                                        }),
+                                        React.createElement('button', {
+                                            type: "button",
+                                            onClick: verificarCNPJ,
+                                            disabled: formData.cnpj.replace(/\D/g, '').length !== 14,
+                                            className: "px-3 py-2 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white rounded-xl text-xs md:text-sm font-medium disabled:opacity-50"
+                                        }, "Verificar")
+                                    ),
+                                    verificacaoCNPJ === 'verificando' && 
+                                        React.createElement('p', { className: "text-xs text-amber-600 mt-1" }, "Verificando CNPJ..."),
+                                    verificacaoCNPJ && verificacaoCNPJ.status === 'ativo' && 
+                                        React.createElement('p', { className: "text-xs text-emerald-600 mt-1 flex items-center gap-1" },
+                                            React.createElement('svg', { className: "w-4 h-4", fill: "currentColor", viewBox: "0 0 20 20" },
+                                                React.createElement('path', { fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z", clipRule: "evenodd" })
+                                            ),
+                                            "CNPJ verificado: " + (verificacaoCNPJ.razaoSocial || '')
+                                        ),
+                                    verificacaoCNPJ && verificacaoCNPJ.status === 'inativo' && 
+                                        React.createElement('p', { className: "text-xs text-red-600 mt-1" }, "CNPJ com situação irregular")
                                 ),
                                 React.createElement('div', null,
                                     React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Responsável *"),
@@ -3387,35 +3449,63 @@ function Login(props) {
                             )
                         ),
 
-                        // Categoria e Serviços (simplificado para este exemplo)
-                        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-4" },
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Categoria Principal *"),
-                                React.createElement('select', {
-                                    value: categoriaSelecionada,
-                                    onChange: function(e) { setCategoriaSelecionada(e.target.value); },
-                                    required: true,
-                                    className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm bg-white"
+                        // Categoria e Serviços
+                        React.createElement('div', { className: "mb-4" },
+                            React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Categoria Principal *"),
+                            React.createElement('select', {
+                                value: categoriaSelecionada,
+                                onChange: function(e) { 
+                                    setCategoriaSelecionada(e.target.value);
+                                    setServicosSelecionados([]); // Limpar serviços selecionados ao mudar categoria
                                 },
-                                    React.createElement('option', { value: "" }, "Selecione uma categoria"),
-                                    categorias.map(function(cat) {
-                                        return React.createElement('option', { key: cat._id, value: cat._id }, cat.nome);
-                                    })
+                                required: true,
+                                className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm bg-white"
+                            },
+                                React.createElement('option', { value: "" }, "Selecione uma categoria"),
+                                categorias.map(function(cat) {
+                                    return React.createElement('option', { key: cat._id, value: cat._id }, cat.nome);
+                                })
+                            )
+                        ),
+
+                        categoriaSelecionada && servicos.length > 0 && 
+                        React.createElement('div', { className: "mb-4" },
+                            React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-2" }, 
+                                "Serviços Prestados *",
+                                React.createElement('span', { className: "text-[10px] text-slate-500 ml-2" }, 
+                                    "(selecione um ou mais serviços)"
                                 )
                             ),
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Serviço"),
-                                React.createElement('select', {
-                                    disabled: !categoriaSelecionada,
-                                    className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 bg-white text-sm " + (!categoriaSelecionada ? 'opacity-50 cursor-not-allowed' : '')
-                                },
-                                    React.createElement('option', { value: "" }, 
-                                        categoriaSelecionada ? "Selecione um serviço" : "Escolha uma categoria primeiro"
-                                    ),
-                                    servicos.map(function(s) {
-                                        return React.createElement('option', { key: s._id, value: s._id }, s.nome);
-                                    })
-                                )
+                            React.createElement('div', { className: "border border-slate-200 rounded-xl p-3 max-h-60 overflow-y-auto" },
+                                servicos.map(function(servico) {
+                                    var isSelected = servicosSelecionados.includes(servico._id);
+                                    return React.createElement('div', {
+                                        key: servico._id,
+                                        onClick: function() {
+                                            var novosSelecionados = [...servicosSelecionados];
+                                            var index = novosSelecionados.indexOf(servico._id);
+                                            if (index === -1) {
+                                                novosSelecionados.push(servico._id);
+                                            } else {
+                                                novosSelecionados.splice(index, 1);
+                                            }
+                                            setServicosSelecionados(novosSelecionados);
+                                        },
+                                        className: "flex items-center gap-2 p-2 hover:bg-slate-50 rounded-lg cursor-pointer border-b border-slate-100 last:border-0"
+                                    },
+                                        React.createElement('input', {
+                                            type: "checkbox",
+                                            checked: isSelected,
+                                            onChange: function() {},
+                                            className: "w-4 h-4 text-[#3d7a3d] rounded"
+                                        }),
+                                        React.createElement('span', { className: "text-sm" }, servico.nome)
+                                    );
+                                })
+                            ),
+                            servicosSelecionados.length > 0 && 
+                            React.createElement('p', { className: "text-xs text-[#3d7a3d] mt-2" },
+                                servicosSelecionados.length + " serviço(s) selecionado(s)"
                             )
                         ),
 
@@ -3488,12 +3578,11 @@ function Login(props) {
                             type: "submit",
                             disabled: loading || !aceitouTermos,
                             className: "w-full px-4 md:px-6 py-3 md:py-4 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white font-semibold rounded-xl disabled:opacity-50 hover:shadow-md transition text-sm md:text-base"
-                        }, loading ? 'Cadastrando...' : '✅ Cadastrar e Continuar para Pagamento (R$ 29,90)')
+                        }, loading ? 'Cadastrando...' : '✅ Cadastrar e Continuar para Pagamento (R$ 9,90)')
                     )
                 )
             );
         }
-
                      // ========== DASHBOARD DO PRESTADOR CORRIGIDO ==========
         function DashboardPrestador(props) {
             var usuario = props.usuario;
