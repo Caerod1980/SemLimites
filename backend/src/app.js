@@ -1,4 +1,4 @@
-// app.js - VERSÃO CORRIGIDA COM UPLOAD
+// app.js - VERSÃO COMPLETA COM UPLOAD E ASSINATURAS
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -9,7 +9,12 @@ import servicosRoutes from './routes/servicos.js';
 import categoriasRoutes from './routes/categorias.js';
 import favoritosRoutes from './routes/favoritos.js';
 import usuarioRoutes from './routes/usuarios.js';
-import uploadRoutes from './routes/upload.js'; // ← NOVA ROTA ADICIONADA
+import uploadRoutes from './routes/upload.js';
+
+// ===== NOVAS IMPORTAÇÕES PARA ASSINATURAS =====
+import assinaturaRoutes from './routes/assinatura.js';
+import webhooksRoutes from './routes/webhooks.js';
+import { verificarAssinatura } from './middlewares/assinatura.js';
 
 dotenv.config();
 
@@ -64,14 +69,23 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '10mb' })); // Aumentar limite para upload de fotos
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Rotas
+// ===== MIDDLEWARE DE ASSINATURA =====
+// Aplicar depois da autenticação, mas antes das rotas protegidas
+// Este middleware verifica se o prestador tem assinatura ativa
+app.use(verificarAssinatura);
+
+// Rotas existentes
 app.use('/api/prestadores', prestadoresRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/servicos', servicosRoutes);
 app.use('/api/categorias', categoriasRoutes);
 app.use('/api/favoritos', favoritosRoutes);
 app.use('/api/usuarios', usuarioRoutes);
-app.use('/api/upload', uploadRoutes); // ← NOVA ROTA ADICIONADA
+app.use('/api/upload', uploadRoutes);
+
+// ===== NOVAS ROTAS PARA ASSINATURAS =====
+app.use('/api/assinatura', assinaturaRoutes);
+app.use('/api/webhooks', webhooksRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -80,7 +94,9 @@ app.get('/health', (req, res) => {
     timestamp: new Date(),
     mongodb: 'connected',
     cors: 'enabled',
-    upload: 'enabled' // Indicador que upload está configurado
+    upload: 'enabled',
+    assinaturas: 'enabled', // Indicador que assinaturas estão configuradas
+    ambiente: process.env.NODE_ENV || 'development'
   });
 });
 
@@ -102,6 +118,46 @@ app.get('/test-storage-config', (req, res) => {
   });
 });
 
+// ===== NOVA ROTA: VERIFICAR CONFIGURAÇÃO DO MERCADO PAGO =====
+app.get('/test-mercado-pago-config', (req, res) => {
+  const hasAccessToken = !!process.env.MERCADO_PAGO_ACCESS_TOKEN;
+  const hasPublicKey = !!process.env.MERCADO_PAGO_PUBLIC_KEY;
+  const hasWebhookSecret = !!process.env.MERCADO_PAGO_WEBHOOK_SECRET;
+  
+  res.json({
+    access_token_configured: hasAccessToken,
+    public_key_configured: hasPublicKey,
+    webhook_secret_configured: hasWebhookSecret,
+    environment: process.env.NODE_ENV || 'development',
+    message: hasAccessToken && hasPublicKey ? 'Mercado Pago configurado' : 'Mercado Pago NÃO configurado completamente'
+  });
+});
+
+// ===== NOVA ROTA: VERIFICAR STATUS DE ASSINATURA DE UM PRESTADOR =====
+app.get('/test-assinatura-status/:prestadorId', async (req, res) => {
+  try {
+    const Prestador = (await import('./models/Prestador.js')).default;
+    const prestador = await Prestador.findById(req.params.prestadorId);
+    
+    if (!prestador) {
+      return res.status(404).json({ error: 'Prestador não encontrado' });
+    }
+    
+    res.json({
+      prestadorId: prestador._id,
+      nome: prestador.nome,
+      planoAtivo: prestador.planoAtivo,
+      planoStatus: prestador.planoStatus,
+      planoExpiracao: prestador.planoExpiracao,
+      planoId: prestador.planoId,
+      historico: prestador.planoHistorico?.slice(-5) // Últimos 5 eventos
+    });
+    
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
@@ -109,6 +165,9 @@ app.listen(PORT, () => {
   console.log(`🔓 CORS permitido para:`, allowedOrigins);
   console.log(`🌐 URL: http://localhost:${PORT}`);
   console.log(`📸 Upload configurado: ${process.env.AZURE_STORAGE_CONNECTION_STRING ? '✅' : '❌'}`);
+  console.log(`💳 Mercado Pago: ${process.env.MERCADO_PAGO_ACCESS_TOKEN ? '✅' : '❌'}`);
+  console.log(`🔐 Webhook Secret: ${process.env.MERCADO_PAGO_WEBHOOK_SECRET ? '✅' : '❌'}`);
+  console.log(`🏷️ Ambiente: ${process.env.NODE_ENV || 'development'}`);
 });
 
 export default app;
