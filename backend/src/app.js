@@ -12,7 +12,7 @@ import usuarioRoutes from './routes/usuarios.js';
 import uploadRoutes from './routes/upload.js';
 import empresaRoutes from './routes/empresa.js';
 
-// ===== NOVAS IMPORTAÇÕES PARA ASSINATURAS =====
+// ===== NOVAS IMPORTAÇÕES PARA AS ASSINATURAS =====
 import assinaturaRoutes from './routes/assinatura.js';
 // REMOVA esta linha - webhooksRoutes não existe
 // import webhooksRoutes from './routes/webhooks.js';
