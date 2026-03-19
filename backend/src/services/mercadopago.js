@@ -30,7 +30,7 @@ const merchantOrder = new MerchantOrder(client);
  * @param {Object} dados - Dados do cliente
  * @returns {Promise<Object>} Dados da preferência
  */
-export async function criarPreferenciaPublica({ email, nome, plano = 'mensal', valor = 29.90 }) {
+export async function criarPreferenciaPublica({ email, nome, plano = 'mensal', valor = 9.90 }) {
   try {
     console.log(`📝 Criando preferência pública para: ${email}`);
     
@@ -102,7 +102,7 @@ export async function criarPreferenciaPublica({ email, nome, plano = 'mensal', v
  */
 export async function criarAssinatura(dados) {
   try {
-    const { prestadorId, email, nome, cpf, plano = 'mensal', valor = 29.90 } = dados;
+    const { prestadorId, email, nome, cpf, plano = 'mensal', valor = 9.90 } = dados;
     
     console.log(`📝 Criando assinatura para prestador: ${prestadorId}`);
     
