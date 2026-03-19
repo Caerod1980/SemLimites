@@ -2883,13 +2883,13 @@ function Login(props) {
                                 }, 500);
                             } else {
                                 console.error('❌ Chave pública não encontrada');
-                                setErro('Erro ao configurar pagamento. Tente novamente.');
+                                setErro('Erro ao configurar pagamento. Use o link alternativo abaixo.');
                             }
                             setCarregandoMP(false);
                         })
                         .catch(function(error) {
                             console.error('❌ Erro ao buscar chave pública:', error);
-                            setErro('Erro ao configurar pagamento. Tente novamente.');
+                            setErro('Erro ao configurar pagamento. Use o link alternativo abaixo.');
                             setCarregandoMP(false);
                         });
                 }
@@ -2925,7 +2925,7 @@ function Login(props) {
                                 },
                                 onError: function(error) {
                                     console.error('❌ Erro no brick:', error);
-                                    setErro('Erro ao carregar pagamento. Tente novamente.');
+                                    setErro('Erro ao carregar pagamento. Use o link alternativo abaixo.');
                                 }
                             }
                         });
@@ -2961,6 +2961,13 @@ function Login(props) {
                         if (data.planoStatus === 'ativo') {
                             console.log('✅ Pagamento confirmado!');
                             clearInterval(interval);
+                            
+                            // Atualizar status no localStorage
+                            var user = JSON.parse(localStorage.getItem('user') || '{}');
+                            user.planoStatus = 'ativo';
+                            user.contaAtiva = true;
+                            localStorage.setItem('user', JSON.stringify(user));
+                            
                             setEtapa('sucesso');
                             setTimeout(function() {
                                 onCadastroSucesso();
@@ -3053,7 +3060,7 @@ function Login(props) {
                     });
             }
 
-            // ===== FUNÇÃO handleSubmit CORRIGIDA =====
+            // ===== FUNÇÃO handleSubmit CORRIGIDA COM PROTEÇÃO DE PAGAMENTO =====
             function handleSubmit(e) {
                 e.preventDefault();
                 
@@ -3113,7 +3120,7 @@ function Login(props) {
                     }
                 }
 
-                // ===== DADOS PARA ENVIO =====
+                // ===== DADOS PARA ENVIO COM STATUS PENDENTE =====
                 var dadosEnvio = {
                     nome: formData.nome,
                     email: formData.email,
@@ -3128,7 +3135,10 @@ function Login(props) {
                     tags: formData.tags.split(',').map(function(t) { return t.trim(); }).filter(function(t) { return t; }),
                     categoriaPrincipal: categoriaSelecionada,
                     servicos: servicosSelecionados,
-                    aceitouTermos: true
+                    aceitouTermos: true,
+                    // NOVO: Marcar que o usuário ainda NÃO está ativo
+                    planoStatus: 'aguardando_pagamento',
+                    contaAtiva: false
                 };
 
                 if (formData.tipoPessoa === 'fisica') {
@@ -3173,12 +3183,11 @@ function Login(props) {
                         if (pagamentoData.success) {
                             console.log('✅ Preferência de pagamento criada:', pagamentoData);
                             
-                            // Guardar o preferenceId na variável local e no estado
                             preferenceIdTemp = pagamentoData.preferenceId;
                             setLinkPagamento(pagamentoData.initPoint);
                             setPreferenceId(pagamentoData.preferenceId);
                             
-                            // ===== PASSO 2: CADASTRAR PRESTADOR =====
+                            // ===== PASSO 2: CADASTRAR PRESTADOR (COM STATUS PENDENTE) =====
                             return fetch(API_URL + '/auth/register', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
@@ -3201,21 +3210,23 @@ function Login(props) {
                             throw new Error(registerData.error);
                         }
                         
-                        console.log('✅ Prestador cadastrado:', registerData);
+                        console.log('✅ Prestador cadastrado (pendente):', registerData);
                         console.log('🔑 Token recebido:', registerData.token);
                         
-                        // Verificar se o token foi recebido
                         if (!registerData.token) {
                             throw new Error('Token não foi gerado pelo servidor');
                         }
                         
-                        // Salvar token e usuário
+                        // Salvar token e usuário (com status pendente)
                         localStorage.setItem('token', registerData.token);
-                        localStorage.setItem('user', JSON.stringify(registerData.user));
+                        localStorage.setItem('user', JSON.stringify({
+                            ...registerData.user,
+                            planoStatus: 'aguardando_pagamento',
+                            contaAtiva: false
+                        }));
                         
                         setPrestadorIdCadastrado(registerData.prestadorId);
                         
-                        // Verificar se temos o preferenceId
                         if (!preferenceIdTemp) {
                             throw new Error('Preference ID não encontrado');
                         }
@@ -3233,7 +3244,8 @@ function Login(props) {
                                 email: formData.email,
                                 nome: formData.nome,
                                 plano: 'mensal',
-                                valor: 29.90
+                                valor: 29.90,
+                                status: 'aguardando_pagamento'
                             })
                         });
                     })
@@ -3248,10 +3260,22 @@ function Login(props) {
                     .then(function(associarData) {
                         console.log('✅ Assinatura associada:', associarData);
                         
+                        // ===== PASSO 4: REDIRECIONAR PARA PAGAMENTO =====
                         setEtapa('pagamento');
                         setLoading(false);
                         
+                        // Iniciar monitoramento do pagamento
                         verificarStatusPagamento();
+                        
+                        // Rolar para o topo para mostrar a tela de pagamento
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        
+                        // Abrir o link de pagamento em nova aba automaticamente
+                        if (linkPagamento) {
+                            setTimeout(function() {
+                                window.open(linkPagamento, '_blank');
+                            }, 1000);
+                        }
                     })
                     .catch(function(error) {
                         console.error('❌ Erro no cadastro:', error);
@@ -3270,28 +3294,31 @@ function Login(props) {
                                 React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M5 13l4 4L19 7" })
                             )
                         ),
-                        React.createElement('h2', { className: "text-2xl font-bold text-[#3d7a3d] mb-4" }, "Pagamento confirmado!"),
+                        React.createElement('h2', { className: "text-2xl font-bold text-[#3d7a3d] mb-4" }, "Pagamento confirmado! 🎉"),
                         React.createElement('p', { className: "text-[#4a8a4a] mb-6" },
-                            "Sua assinatura foi ativada com sucesso. Você já pode fazer login."
+                            "Sua assinatura foi ativada com sucesso. Agora você já pode acessar o dashboard e começar a usar o SemLimites."
                         ),
-                        React.createElement('div', { className: "animate-pulse" }, "Redirecionando...")
+                        React.createElement('div', { className: "animate-pulse" }, "Redirecionando para o dashboard...")
                     )
                 );
             }
 
-            // ===== TELA DE PAGAMENTO =====
+            // ===== TELA DE PAGAMENTO CORRIGIDA =====
             if (etapa === 'pagamento') {
                 return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-8" },
                     React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-8 shadow-sm" },
                         React.createElement('div', { className: "text-center mb-8" },
-                            React.createElement('div', { className: "w-16 h-16 mx-auto mb-4 bg-[#f0f7f0] rounded-full flex items-center justify-center" },
-                                React.createElement('svg', { className: "w-8 h-8 text-[#3d7a3d]", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                    React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" })
+                            React.createElement('div', { className: "w-20 h-20 mx-auto mb-4 bg-amber-100 rounded-full flex items-center justify-center animate-pulse" },
+                                React.createElement('svg', { className: "w-10 h-10 text-amber-600", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                    React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" })
                                 )
                             ),
-                            React.createElement('h2', { className: "text-2xl font-bold text-[#3d7a3d] mb-2" }, "Ative sua conta"),
-                            React.createElement('p', { className: "text-[#4a8a4a]" },
-                                "Realize o pagamento da primeira mensalidade."
+                            React.createElement('h2', { className: "text-2xl font-bold text-[#3d7a3d] mb-2" }, "Quase lá! 🎉"),
+                            React.createElement('p', { className: "text-[#4a8a4a] mb-2" },
+                                "Seu cadastro foi criado, mas para ativar sua conta você precisa realizar o pagamento."
+                            ),
+                            React.createElement('p', { className: "text-sm text-amber-600 font-medium bg-amber-50 p-2 rounded-lg" },
+                                "⚠️ Você só poderá acessar o dashboard após a confirmação do pagamento."
                             )
                         ),
 
@@ -3319,20 +3346,24 @@ function Login(props) {
                             React.createElement('p', { className: "text-xs text-[#4a8a4a]" }, "Carregando opções de pagamento...")
                         ),
 
-                        linkPagamento && React.createElement('div', { className: "text-center mt-4" },
-                            React.createElement('p', { className: "text-xs text-slate-500 mb-2" },
-                                "Se o pagamento não carregar, clique no link:"
+                        // Link direto para pagamento (SEMPRE visível)
+                        linkPagamento && React.createElement('div', { className: "text-center mt-6 p-6 bg-amber-50 rounded-xl border-2 border-amber-300" },
+                            React.createElement('p', { className: "text-base text-amber-800 mb-4 font-semibold" },
+                                "👇 Clique no botão abaixo para pagar com Mercado Pago"
                             ),
                             React.createElement('a', {
                                 href: linkPagamento,
                                 target: "_blank",
                                 rel: "noopener noreferrer",
-                                className: "text-sm text-[#3d7a3d] underline hover:text-[#2d5a2d]"
-                            }, "Pagar com Mercado Pago")
+                                className: "inline-block px-8 py-4 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white font-bold rounded-xl hover:shadow-lg transition text-lg md:text-xl transform hover:scale-105"
+                            }, "PAGAR AGORA →"),
+                            React.createElement('p', { className: "text-xs text-amber-600 mt-4" },
+                                "Após o pagamento, sua conta será ativada automaticamente."
+                            )
                         ),
 
                         React.createElement('p', { className: "text-xs text-slate-400 text-center mt-6" },
-                            "Após a confirmação, você será redirecionado automaticamente."
+                            "Não feche esta página. Após o pagamento, você será redirecionado automaticamente para o dashboard."
                         )
                     )
                 );
