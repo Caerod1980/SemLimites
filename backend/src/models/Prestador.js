@@ -1,4 +1,4 @@
-// /src/models/Prestador.js - VERSÃO COM MIXED TYPE
+// /src/models/Prestador.js - VERSÃO COM MIXED TYPE E ASSINATURAS
 import mongoose from 'mongoose';
 
 const reviewSchema = new mongoose.Schema({
@@ -39,6 +39,39 @@ const prestadorSchema = new mongoose.Schema({
   dadosCNPJ: {
     type: mongoose.Schema.Types.Mixed,
     default: {}
+  },
+  
+  // ===== NOVOS CAMPOS PARA ASSINATURA E PLANOS =====
+  planoAtivo: { 
+    type: Boolean, 
+    default: false 
+  },
+  planoExpiracao: Date,
+  planoId: String, // ID da assinatura no Mercado Pago
+  planoStatus: {
+    type: String,
+    enum: ['pendente', 'ativo', 'cancelado', 'expirado'],
+    default: 'pendente'
+  },
+  planoHistorico: [{
+    data: { type: Date, default: Date.now },
+    evento: String,
+    detalhes: String,
+    paymentId: String,
+    valor: Number
+  }],
+  
+  // ===== CAMPOS DE PAGAMENTO MERCADO PAGO =====
+  mercadoPago: {
+    customerId: String, // ID do cliente no Mercado Pago
+    subscriptionId: String, // ID da assinatura
+    paymentMethod: String, // Método de pagamento usado
+    lastPayment: {
+      date: Date,
+      amount: Number,
+      status: String,
+      paymentId: String
+    }
   },
   
   // ===== NOVOS CAMPOS PARA CATEGORIAS HIERÁRQUICAS =====
@@ -100,7 +133,7 @@ const prestadorSchema = new mongoose.Schema({
   
 }, { timestamps: true });
 
-// ===== ÍNDICES =====
+// ===== ÍNDICES ATUALIZADOS =====
 prestadorSchema.index({ cidade: 1, categoriaPrincipal: 1 });
 prestadorSchema.index({ cidade: 1, categoria: 1 });
 prestadorSchema.index({ estrelas: -1, avaliacoes: -1 });
@@ -112,6 +145,13 @@ prestadorSchema.index({ cpf: 1 });
 prestadorSchema.index({ cnpj: 1 });
 prestadorSchema.index({ servicos: 1 });
 prestadorSchema.index({ totalCurtidas: -1 });
+
+// ===== NOVOS ÍNDICES PARA ASSINATURAS =====
+prestadorSchema.index({ planoAtivo: 1 });
+prestadorSchema.index({ planoStatus: 1 });
+prestadorSchema.index({ planoExpiracao: 1 });
+prestadorSchema.index({ 'mercadoPago.customerId': 1 });
+prestadorSchema.index({ 'mercadoPago.subscriptionId': 1 });
 
 // Índice composto para busca avançada
 prestadorSchema.index({ 
@@ -132,6 +172,189 @@ prestadorSchema.pre('save', function(next) {
   }
   next();
 });
+
+// ===== MÉTODOS DE INSTÂNCIA =====
+
+/**
+ * Buscar detalhes completos da categoria principal
+ */
+prestadorSchema.methods.getCategoriaPrincipal = async function() {
+  if (!this.categoriaPrincipal) return null;
+  
+  const Categoria = mongoose.model('Categoria');
+  return await Categoria.findById(this.categoriaPrincipal);
+};
+
+/**
+ * Buscar detalhes completos dos serviços
+ */
+prestadorSchema.methods.getServicosDetalhados = async function() {
+  if (!this.servicos || this.servicos.length === 0) return [];
+  
+  const Categoria = mongoose.model('Categoria');
+  return await Categoria.find({ _id: { $in: this.servicos } });
+};
+
+/**
+ * Verificar se prestador oferece um serviço específico
+ * @param {string} servicoId - ID do serviço
+ */
+prestadorSchema.methods.ofereceServico = function(servicoId) {
+  return this.servicos && this.servicos.some(
+    s => s.toString() === servicoId.toString()
+  );
+};
+
+/**
+ * Verificar se o prestador tem plano ativo
+ */
+prestadorSchema.methods.temPlanoAtivo = function() {
+  if (!this.planoAtivo || this.planoStatus !== 'ativo') return false;
+  
+  if (this.planoExpiracao && this.planoExpiracao < new Date()) {
+    this.planoAtivo = false;
+    this.planoStatus = 'expirado';
+    this.save();
+    return false;
+  }
+  
+  return true;
+};
+
+/**
+ * Adicionar evento ao histórico do plano
+ * @param {string} evento - Nome do evento
+ * @param {string} detalhes - Detalhes do evento
+ * @param {Object} opcoes - Opções adicionais (paymentId, valor, etc)
+ */
+prestadorSchema.methods.adicionarHistoricoPlano = function(evento, detalhes, opcoes = {}) {
+  this.planoHistorico = this.planoHistorico || [];
+  this.planoHistorico.push({
+    data: new Date(),
+    evento,
+    detalhes,
+    paymentId: opcoes.paymentId,
+    valor: opcoes.valor
+  });
+};
+
+/**
+ * Ativar plano após pagamento aprovado
+ * @param {Object} dados - Dados do pagamento
+ */
+prestadorSchema.methods.ativarPlano = function(dados) {
+  this.planoAtivo = true;
+  this.planoStatus = 'ativo';
+  this.planoExpiracao = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // +30 dias
+  
+  if (dados.paymentId) {
+    this.mercadoPago = this.mercadoPago || {};
+    this.mercadoPago.lastPayment = {
+      date: new Date(),
+      amount: dados.valor,
+      status: 'approved',
+      paymentId: dados.paymentId
+    };
+  }
+  
+  this.adicionarHistoricoPlano(
+    'pagamento_aprovado',
+    `Pagamento aprovado - ID: ${dados.paymentId || 'N/A'}`,
+    { paymentId: dados.paymentId, valor: dados.valor }
+  );
+};
+
+// ===== MÉTODOS ESTÁTICOS =====
+
+/**
+ * Buscar prestadores por serviço específico
+ * @param {string} servicoId - ID do serviço
+ * @param {Object} filtros - Filtros adicionais (cidade, etc)
+ */
+prestadorSchema.statics.buscarPorServico = async function(servicoId, filtros = {}) {
+  const query = { servicos: servicoId, ...filtros };
+  return await this.find(query)
+    .sort({ estrelas: -1, avaliacoes: -1, totalCurtidas: -1 })
+    .limit(20);
+};
+
+/**
+ * Buscar prestadores por categoria principal
+ * @param {string} categoriaId - ID da categoria principal
+ * @param {Object} filtros - Filtros adicionais
+ */
+prestadorSchema.statics.buscarPorCategoria = async function(categoriaId, filtros = {}) {
+  const query = { categoriaPrincipal: categoriaId, ...filtros };
+  return await this.find(query)
+    .sort({ estrelas: -1, avaliacoes: -1, totalCurtidas: -1 });
+};
+
+/**
+ * Busca avançada combinando múltiplos critérios
+ * @param {Object} params - Parâmetros de busca
+ */
+prestadorSchema.statics.buscaAvancada = async function(params) {
+  const {
+    servicoId,
+    categoriaId,
+    cidade,
+    texto,
+    page = 1,
+    limit = 12
+  } = params;
+
+  let query = {};
+
+  if (servicoId) {
+    query.servicos = servicoId;
+  } else if (categoriaId) {
+    query.categoriaPrincipal = categoriaId;
+  }
+
+  if (cidade) {
+    query.cidade = new RegExp(cidade, 'i');
+  }
+
+  if (texto) {
+    query.$text = { $search: texto };
+  }
+
+  const prestadores = await this.find(query)
+    .sort({ estrelas: -1, avaliacoes: -1, totalCurtidas: -1 })
+    .limit(parseInt(limit))
+    .skip((parseInt(page) - 1) * parseInt(limit));
+
+  const total = await this.countDocuments(query);
+
+  return {
+    prestadores,
+    total,
+    page: parseInt(page),
+    totalPages: Math.ceil(total / parseInt(limit))
+  };
+};
+
+/**
+ * Buscar prestadores com planos expirados
+ * (para jobs de limpeza/notificação)
+ */
+prestadorSchema.statics.buscarExpirados = async function() {
+  const now = new Date();
+  return await this.find({
+    planoAtivo: true,
+    planoStatus: 'ativo',
+    planoExpiracao: { $lt: now }
+  });
+};
+
+/**
+ * Buscar prestadores com pagamentos pendentes
+ */
+prestadorSchema.statics.buscarPendentes = async function() {
+  return await this.find({
+    planoStatus: 'pendente'
+  });
+};
 
 const Prestador = mongoose.model('Prestador', prestadorSchema);
 
