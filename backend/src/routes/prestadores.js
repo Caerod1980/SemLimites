@@ -4,6 +4,7 @@ import Prestador from '../models/Prestador.js';
 import User from '../models/User.js';
 import Servico from '../models/Servico.js';
 import { consultarCNPJ } from '../services/receitaFederal.js';
+import { cancelarAssinatura } from '../services/mercadopago.js'; // NOVA IMPORTAÇÃO
 
 const router = express.Router();
 
@@ -390,7 +391,7 @@ router.delete('/foto', autenticar, async (req, res) => {
   }
 });
 
-// ========== EXCLUIR PERFIL DO PRESTADOR PERMANENTEMENTE ==========
+// ========== EXCLUIR PERFIL DO PRESTADOR PERMANENTEMENTE (COM CANCELAMENTO DE ASSINATURA) ==========
 router.delete('/perfil', autenticar, async (req, res) => {
   try {
     console.log('🗑️ Iniciando exclusão permanente do prestador:', req.user.userId);
@@ -411,22 +412,57 @@ router.delete('/perfil', autenticar, async (req, res) => {
 
     const prestadorId = user.prestadorId;
 
+    // ===== BUSCAR PRESTADOR PARA OBTER DADOS DA ASSINATURA =====
+    const prestador = await Prestador.findById(prestadorId);
+    
+    if (!prestador) {
+      return res.status(404).json({ error: 'Prestador não encontrado' });
+    }
+
+    // ===== CANCELAR ASSINATURA NO MERCADO PAGO =====
+    let assinaturaCancelada = false;
+    if (prestador.planoId) {
+      try {
+        console.log(`🔄 Cancelando assinatura no Mercado Pago: ${prestador.planoId}`);
+        
+        const resultado = await cancelarAssinatura(prestador.planoId);
+        
+        if (resultado.success) {
+          console.log(`✅ Assinatura cancelada com sucesso no Mercado Pago`);
+          assinaturaCancelada = true;
+        } else {
+          console.error(`❌ Erro ao cancelar assinatura no Mercado Pago:`, resultado.error);
+          // Continuamos mesmo com erro no MP? Melhor avisar
+        }
+      } catch (mpError) {
+        console.error('❌ Erro ao chamar API do Mercado Pago:', mpError);
+        // Não interrompemos a exclusão, mas registramos
+      }
+    } else {
+      console.log('ℹ️ Prestador não possui planoId (assinatura não encontrada)');
+    }
+
+    // ===== EXCLUIR SERVIÇOS DO PRESTADOR =====
     const servicosExcluidos = await Servico.deleteMany({ prestadorId: prestadorId });
     console.log(`✅ ${servicosExcluidos.deletedCount} serviços excluídos`);
 
+    // ===== EXCLUIR PRESTADOR =====
     const prestadorExcluido = await Prestador.findByIdAndDelete(prestadorId);
     
     if (!prestadorExcluido) {
       return res.status(404).json({ error: 'Prestador não encontrado' });
     }
 
+    // ===== EXCLUIR USUÁRIO =====
     await User.findByIdAndDelete(req.user.userId);
 
     console.log(`✅ Prestador ${prestadorId} e usuário ${req.user.userId} excluídos permanentemente`);
+    console.log(`📊 Assinatura cancelada: ${assinaturaCancelada ? 'Sim' : 'Não'}`);
 
     res.json({ 
       success: true,
       message: 'Perfil excluído permanentemente com sucesso',
+      assinaturaCancelada: assinaturaCancelada,
       servicosExcluidos: servicosExcluidos.deletedCount
     });
 
