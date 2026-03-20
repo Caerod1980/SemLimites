@@ -3057,43 +3057,54 @@ function Login(props) {
             }
 
             // ===== FUNÇÃO PARA VERIFICAR CNPJ NA RECEITA =====
-            function verificarCNPJ() {
-                var cnpjNumeros = formData.cnpj.replace(/\D/g, '');
-                if (cnpjNumeros.length !== 14) {
-                    setErro('CNPJ inválido. Deve conter 14 dígitos.');
-                    return;
-                }
+function verificarCNPJ() {
+    var cnpjNumeros = formData.cnpj.replace(/\D/g, '');
+    if (cnpjNumeros.length !== 14) {
+        setErro('CNPJ inválido. Deve conter 14 dígitos.');
+        return;
+    }
 
-                setErro('');
-                setVerificacaoCNPJ('verificando');
+    setErro('');
+    setVerificacaoCNPJ('verificando');
 
-                fetch(API_URL + '/empresa/consultar-cnpj/' + cnpjNumeros)
-                    .then(function(response) { return response.json(); })
-                    .then(function(data) {
-                        if (data.status === 'OK' && (data.situacao === 'Ativa' || data.situacao_cadastral === 'Ativa')) {
-                            setVerificacaoCNPJ({
-                                status: 'ativo',
-                                razaoSocial: data.razao_social || data.nome,
-                                cnpj: formData.cnpj
-                            });
-                            setFormData(function(prev) {
-                                return { ...prev, nome: data.razao_social || data.nome || prev.nome };
-                            });
-                        } else {
-                            setVerificacaoCNPJ({
-                                status: 'inativo',
-                                mensagem: data.situacao || data.situacao_cadastral || 'CNPJ com situação irregular'
-                            });
-                        }
-                    })
-                    .catch(function(error) {
-                        console.error('Erro ao verificar CNPJ:', error);
-                        setVerificacaoCNPJ({
-                            status: 'erro',
-                            mensagem: 'Erro ao verificar CNPJ'
-                        });
-                    });
-            }
+    fetch(API_URL + '/prestadores/verificar-cnpj', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cnpj: formData.cnpj })
+    })
+    .then(function(response) { 
+        if (!response.ok) {
+            return response.json().then(function(err) {
+                throw new Error(err.motivo || 'Erro na consulta');
+            });
+        }
+        return response.json(); 
+    })
+    .then(function(data) {
+        if (data.valido) {
+            setVerificacaoCNPJ({
+                status: 'ativo',
+                razaoSocial: data.empresa.razaoSocial,
+                cnpj: formData.cnpj
+            });
+            setFormData(function(prev) {
+                return { ...prev, nome: data.empresa.razaoSocial || prev.nome };
+            });
+        } else {
+            setVerificacaoCNPJ({
+                status: 'inativo',
+                mensagem: data.motivo || 'CNPJ com situação irregular'
+            });
+        }
+    })
+    .catch(function(error) {
+        console.error('Erro ao verificar CNPJ:', error);
+        setVerificacaoCNPJ({
+            status: 'erro',
+            mensagem: error.message || 'Erro ao verificar CNPJ'
+        });
+    });
+}
 
             // ===== FUNÇÃO handleSubmit CORRIGIDA (SÓ CRIA PREFERÊNCIA) =====
             function handleSubmit(e) {
