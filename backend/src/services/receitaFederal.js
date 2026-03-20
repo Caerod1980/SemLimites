@@ -5,10 +5,10 @@ import axios from 'axios';
 const cache = new Map();
 const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 dias em milissegundos
 
-// Controle de rate limiting
+// Controle de rate limiting (ReceitaWS gratuita: 3 consultas por minuto)
 let ultimasConsultas = [];
-const LIMITE_CONSULTAS = 10;
-const JANELA_TEMPO = 60 * 1000; // 1 minuto
+const LIMITE_CONSULTAS = 3;
+const JANELA_TEMPO = 60 * 1000; // 1 minuto em milissegundos
 
 /**
  * Aguarda até que haja disponibilidade no rate limit
@@ -16,11 +16,13 @@ const JANELA_TEMPO = 60 * 1000; // 1 minuto
 async function aguardarRateLimit() {
     const agora = Date.now();
     
+    // Remover consultas antigas da janela
     ultimasConsultas = ultimasConsultas.filter(timestamp => 
         agora - timestamp < JANELA_TEMPO
     );
     
     if (ultimasConsultas.length >= LIMITE_CONSULTAS) {
+        // Calcular tempo de espera
         const consultaMaisAntiga = ultimasConsultas[0];
         const tempoEspera = JANELA_TEMPO - (agora - consultaMaisAntiga);
         
@@ -28,204 +30,178 @@ async function aguardarRateLimit() {
         await new Promise(resolve => setTimeout(resolve, tempoEspera));
     }
     
+    // Registrar esta consulta
     ultimasConsultas.push(Date.now());
 }
 
 /**
- * Consulta CNPJ na BrasilAPI
- */
-async function consultarCNPJBrasilAPI(cnpjLimpo) {
-    try {
-        console.log(`🔍 Consultando CNPJ na BrasilAPI: ${cnpjLimpo}`);
-        
-        const response = await axios.get(`https://brasilapi.com.br/api/cnpj/v1/${cnpjLimpo}`, {
-            timeout: 10000,
-            headers: { 'User-Agent': 'SemLimites/1.0' }
-        });
-
-        const data = response.data;
-        
-        return {
-            success: true,
-            fonte: 'brasilapi',
-            dados: {
-                razao_social: data.razao_social,
-                nome_fantasia: data.nome_fantasia || data.razao_social,
-                situacao: data.descricao_situacao_cadastral || data.situacao_cadastral,
-                situacao_cadastral: data.descricao_situacao_cadastral || data.situacao_cadastral,
-                logradouro: data.logradouro,
-                numero: data.numero,
-                complemento: data.complemento || '',
-                bairro: data.bairro,
-                municipio: data.municipio,
-                uf: data.uf,
-                cep: data.cep,
-                telefone: data.ddd_telefone_1 || '',
-                email: data.email || '',
-                data_abertura: data.data_inicio_atividade,
-                porte: data.porte,
-                natureza_juridica: data.natureza_juridica,
-                capital_social: data.capital_social
-            }
-        };
-    } catch (error) {
-        console.error(`❌ Erro na BrasilAPI:`, error.message);
-        return { success: false, error: error.message };
-    }
-}
-
-/**
- * Consulta CNPJ na ReceitaWS
- */
-async function consultarCNPJReceitaWS(cnpjLimpo) {
-    try {
-        console.log(`🔍 Consultando CNPJ na ReceitaWS: ${cnpjLimpo}`);
-        
-        const response = await axios.get(`https://receitaws.com.br/v1/cnpj/${cnpjLimpo}`, {
-            timeout: 10000
-        });
-
-        const data = response.data;
-        
-        if (data.status === 'ERROR') {
-            return { success: false, error: data.message };
-        }
-
-        return {
-            success: true,
-            fonte: 'receitaws',
-            dados: {
-                razao_social: data.nome || '',
-                nome_fantasia: data.fantasia || data.nome || '',
-                situacao: data.situacao || '',
-                situacao_cadastral: data.situacao || '',
-                logradouro: data.logradouro || '',
-                numero: data.numero || '',
-                complemento: data.complemento || '',
-                bairro: data.bairro || '',
-                municipio: data.municipio || '',
-                uf: data.uf || '',
-                cep: data.cep || '',
-                telefone: data.telefone || '',
-                email: data.email || '',
-                data_abertura: data.abertura || '',
-                porte: data.porte || '',
-                natureza_juridica: data.natureza_juridica || '',
-                capital_social: data.capital_social || '0'
-            }
-        };
-    } catch (error) {
-        console.error(`❌ Erro na ReceitaWS:`, error.message);
-        return { success: false, error: error.message };
-    }
-}
-
-/**
- * Consulta CNPJ principal
+ * Consulta CNPJ na ReceitaWS (API pública)
+ * @param {string} cnpj - CNPJ com ou sem pontuação
+ * @returns {Promise<Object>} Dados da empresa
  */
 export async function consultarCNPJ(cnpj) {
-    try {
-        const cnpjLimpo = cnpj.replace(/[^\d]/g, '');
-        
-        if (cnpjLimpo.length !== 14) {
-            return { 
-                valido: false, 
-                motivo: "CNPJ inválido (deve ter 14 dígitos)" 
-            };
-        }
-
-        // Verificar cache
-        const cacheKey = `cnpj_${cnpjLimpo}`;
-        if (cache.has(cacheKey)) {
-            const cached = cache.get(cacheKey);
-            if (Date.now() - cached.timestamp < CACHE_TTL) {
-                console.log(`📦 Dados do CNPJ ${cnpjLimpo} obtidos do cache`);
-                return {
-                    valido: cached.valido,
-                    situacao: cached.situacao,
-                    empresa: cached.empresa
-                };
-            }
-        }
-
-        // Aguardar rate limit
-        await aguardarRateLimit();
-
-        // Tentar BrasilAPI primeiro
-        let resultado = await consultarCNPJBrasilAPI(cnpjLimpo);
-        
-        // Se falhar, tentar ReceitaWS
-        if (!resultado.success) {
-            console.log('⚠️ BrasilAPI falhou, tentando ReceitaWS...');
-            resultado = await consultarCNPJReceitaWS(cnpjLimpo);
-        }
-
-        if (!resultado.success) {
-            return {
-                valido: false,
-                motivo: "Não foi possível consultar o CNPJ. Tente novamente mais tarde."
-            };
-        }
-
-        const dados = resultado.dados;
-        
-        // CORREÇÃO: Verificar situação de forma mais precisa
-        const situacao = dados.situacao || '';
-        const situacaoUpper = situacao.toUpperCase().trim();
-        
-        // Lista de situações consideradas ativas
-        const situacoesAtivas = ['ATIVA', 'ATIVO', 'REGULAR', 'HABILITADO', 'APTA', 'ATIVO'];
-        
-        const isAtivo = situacoesAtivas.some(s => situacaoUpper.includes(s));
-
-        // Estruturar dados retornados
-        const empresa = {
-            razaoSocial: dados.razao_social || 'Não informado',
-            nomeFantasia: dados.nome_fantasia || dados.razao_social || 'Não informado',
-            dataAbertura: dados.data_abertura || 'Não informada',
-            situacao: situacao,
-            endereco: {
-                logradouro: dados.logradouro || '',
-                numero: dados.numero || '',
-                complemento: dados.complemento || '',
-                bairro: dados.bairro || '',
-                cep: dados.cep || '',
-                municipio: dados.municipio || '',
-                uf: dados.uf || ''
-            },
-            enderecoCompleto: `${dados.logradouro || ''}, ${dados.numero || ''}${dados.complemento ? ' - ' + dados.complemento : ''} - ${dados.bairro || ''}, ${dados.municipio || ''}/${dados.uf || ''}`.trim(),
-            contato: {
-                telefone: dados.telefone || 'Não informado',
-                email: dados.email || 'Não informado'
-            },
-            capitalSocial: dados.capital_social || '0',
-            porte: dados.porte || 'Não informado',
-            naturezaJuridica: dados.natureza_juridica || 'Não informada',
-            fonte: resultado.fonte
-        };
-
-        // Salvar no cache
-        cache.set(cacheKey, {
-            timestamp: Date.now(),
-            valido: isAtivo,
-            situacao: situacao,
-            empresa: empresa
-        });
-
-        return {
-            valido: isAtivo,
-            situacao: situacao,
-            empresa: empresa
-        };
-
-    } catch (error) {
-        console.error('❌ Erro ao consultar CNPJ:', error.message);
-        
-        return { 
-            valido: false, 
-            motivo: "Erro ao consultar CNPJ. Tente novamente." 
-        };
+  try {
+    const cnpjLimpo = cnpj.replace(/[^\d]/g, '');
+    
+    if (cnpjLimpo.length !== 14) {
+      return { 
+        valido: false, 
+        motivo: "CNPJ inválido (deve ter 14 dígitos)" 
+      };
     }
+
+    // Verificar cache
+    const cacheKey = `cnpj_${cnpjLimpo}`;
+    if (cache.has(cacheKey)) {
+      const cached = cache.get(cacheKey);
+      if (Date.now() - cached.timestamp < CACHE_TTL) {
+        console.log(`📦 Dados do CNPJ ${cnpjLimpo} obtidos do cache`);
+        return {
+          valido: cached.valido,
+          situacao: cached.situacao,
+          empresa: cached.empresa
+        };
+      } else {
+        cache.delete(cacheKey);
+      }
+    }
+
+    // Aguardar rate limit
+    await aguardarRateLimit();
+
+    console.log(`🔍 Consultando CNPJ na ReceitaWS: ${cnpjLimpo}`);
+    
+    // Fazer requisição à ReceitaWS
+    const response = await axios.get(`https://receitaws.com.br/v1/cnpj/${cnpjLimpo}`, {
+      timeout: 10000 // 10 segundos de timeout
+    });
+
+    const data = response.data;
+    
+    // Verificar se a consulta foi bem-sucedida
+    if (data.status === 'ERROR') {
+      return {
+        valido: false,
+        motivo: data.message || 'CNPJ não encontrado na Receita Federal'
+      };
+    }
+
+    // Verificar se o CNPJ está ativo
+    const situacao = data.situacao || 'DESCONHECIDA';
+    const isAtivo = situacao.toUpperCase() === 'ATIVA';
+
+    // Estruturar dados relevantes
+    const empresa = {
+      razaoSocial: data.nome || 'Não informado',
+      nomeFantasia: data.fantasia || data.nome || 'Não informado',
+      dataAbertura: data.abertura || 'Não informada',
+      situacao: situacao,
+      dataSituacao: data.data_situacao || null,
+      tipo: data.tipo || 'Não informado',
+      porte: data.porte || 'Não informado',
+      naturezaJuridica: data.natureza_juridica || 'Não informada',
+      atividadePrincipal: data.atividade_principal?.[0]?.text || 'Não informada',
+      atividadesSecundarias: data.atividades_secundarias?.map(a => a.text) || [],
+      endereco: {
+        logradouro: data.logradouro || '',
+        numero: data.numero || '',
+        complemento: data.complemento || '',
+        bairro: data.bairro || '',
+        cep: data.cep || '',
+        municipio: data.municipio || '',
+        uf: data.uf || ''
+      },
+      enderecoCompleto: `${data.logradouro || ''}, ${data.numero || ''}${data.complemento ? ' - ' + data.complemento : ''} - ${data.bairro || ''}, ${data.municipio || ''}/${data.uf || ''}`.trim(),
+      contato: {
+        telefone: data.telefone || 'Não informado',
+        email: data.email || 'Não informado'
+      },
+      capitalSocial: data.capital_social || '0',
+      simples: {
+        optante: data.simples?.optante === 'S',
+        dataOpcao: data.simples?.data_opcao || null,
+        dataExclusao: data.simples?.data_exclusao || null
+      },
+      mei: data.simei?.optante === 'S'
+    };
+
+    // Salvar no cache
+    cache.set(cacheKey, {
+      timestamp: Date.now(),
+      valido: isAtivo,
+      situacao: situacao,
+      empresa: empresa
+    });
+
+    return {
+      valido: isAtivo,
+      situacao: situacao,
+      empresa: empresa
+    };
+
+  } catch (error) {
+    console.error('❌ Erro ao consultar CNPJ na ReceitaWS:', error.message);
+    
+    // Tratamento específico para erros
+    if (error.code === 'ECONNABORTED') {
+      return { 
+        valido: false, 
+        motivo: "Tempo limite excedido. Tente novamente." 
+      };
+    }
+    
+    if (error.response && error.response.status === 429) {
+      return { 
+        valido: false, 
+        motivo: "Muitas consultas. Aguarde um minuto e tente novamente." 
+      };
+    }
+    
+    return { 
+      valido: false, 
+      motivo: "Erro ao consultar Receita Federal. Tente novamente mais tarde." 
+    };
+  }
+}
+
+/**
+ * Versão com API Key (para plano pago da ReceitaWS)
+ */
+export async function consultarCNPJComChave(cnpj, apiKey) {
+  try {
+    const cnpjLimpo = cnpj.replace(/[^\d]/g, '');
+    
+    const response = await axios.get(`https://receitaws.com.br/v1/cnpj/${cnpjLimpo}`, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`
+      },
+      timeout: 10000
+    });
+
+    // Processar dados (similar à função principal)
+    const data = response.data;
+    
+    if (data.status === 'ERROR') {
+      return { valido: false, motivo: data.message };
+    }
+
+    return {
+      valido: data.situacao === 'ATIVA',
+      situacao: data.situacao,
+      empresa: {
+        razaoSocial: data.nome,
+        nomeFantasia: data.fantasia,
+        dataAbertura: data.abertura,
+        atividadePrincipal: data.atividade_principal?.[0]?.text,
+        endereco: `${data.logradouro}, ${data.numero} - ${data.bairro}, ${data.municipio}/${data.uf}`,
+        telefone: data.telefone
+      }
+    };
+
+  } catch (error) {
+    console.error('Erro ao consultar CNPJ com chave:', error);
+    return { valido: false, motivo: "Erro na consulta" };
+  }
 }
 
 /**
@@ -239,3 +215,19 @@ export async function validarCNPJ(cnpj) {
         razaoSocial: resultado.empresa?.razaoSocial
     };
 }
+
+// Manter os dados mockados para testes (opcional)
+export const MOCK_CNPJS = {
+  "12345678000199": {
+    nome: "J. SOUZA ELETRICISTA LTDA",
+    fantasia: "JOÃO SOUZA ELETRICISTA"
+  },
+  "98765432000188": {
+    nome: "PAULA MARTINS DIARISTA ME",
+    fantasia: "PAULA MARTINS"
+  },
+  "11122233000177": {
+    nome: "RAFAEL LIMA ENCANADOR LTDA",
+    fantasia: "R LIMA ENCANADOR"
+  }
+};
