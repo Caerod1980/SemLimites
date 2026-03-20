@@ -7,8 +7,8 @@ const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 dias em milissegundos
 
 // Controle de rate limiting
 let ultimasConsultas = [];
-const LIMITE_CONSULTAS = 10; // Aumentei para 10 consultas
-const JANELA_TEMPO = 60 * 1000; // 1 minuto em milissegundos
+const LIMITE_CONSULTAS = 10;
+const JANELA_TEMPO = 60 * 1000; // 1 minuto
 
 /**
  * Aguarda até que haja disponibilidade no rate limit
@@ -16,7 +16,6 @@ const JANELA_TEMPO = 60 * 1000; // 1 minuto em milissegundos
 async function aguardarRateLimit() {
     const agora = Date.now();
     
-    // Remover consultas antigas da janela
     ultimasConsultas = ultimasConsultas.filter(timestamp => 
         agora - timestamp < JANELA_TEMPO
     );
@@ -33,9 +32,7 @@ async function aguardarRateLimit() {
 }
 
 /**
- * Consulta CNPJ na BrasilAPI (mais confiável)
- * @param {string} cnpj - CNPJ com ou sem pontuação
- * @returns {Promise<Object>} Dados da empresa
+ * Consulta CNPJ na BrasilAPI
  */
 async function consultarCNPJBrasilAPI(cnpjLimpo) {
     try {
@@ -43,14 +40,11 @@ async function consultarCNPJBrasilAPI(cnpjLimpo) {
         
         const response = await axios.get(`https://brasilapi.com.br/api/cnpj/v1/${cnpjLimpo}`, {
             timeout: 10000,
-            headers: {
-                'User-Agent': 'SemLimites/1.0'
-            }
+            headers: { 'User-Agent': 'SemLimites/1.0' }
         });
 
         const data = response.data;
         
-        // Mapear dados da BrasilAPI para o formato esperado
         return {
             success: true,
             fonte: 'brasilapi',
@@ -71,9 +65,7 @@ async function consultarCNPJBrasilAPI(cnpjLimpo) {
                 data_abertura: data.data_inicio_atividade,
                 porte: data.porte,
                 natureza_juridica: data.natureza_juridica,
-                capital_social: data.capital_social,
-                cnae_principal: data.cnae_fiscal_descricao,
-                atividade_principal: data.cnae_fiscal_descricao
+                capital_social: data.capital_social
             }
         };
     } catch (error) {
@@ -83,9 +75,7 @@ async function consultarCNPJBrasilAPI(cnpjLimpo) {
 }
 
 /**
- * Consulta CNPJ na ReceitaWS (fallback)
- * @param {string} cnpjLimpo 
- * @returns {Promise<Object>}
+ * Consulta CNPJ na ReceitaWS
  */
 async function consultarCNPJReceitaWS(cnpjLimpo) {
     try {
@@ -97,15 +87,10 @@ async function consultarCNPJReceitaWS(cnpjLimpo) {
 
         const data = response.data;
         
-        // Verificar se a consulta foi bem-sucedida
         if (data.status === 'ERROR') {
-            return { 
-                success: false, 
-                error: data.message || 'CNPJ não encontrado na ReceitaWS' 
-            };
+            return { success: false, error: data.message };
         }
 
-        // Mapear dados da ReceitaWS
         return {
             success: true,
             fonte: 'receitaws',
@@ -126,9 +111,7 @@ async function consultarCNPJReceitaWS(cnpjLimpo) {
                 data_abertura: data.abertura || '',
                 porte: data.porte || '',
                 natureza_juridica: data.natureza_juridica || '',
-                capital_social: data.capital_social || '0',
-                cnae_principal: data.atividade_principal?.[0]?.text || '',
-                atividade_principal: data.atividade_principal?.[0]?.text || ''
+                capital_social: data.capital_social || '0'
             }
         };
     } catch (error) {
@@ -138,9 +121,7 @@ async function consultarCNPJReceitaWS(cnpjLimpo) {
 }
 
 /**
- * Consulta CNPJ com fallback automático
- * @param {string} cnpj - CNPJ com ou sem pontuação
- * @returns {Promise<Object>} Dados da empresa
+ * Consulta CNPJ principal
  */
 export async function consultarCNPJ(cnpj) {
     try {
@@ -160,19 +141,17 @@ export async function consultarCNPJ(cnpj) {
             if (Date.now() - cached.timestamp < CACHE_TTL) {
                 console.log(`📦 Dados do CNPJ ${cnpjLimpo} obtidos do cache`);
                 return {
-                    valido: cached.situacao === 'ATIVA' || cached.situacao === 'Ativa',
+                    valido: cached.valido,
                     situacao: cached.situacao,
-                    empresa: cached.dados
+                    empresa: cached.empresa
                 };
-            } else {
-                cache.delete(cacheKey);
             }
         }
 
         // Aguardar rate limit
         await aguardarRateLimit();
 
-        // Tentar BrasilAPI primeiro (mais confiável)
+        // Tentar BrasilAPI primeiro
         let resultado = await consultarCNPJBrasilAPI(cnpjLimpo);
         
         // Se falhar, tentar ReceitaWS
@@ -184,31 +163,27 @@ export async function consultarCNPJ(cnpj) {
         if (!resultado.success) {
             return {
                 valido: false,
-                motivo: "Não foi possível consultar o CNPJ em nenhuma fonte. Tente novamente mais tarde."
+                motivo: "Não foi possível consultar o CNPJ. Tente novamente mais tarde."
             };
         }
 
         const dados = resultado.dados;
         
-        // Verificar se o CNPJ está ativo (aceitar diferentes formatos)
+        // CORREÇÃO: Verificar situação de forma mais precisa
         const situacao = dados.situacao || '';
-        const isAtivo = situacao.toUpperCase().includes('ATIVA') || 
-                       situacao.toUpperCase() === 'ATIVO' ||
-                       situacao.toUpperCase().includes('REGULAR') ||
-                       situacao.toUpperCase().includes('HABILITADO');
+        const situacaoUpper = situacao.toUpperCase().trim();
+        
+        // Lista de situações consideradas ativas
+        const situacoesAtivas = ['ATIVA', 'ATIVO', 'REGULAR', 'HABILITADO', 'APTA', 'ATIVO'];
+        
+        const isAtivo = situacoesAtivas.some(s => situacaoUpper.includes(s));
 
         // Estruturar dados retornados
         const empresa = {
             razaoSocial: dados.razao_social || 'Não informado',
             nomeFantasia: dados.nome_fantasia || dados.razao_social || 'Não informado',
             dataAbertura: dados.data_abertura || 'Não informada',
-            situacao: dados.situacao || dados.situacao_cadastral || 'DESCONHECIDA',
-            dataSituacao: null,
-            tipo: 'MATRIZ',
-            porte: dados.porte || 'Não informado',
-            naturezaJuridica: dados.natureza_juridica || 'Não informada',
-            atividadePrincipal: dados.atividade_principal || dados.cnae_principal || 'Não informada',
-            atividadesSecundarias: [],
+            situacao: situacao,
             endereco: {
                 logradouro: dados.logradouro || '',
                 numero: dados.numero || '',
@@ -224,25 +199,22 @@ export async function consultarCNPJ(cnpj) {
                 email: dados.email || 'Não informado'
             },
             capitalSocial: dados.capital_social || '0',
-            simples: {
-                optante: false,
-                dataOpcao: null,
-                dataExclusao: null
-            },
-            mei: false,
+            porte: dados.porte || 'Não informado',
+            naturezaJuridica: dados.natureza_juridica || 'Não informada',
             fonte: resultado.fonte
         };
 
         // Salvar no cache
         cache.set(cacheKey, {
             timestamp: Date.now(),
-            situacao: dados.situacao,
-            dados: empresa
+            valido: isAtivo,
+            situacao: situacao,
+            empresa: empresa
         });
 
         return {
             valido: isAtivo,
-            situacao: dados.situacao,
+            situacao: situacao,
             empresa: empresa
         };
 
@@ -251,7 +223,7 @@ export async function consultarCNPJ(cnpj) {
         
         return { 
             valido: false, 
-            motivo: "Erro ao consultar Receita Federal. Tente novamente mais tarde." 
+            motivo: "Erro ao consultar CNPJ. Tente novamente." 
         };
     }
 }
@@ -267,22 +239,3 @@ export async function validarCNPJ(cnpj) {
         razaoSocial: resultado.empresa?.razaoSocial
     };
 }
-
-// Manter MOCK_CNPJS para testes (opcional)
-export const MOCK_CNPJS = {
-    "12345678000199": {
-        nome: "J. SOUZA ELETRICISTA LTDA",
-        fantasia: "JOÃO SOUZA ELETRICISTA",
-        situacao: "ATIVA"
-    },
-    "98765432000188": {
-        nome: "PAULA MARTINS DIARISTA ME",
-        fantasia: "PAULA MARTINS",
-        situacao: "ATIVA"
-    },
-    "11122233000177": {
-        nome: "RAFAEL LIMA ENCANADOR LTDA",
-        fantasia: "R LIMA ENCANADOR",
-        situacao: "ATIVA"
-    }
-};
