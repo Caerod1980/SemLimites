@@ -18,7 +18,7 @@ router.get('/consultar-cnpj/:cnpj', async (req, res) => {
     // Usar o serviço de consulta
     const resultado = await consultarCNPJ(cnpj);
     
-    // Se houve erro na consulta (API indisponível, etc)
+    // Caso haja erro na consulta (API indisponível, etc)
     if (!resultado.valido && resultado.motivo) {
       return res.status(400).json({
         status: 'ERRO',
