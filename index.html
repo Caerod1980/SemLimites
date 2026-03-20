@@ -6307,7 +6307,7 @@
             );
         }
 
-        // ========== PÁGINA COMO FUNCIONA ==========
+          // ========== PÁGINA COMO FUNCIONA ==========
         function ComoFunciona(props) {
             var onVoltar = props.onVoltar;
 
@@ -6348,12 +6348,11 @@
 
                         React.createElement('h3', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-4" }, "Passo a Passo para Clientes"),
                         
-                        React.createElement('div', { className: "space-y-6" },
+                        React.createElement('div', { className: "space-y-4" },
                             React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
                                 React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "1. Acesse a Página Inicial"),
                                 React.createElement('p', { className: "text-sm text-slate-600" }, "Ao entrar no SemLimites, você já está pronto para começar sua busca. Nossa interface foi pensada para ser intuitiva e direta, sem complicações.")
                             ),
-                            
                             React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
                                 React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "2. Utilize os Filtros de Busca"),
                                 React.createElement('p', { className: "text-sm text-slate-600 mb-2" }, "Na página inicial, você encontra filtros inteligentes que ajudam a refinar sua procura:"),
@@ -6372,11 +6371,11 @@
                                             ),
                                             React.createElement('tr', null,
                                                 React.createElement('td', { className: "px-3 py-2 font-medium" }, "Categoria"),
-                                                React.createElement('td', { className: "px-3 py-2" }, "Selecione o tipo de serviço desejado (eletricista, encanador, pintor, etc.)")
+                                                React.createElement('td', { className: "px-3 py-2" }, "Selecione o tipo de serviço desejado")
                                             ),
                                             React.createElement('tr', null,
                                                 React.createElement('td', { className: "px-3 py-2 font-medium" }, "Serviço Específico"),
-                                                React.createElement('td', { className: "px-3 py-2" }, "Após escolher a categoria, refine ainda mais com serviços específicos")
+                                                React.createElement('td', { className: "px-3 py-2" }, "Após escolher a categoria, refine ainda mais")
                                             ),
                                             React.createElement('tr', null,
                                                 React.createElement('td', { className: "px-3 py-2 font-medium" }, "Nome ou Palavra-chave"),
@@ -6385,48 +6384,18 @@
                                         )
                                     )
                                 ),
-                                React.createElement('p', { className: "text-sm text-slate-600 mt-3 italic" }, "Exemplo prático: Você precisa de um eletricista em São Paulo. Basta selecionar \"São Paulo\" no filtro de cidade, escolher \"Eletricista\" na categoria e pronto! Uma lista com os melhores profissionais aparecerá para você.")
+                                React.createElement('p', { className: "text-sm text-slate-600 mt-3 italic" }, "Exemplo: Você precisa de um eletricista em São Paulo. Basta selecionar \"São Paulo\" no filtro de cidade, escolher \"Eletricista\" na categoria e pronto!")
                             ),
-                            
                             React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
                                 React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "3. Explore os Perfis dos Profissionais"),
-                                React.createElement('p', { className: "text-sm text-slate-600 mb-2" }, "Ao encontrar um profissional que chamou sua atenção, clique em \"Ver Perfil\". Lá você encontrará todas as informações necessárias para tomar uma decisão segura:"),
+                                React.createElement('p', { className: "text-sm text-slate-600 mb-2" }, "Ao encontrar um profissional, clique em \"Ver Perfil\". Lá você encontrará:"),
                                 React.createElement('ul', { className: "list-disc pl-5 space-y-1 text-sm text-slate-600" },
-                                    React.createElement('li', null, React.createElement('span', { className: "font-medium" }, "📸 Foto de Perfil"), " – Uma imagem profissional ajuda a criar conexão e confiança."),
-                                    React.createElement('li', null, React.createElement('span', { className: "font-medium" }, "📋 Descrição Detalhada"), " – O profissional conta um pouco sobre sua trajetória."),
-                                    React.createElement('li', null, React.createElement('span', { className: "font-medium" }, "🛠️ Especialidades"), " – Habilidades específicas como \"Hidráulica residencial\"."),
-                                    React.createElement('li', null, React.createElement('span', { className: "font-medium" }, "📜 Certificações"), " – Comprovações da qualificação profissional."),
-                                    React.createElement('li', null, React.createElement('span', { className: "font-medium" }, "⭐ Avaliações"), " – Notas e comentários de clientes anteriores."),
-                                    React.createElement('li', null, React.createElement('span', { className: "font-medium" }, "📞 Contato"), " – WhatsApp e telefone para contato direto.")
-                                ),
-                                React.createElement('div', { className: "mt-3 p-3 bg-[#fff8e7] rounded-lg border border-[#FFE3A0]" },
-                                    React.createElement('p', { className: "text-xs text-slate-600 italic" }, 
-                                        "⭐ Exemplo de avaliação: \"Profissional pontual, educado e resolveu o problema com excelência. Super recomendo!\" – Carlos Silva • 15/03/2026"
-                                    )
-                                )
-                            ),
-                            
-                            React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Vantagens de Usar o SemLimites"),
-                                React.createElement('ul', { className: "list-disc pl-5 space-y-2 text-sm text-slate-600" },
-                                    React.createElement('li', null, React.createElement('span', { className: "font-medium" }, "✅ Sem Taxas ou Comissões"), " – A plataforma é 100% gratuita para clientes."),
-                                    React.createElement('li', null, React.createElement('span', { className: "font-medium" }, "🔍 Transparência Total"), " – Todas as avaliações são públicas e verificadas."),
-                                    React.createElement('li', null, React.createElement('span', { className: "font-medium" }, "🤝 Conexão Direta"), " – Você fala diretamente com o profissional, sem intermediários."),
-                                    React.createElement('li', null, React.createElement('span', { className: "font-medium" }, "📱 Acesso Facilitado"), " – Funciona perfeitamente em computadores, tablets e celulares."),
-                                    React.createElement('li', null, React.createElement('span', { className: "font-medium" }, "❤️ Favoritos"), " – Salve profissionais de confiança para contratações futuras.")
-                                )
-                            ),
-                            
-                            React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0]" },
-                                React.createElement('h4', { className: "font-semibold text-[#F09030] mb-2" }, "📌 Exemplo Prático de Jornada do Cliente"),
-                                React.createElement('div', { className: "text-sm text-slate-600 space-y-1 font-mono bg-white p-3 rounded-lg" },
-                                    React.createElement('p', null, "1. Maria precisa de um encanador urgente em sua casa no Rio de Janeiro."),
-                                    React.createElement('p', null, "2. Ela acessa o SemLimites, seleciona \"Rio de Janeiro\" no filtro de cidade e \"Encanador\" na categoria."),
-                                    React.createElement('p', null, "3. Vários perfis aparecem. Ela analisa as avaliações, fotos e descrições."),
-                                    React.createElement('p', null, "4. Encontra o João, um encanador com 47 avaliações positivas, média 4.9 estrelas."),
-                                    React.createElement('p', null, "5. Clica em \"Ver Perfil\", lê os comentários e fica tranquila."),
-                                    React.createElement('p', null, "6. Com um clique, inicia uma conversa no WhatsApp com João."),
-                                    React.createElement('p', null, "7. João realiza o serviço, Maria fica satisfeita e volta para avaliar o trabalho.")
+                                    React.createElement('li', null, React.createElement('span', { className: "font-medium" }, "📸 Foto de Perfil"), " – Uma imagem profissional"),
+                                    React.createElement('li', null, React.createElement('span', { className: "font-medium" }, "📋 Descrição Detalhada"), " – Trajetória e experiência"),
+                                    React.createElement('li', null, React.createElement('span', { className: "font-medium" }, "🛠️ Especialidades"), " – Habilidades específicas"),
+                                    React.createElement('li', null, React.createElement('span', { className: "font-medium" }, "📜 Certificações"), " – Qualificações profissionais"),
+                                    React.createElement('li', null, React.createElement('span', { className: "font-medium" }, "⭐ Avaliações"), " – Notas e comentários de clientes"),
+                                    React.createElement('li', null, React.createElement('span', { className: "font-medium" }, "📞 Contato"), " – WhatsApp e telefone")
                                 )
                             )
                         ),
@@ -6448,114 +6417,25 @@
                             "Para Prestadores de Serviço"
                         ),
                         React.createElement('p', { className: "text-sm md:text-base text-slate-600 mb-6" },
-                            "Sua Carreira Profissional no Mundo Digital. O SemLimites foi criado para valorizar o profissional que entrega qualidade. Agora você tem uma ferramenta completa para reunir e divulgar suas informações de forma organizada."
+                            "Sua Carreira Profissional no Mundo Digital. O SemLimites foi criado para valorizar o profissional que entrega qualidade."
                         ),
 
-                        React.createElement('h3', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-4" }, "Passo a Passo para Prestadores"),
-                        
-                        React.createElement('div', { className: "space-y-6" },
+                        React.createElement('div', { className: "space-y-4" },
                             React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
                                 React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "1. Acesse a Plataforma e Faça seu Cadastro"),
-                                React.createElement('p', { className: "text-sm text-slate-600 mb-2" }, "Entre no SemLimites e clique em \"Sou Prestador\". Você será direcionado para um formulário completo onde poderá contar sua história profissional."),
-                                React.createElement('ul', { className: "list-disc pl-5 space-y-1 text-sm text-slate-600" },
-                                    React.createElement('li', null, "📋 Nome completo ou nome da empresa"),
-                                    React.createElement('li', null, "📧 E-mail para login"),
-                                    React.createElement('li', null, "🔒 Senha segura"),
-                                    React.createElement('li', null, "🆔 CPF ou CNPJ (com verificação automática para empresas)"),
-                                    React.createElement('li', null, "📍 Cidade e Estado de atuação"),
-                                    React.createElement('li', null, "📞 WhatsApp e telefone"),
-                                    React.createElement('li', null, "🛠️ Categoria principal e serviços específicos"),
-                                    React.createElement('li', null, "📝 Descrição profissional"),
-                                    React.createElement('li', null, "🏷️ Tags e especialidades")
-                                )
+                                React.createElement('p', { className: "text-sm text-slate-600" }, "Clique em \"Sou Prestador\" e preencha seus dados. Após o cadastro, realize o pagamento da mensalidade para ativar sua conta.")
                             ),
-                            
                             React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
                                 React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "2. Sobre a Mensalidade"),
-                                React.createElement('p', { className: "text-sm text-slate-600 mb-2" }, 
-                                    "Para manter seu perfil ativo e ter acesso a todas as ferramentas de gestão, o SemLimites cobra uma mensalidade acessível. Este valor é essencial para:")
-                                ),
-                                React.createElement('ul', { className: "list-disc pl-5 space-y-1 text-sm text-slate-600" },
-                                    React.createElement('li', null, "Manter a plataforma funcionando com segurança e estabilidade"),
-                                    React.createElement('li', null, "Investir em melhorias contínuas e novas funcionalidades"),
-                                    React.createElement('li', null, "Garantir suporte e evolução do sistema"),
-                                    React.createElement('li', null, "Oferecer uma vitrine profissional de qualidade")
-                                ),
-                                React.createElement('p', { className: "text-sm text-slate-600 mt-2 font-medium text-[#3d7a3d]" },
-                                    "Após a confirmação do pagamento, sua conta é ativada e você já pode começar a usar todas as funcionalidades da plataforma."
-                                )
+                                React.createElement('p', { className: "text-sm text-slate-600" }, "Para manter seu perfil ativo e ter acesso a todas as ferramentas, o SemLimites cobra uma mensalidade acessível. Após a confirmação do pagamento, sua conta é ativada.")
                             ),
-                            
                             React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0]" },
                                 React.createElement('h4', { className: "font-semibold text-[#F09030] mb-2" }, "3. Cancelamento da Assinatura e Exclusão de Conta"),
-                                React.createElement('p', { className: "text-sm text-slate-600 mb-2" }, 
-                                    "Você tem total controle sobre sua conta. Se desejar encerrar seu cadastro:"),
-                                React.createElement('ul', { className: "list-disc pl-5 space-y-1 text-sm text-slate-600" },
-                                    React.createElement('li', null, "Acesse o Dashboard do Prestador e vá até a \"Zona de Perigo\""),
-                                    React.createElement('li', null, "Clique em \"Excluir minha conta permanentemente\""),
-                                    React.createElement('li', null, "Confirme com seu nome completo e a frase \"EXCLUIR PERMANENTEMENTE\""),
-                                    React.createElement('li', null, "Após a confirmação, sua assinatura é automaticamente cancelada e todos os seus dados são removidos do sistema.")
-                                ),
-                                React.createElement('p', { className: "text-sm text-slate-600 mt-2 font-medium text-amber-600" },
-                                    "⚠️ A exclusão é irreversível. Todo seu histórico, serviços, avaliações e dados serão permanentemente excluídos."
-                                )
+                                React.createElement('p', { className: "text-sm text-slate-600" }, "Acesse o Dashboard do Prestador e vá até a \"Zona de Perigo\". Clique em \"Excluir minha conta permanentemente\", confirme com seu nome e a frase \"EXCLUIR PERMANENTEMENTE\". Sua assinatura será cancelada automaticamente.")
                             ),
-                            
                             React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
                                 React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "O Painel do Prestador - Sua Central de Controle"),
-                                React.createElement('p', { className: "text-sm text-slate-600 mb-2" }, "Assim que você acessa sua conta, entra no Painel do Prestador, um ambiente exclusivo e poderoso para gerenciar sua carreira digital."),
-                                
-                                React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-3 mt-3" },
-                                    React.createElement('div', { className: "bg-white rounded-lg p-3" },
-                                        React.createElement('p', { className: "font-medium text-[#2d5a2d]" }, "📊 Visão Geral"),
-                                        React.createElement('p', { className: "text-xs text-slate-600" }, "Reputação, serviços realizados, curtidas, clientes fiéis e pendências.")
-                                    ),
-                                    React.createElement('div', { className: "bg-white rounded-lg p-3" },
-                                        React.createElement('p', { className: "font-medium text-[#2d5a2d]" }, "👤 Perfil Profissional"),
-                                        React.createElement('p', { className: "text-xs text-slate-600" }, "Edite foto, dados, localização, contato, categoria, serviços, especialidades e certificações.")
-                                    ),
-                                    React.createElement('div', { className: "bg-white rounded-lg p-3" },
-                                        React.createElement('p', { className: "font-medium text-[#2d5a2d]" }, "📋 Gestão de Serviços"),
-                                        React.createElement('p', { className: "text-xs text-slate-600" }, "Cadastre serviços, gere links exclusivos de avaliação e envie via WhatsApp com mensagem pronta.")
-                                    ),
-                                    React.createElement('div', { className: "bg-white rounded-lg p-3" },
-                                        React.createElement('p', { className: "font-medium text-[#2d5a2d]" }, "⭐ Avaliações Recebidas"),
-                                        React.createElement('p', { className: "text-xs text-slate-600" }, "Acompanhe notas, comentários e datas das avaliações dos clientes.")
-                                    ),
-                                    React.createElement('div', { className: "bg-white rounded-lg p-3" },
-                                        React.createElement('p', { className: "font-medium text-[#2d5a2d]" }, "📈 Estatísticas"),
-                                        React.createElement('p', { className: "text-xs text-slate-600" }, "Reputação média, taxa de aprovação, clientes fiéis e total de curtidas.")
-                                    ),
-                                    React.createElement('div', { className: "bg-white rounded-lg p-3" },
-                                        React.createElement('p', { className: "font-medium text-[#2d5a2d]" }, "⚠️ Zona de Perigo"),
-                                        React.createElement('p', { className: "text-xs text-slate-600" }, "Exclusão permanente da conta com múltiplas camadas de confirmação.")
-                                    )
-                                )
-                            ),
-                            
-                            React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Vantagens Exclusivas para Prestadores"),
-                                React.createElement('ul', { className: "list-disc pl-5 space-y-1 text-sm text-slate-600" },
-                                    React.createElement('li', null, "✅ Ferramenta profissional completa para gerenciar sua carreira"),
-                                    React.createElement('li', null, "📱 Presença digital organizada – seu perfil é sua vitrine, currículo e portfólio"),
-                                    React.createElement('li', null, "🔄 Feedback contínuo – avaliações ajudam a identificar pontos fortes e áreas de melhoria"),
-                                    React.createElement('li', null, "🌟 Reconhecimento – profissionais bem avaliados ganham mais visibilidade"),
-                                    React.createElement('li', null, "👥 Clientes fiéis – sistema identifica clientes recorrentes"),
-                                    React.createElement('li', null, "📢 Compartilhamento – link exclusivo do seu perfil para divulgar em redes sociais e WhatsApp")
-                                )
-                            ),
-                            
-                            React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0]" },
-                                React.createElement('h4', { className: "font-semibold text-[#F09030] mb-2" }, "📌 Exemplo Prático de Jornada do Prestador"),
-                                React.createElement('div', { className: "text-sm text-slate-600 space-y-1 font-mono bg-white p-3 rounded-lg" },
-                                    React.createElement('p', null, "1. João, eletricista há 15 anos, descobre o SemLimites e faz seu cadastro."),
-                                    React.createElement('p', null, "2. Após cada serviço, João cadastra o trabalho e envia o link de avaliação."),
-                                    React.createElement('p', null, "3. Maria, uma cliente satisfeita, avalia o serviço com 5 estrelas."),
-                                    React.createElement('p', null, "4. A reputação de João sobe para 4.9 estrelas. Ele aparece nas primeiras posições."),
-                                    React.createElement('p', null, "5. Novos clientes encontram João, contratam e também avaliam positivamente."),
-                                    React.createElement('p', null, "6. João identifica que 70% de seus clientes são recorrentes."),
-                                    React.createElement('p', null, "7. Ele compartilha o link do seu perfil e conquista ainda mais clientes.")
-                                )
+                                React.createElement('p', { className: "text-sm text-slate-600" }, "Gerencie serviços, envie links de avaliação, acompanhe sua reputação e veja estatísticas detalhadas do seu negócio.")
                             )
                         ),
                         
@@ -6567,12 +6447,10 @@
                         )
                     ),
 
-                    // Rodapé da página com disclaimer
                     React.createElement('div', { className: "mt-8 pt-6 border-t border-[#c0dfc0] text-center text-xs text-slate-500" },
                         React.createElement('p', null, 
                             "O SemLimites atua exclusivamente como meio de divulgação e conexão entre usuários e prestadores de serviços independentes. ",
-                            "A responsabilidade pela execução dos serviços é integralmente do prestador contratado. ",
-                            "Prestadores pagam uma mensalidade acessível para manter seu perfil ativo e utilizar as ferramentas de gestão."
+                            "A responsabilidade pela execução dos serviços é integralmente do prestador contratado."
                         )
                     )
                 )
@@ -6586,11 +6464,8 @@
             return React.createElement('div', { className: "max-w-4xl mx-auto px-4 py-8 md:py-12" },
                 React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-6 md:p-8 shadow-sm" },
                     
-                    // Cabeçalho
                     React.createElement('div', { className: "flex items-center justify-between mb-8" },
-                        React.createElement('h1', { className: "text-2xl md:text-3xl font-bold text-[#3d7a3d]" }, 
-                            "📞 Contato e Suporte"
-                        ),
+                        React.createElement('h1', { className: "text-2xl md:text-3xl font-bold text-[#3d7a3d]" }, "📞 Contato e Suporte"),
                         React.createElement('button', {
                             onClick: onVoltar,
                             className: "text-sm text-[#4a8a4a] hover:text-[#2d5a2d] flex items-center gap-1"
@@ -6602,7 +6477,6 @@
                         )
                     ),
 
-                    // Apresentação
                     React.createElement('div', { className: "bg-gradient-to-r from-[#f0f7f0] to-[#fff8e7] rounded-xl p-6 mb-8 border border-[#c0dfc0]" },
                         React.createElement('p', { className: "text-lg md:text-xl text-slate-700 mb-4 font-medium" },
                             "Olá, prestadores e clientes da plataforma Sem Limites!"
@@ -6612,31 +6486,10 @@
                             ", idealizador desta iniciativa que nasce com o propósito de transformar a forma como profissionais e clientes se conectam no Brasil."
                         ),
                         React.createElement('p', { className: "text-sm md:text-base text-slate-600 leading-relaxed" },
-                            "A Sem Limites foi criada a partir de uma necessidade real: facilitar o encontro entre pessoas que buscam soluções e profissionais capacitados que desejam expandir sua atuação. ",
-                            "Mais do que uma simples plataforma, buscamos construir um ambiente de confiança, visibilidade e oportunidades, onde cada prestador possa apresentar seu trabalho com dignidade e cada cliente encontre exatamente o que precisa, com segurança e praticidade."
+                            "A Sem Limites foi criada para facilitar o encontro entre pessoas que buscam soluções e profissionais capacitados. Buscamos construir um ambiente de confiança, visibilidade e oportunidades."
                         )
                     ),
 
-                    // Missão
-                    React.createElement('div', { className: "mb-8" },
-                        React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 flex items-center gap-2" },
-                            React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" })
-                            ),
-                            "Nossa Missão"
-                        ),
-                        React.createElement('p', { className: "text-sm md:text-base text-slate-600 leading-relaxed" },
-                            "Acreditamos que a valorização do trabalho e a conexão direta entre as pessoas são pilares fundamentais para impulsionar não apenas negócios, mas também histórias, sonhos e crescimento profissional."
-                        ),
-                        React.createElement('p', { className: "text-sm md:text-base text-slate-600 leading-relaxed mt-3" },
-                            "Estamos em constante evolução e, por isso, sua participação é essencial. Sugestões, críticas e ideias são sempre bem-vindas — são elas que nos ajudam a aprimorar a plataforma e fortalecer nossa missão de contribuir para um mercado de serviços mais acessível, transparente e eficiente."
-                        ),
-                        React.createElement('p', { className: "text-sm md:text-base text-slate-600 leading-relaxed mt-3 font-medium" },
-                            "Se você deseja colaborar, sugerir melhorias, estabelecer parcerias ou simplesmente entrar em contato, será um prazer falar com você."
-                        )
-                    ),
-
-                    // Contato
                     React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-6 border border-[#c0dfc0] mb-8" },
                         React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-6 flex items-center gap-2" },
                             React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -6649,7 +6502,7 @@
                             React.createElement('div', { className: "flex items-center gap-4 p-4 bg-white rounded-xl border border-[#c0dfc0]" },
                                 React.createElement('div', { className: "w-12 h-12 bg-[#25D366] rounded-full flex items-center justify-center" },
                                     React.createElement('svg', { className: "w-6 h-6 text-white", fill: "currentColor", viewBox: "0 0 24 24" },
-                                        React.createElement('path', { d: "M12.001 2C6.478 2 2 6.478 2 12c0 1.85.502 3.647 1.425 5.204L2.038 21.5l4.379-1.282c1.5.852 3.2 1.321 5.022 1.321 5.523 0 10-4.478 10-10s-4.477-10-10-10zm0 18c-1.502 0-2.93-.421-4.166-1.166l-.3-.178-2.7.79.79-2.6-.164-.312A7.968 7.968 0 014 12c0-4.411 3.589-8 8.001-8 4.41 0 7.999 3.589 7.999 8 0 4.412-3.589 8-7.999 8z" }),
+                                        React.createElement('path', { d: "M12.001 2C6.478 2 2 6.478 2 12c0 1.85.502 3.647 1.425 5.204L2.038 21.5l4.379-1.282c1.5.852 3.2 1.321 5.022 1.321 5.523 0 10-4.478 10-10s-4.477-10-10-10z" }),
                                         React.createElement('path', { d: "M13.099 14.302l-1.8-.8c-.3-.1-.6-.1-.8.1l-1.2 1.4c-.1.1-.2.1-.3.1-.1 0-.2 0-.3-.1-1.3-.8-2.4-1.9-3.2-3.2 0-.1 0-.2.1-.3l1.4-1.2c.1-.1.2-.3.1-.5l-.8-1.8c0-.2-.2-.4-.4-.4h-1.4c-.2 0-.4.2-.4.4 0 2.8 1.4 5.4 3.7 7 2.3 1.6 5 2.1 7.6 1.2.2-.1.4-.3.4-.5v-1.4c.2-.2 0-.4-.2-.5z" })
                                     )
                                 ),
@@ -6681,7 +6534,6 @@
                         )
                     ),
 
-                    // Parcerias
                     React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-6 border border-[#FFE3A0] mb-8" },
                         React.createElement('h2', { className: "text-xl font-bold text-[#F09030] mb-4 flex items-center gap-2" },
                             React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -6692,9 +6544,6 @@
                         React.createElement('p', { className: "text-sm md:text-base text-slate-600 leading-relaxed mb-4" },
                             "Estamos abertos a parcerias estratégicas, patrocinadores e profissionais que desejam crescer junto com a plataforma."
                         ),
-                        React.createElement('p', { className: "text-sm md:text-base text-slate-600 leading-relaxed font-medium" },
-                            "Se você acredita no potencial da Sem Limites, será muito bem-vindo(a) para fazer parte desta jornada."
-                        ),
                         React.createElement('div', { className: "mt-4 text-center" },
                             React.createElement('a', {
                                 href: "mailto:caerod@gmail.com?subject=Parceria%20Sem%20Limites",
@@ -6703,15 +6552,11 @@
                         )
                     ),
 
-                    // Mensagem final
                     React.createElement('div', { className: "text-center pt-4 border-t border-[#c0dfc0]" },
                         React.createElement('p', { className: "text-sm text-slate-500" },
                             "Desejo a todos excelentes conexões e ótimos negócios."
                         ),
-                        React.createElement('p', { className: "text-sm font-medium text-[#3d7a3d] mt-3" },
-                            "Atenciosamente,"
-                        ),
-                        React.createElement('p', { className: "text-base font-bold text-[#3d7a3d] mt-1" },
+                        React.createElement('p', { className: "text-base font-bold text-[#3d7a3d] mt-3" },
                             "Rodrigo Caetano"
                         ),
                         React.createElement('p', { className: "text-xs text-slate-400 mt-1" },
@@ -6726,65 +6571,11 @@
         function FaqPrestadores(props) {
             var onVoltar = props.onVoltar;
             
-            var faqItems = [
-                {
-                    question: "Como faço para me cadastrar como prestador?",
-                    answer: "É muito simples! No canto superior direito da página inicial, clique no botão \"Sou Prestador\". Você será direcionado para um formulário onde deverá preencher seus dados (nome ou empresa, e-mail, senha, CPF/CNPJ, localização, etc.). Após o preenchimento e aceite dos Termos de Uso, você será direcionado para a área de pagamento. Após a confirmação do pagamento da mensalidade, sua conta será ativada imediatamente."
-                },
-                {
-                    question: "Esqueci minha senha. O que faço?",
-                    answer: "Sem problemas! Na página de login, clique no link \"Esqueceu a senha?\". Digite o e-mail cadastrado e enviaremos um link para você criar uma nova senha com segurança."
-                },
-                {
-                    question: "Posso alterar meu e-mail ou senha depois do cadastro?",
-                    answer: "Sim! Dentro do seu Dashboard do Prestador, na seção de edição de perfil, você encontra as opções para alterar seu e-mail e senha a qualquer momento."
-                },
-                {
-                    question: "É seguro fornecer meu CPF ou CNPJ?",
-                    answer: "Totalmente. A segurança dos seus dados é nossa prioridade. Utilizamos criptografia de ponta e seguimos rigorosamente a Lei Geral de Proteção de Dados (LGPD). Seus dados são usados apenas para a validação da sua conta e para garantir a transparência da plataforma para os clientes."
-                },
-                {
-                    question: "Como posso deixar meu perfil mais atrativo para clientes?",
-                    answer: "Um perfil completo é a chave do sucesso! Invista em: Foto profissional (imagem de qualidade, fundo neutro), Descrição detalhada (conte sua história e experiência), Especialidades e Certificações (liste cursos e qualificações), e mantenha seu portfólio de serviços sempre atualizado."
-                },
-                {
-                    question: "Como funciona o cadastro de um serviço?",
-                    answer: "Após realizar um trabalho, vá até a aba \"Serviços\" no seu Dashboard e clique em \"Novo Serviço\". Você preencherá os dados do cliente (nome, WhatsApp, e-mail), o título e a descrição do serviço, e a data de realização. Pronto! Um link de avaliação exclusivo será gerado."
-                },
-                {
-                    question: "Como envio o link de avaliação para o cliente?",
-                    answer: "No Dashboard, na lista de serviços \"Aguardando\", você tem duas opções: 1) 📋 Copiar link - você copia e envia manualmente; 2) 📱 Enviar via WhatsApp - com um clique, uma mensagem automática é enviada para o WhatsApp do cliente, com o link e as instruções."
-                },
-                {
-                    question: "O que significa o status \"Aguardando\", \"Avaliado\" e \"Expirado\"?",
-                    answer: "⏳ Aguardando: O link foi gerado, mas o cliente ainda não avaliou (válido por 30 dias). ✅ Avaliado: O cliente já deixou sua avaliação. ⌛ Expirado: O prazo de 30 dias se esgotou e o link não é mais válido."
-                },
-                {
-                    question: "Como é calculada a minha reputação (minhas estrelas)?",
-                    answer: "Sua reputação é a média aritmética de todas as notas (de 1 a 5 estrelas) que você recebeu dos clientes em serviços avaliados. Quanto mais avaliações positivas, mais alta e consistente será sua nota."
-                },
-                {
-                    question: "Um cliente deixou uma avaliação negativa. O que posso fazer?",
-                    answer: "A transparência é um dos pilares do SemLimites. Analise o feedback, reflita sobre o comentário e use como aprendizado. A melhor forma de equilibrar uma nota negativa é continuar prestando serviços de excelência e acumulando avaliações positivas."
-                },
-                {
-                    question: "Como funciona a mensalidade do SemLimites?",
-                    answer: "O SemLimites cobra uma mensalidade acessível para manter seu perfil ativo e ter acesso a todas as ferramentas de gestão. O pagamento é processado pelo Mercado Pago de forma segura. Você pode cancelar sua assinatura a qualquer momento através da opção \"Excluir minha conta\" na Zona de Perigo do Dashboard."
-                },
-                {
-                    question: "Como faço para excluir minha conta permanentemente?",
-                    answer: "Dentro do seu Dashboard, na seção \"Zona de Perigo\", você encontrará a opção para iniciar o processo de exclusão permanente. Será necessário confirmar seu nome e digitar a frase \"EXCLUIR PERMANENTEMENTE\" para proteção contra exclusões acidentais. Ao confirmar, sua assinatura será automaticamente cancelada e todos os seus dados serão removidos do sistema."
-                }
-            ];
-            
             return React.createElement('div', { className: "max-w-4xl mx-auto px-4 py-8 md:py-12" },
                 React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-6 md:p-8 shadow-sm" },
                     
-                    // Cabeçalho
                     React.createElement('div', { className: "flex items-center justify-between mb-8" },
-                        React.createElement('h1', { className: "text-2xl md:text-3xl font-bold text-[#3d7a3d]" }, 
-                            "❓ FAQ para Prestadores"
-                        ),
+                        React.createElement('h1', { className: "text-2xl md:text-3xl font-bold text-[#3d7a3d]" }, "❓ FAQ para Prestadores"),
                         React.createElement('button', {
                             onClick: onVoltar,
                             className: "text-sm text-[#4a8a4a] hover:text-[#2d5a2d] flex items-center gap-1"
@@ -6800,88 +6591,72 @@
                         "Perguntas frequentes para quem oferece serviços"
                     ),
 
-                    // Categorias de FAQ
                     React.createElement('div', { className: "space-y-6" },
-                        // Cadastro e Conta
                         React.createElement('div', null,
                             React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 pb-2 border-b border-[#c0dfc0]" }, "1. Cadastro e Conta"),
                             React.createElement('div', { className: "space-y-4" },
-                                faqItems.filter(function(item, index) { return index < 4; }).map(function(item, idx) {
-                                    return React.createElement('div', { key: idx, className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                        React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, item.question),
-                                        React.createElement('p', { className: "text-sm text-slate-600 leading-relaxed" }, item.answer)
-                                    );
-                                })
+                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Como faço para me cadastrar como prestador?"),
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, "No canto superior direito, clique em \"Sou Prestador\". Preencha seus dados, aceite os Termos de Uso e realize o pagamento da mensalidade. Após confirmação, sua conta será ativada.")
+                                ),
+                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Esqueci minha senha. O que faço?"),
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, "Na página de login, clique em \"Esqueceu a senha?\". Digite seu e-mail e enviaremos um link para criar uma nova senha.")
+                                ),
+                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "É seguro fornecer meu CPF ou CNPJ?"),
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, "Sim! Utilizamos criptografia e seguimos a LGPD. Seus dados são usados apenas para validação da conta e transparência.")
+                                )
                             )
                         ),
                         
-                        // Perfil Profissional
                         React.createElement('div', null,
-                            React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 pb-2 border-b border-[#c0dfc0]" }, "2. Perfil Profissional"),
+                            React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 pb-2 border-b border-[#c0dfc0]" }, "2. Perfil e Serviços"),
                             React.createElement('div', { className: "space-y-4" },
-                                faqItems.filter(function(item, index) { return index >= 4 && index < 5; }).map(function(item, idx) {
-                                    return React.createElement('div', { key: idx, className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                        React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, item.question),
-                                        React.createElement('p', { className: "text-sm text-slate-600 leading-relaxed" }, item.answer)
-                                    );
-                                })
+                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Como deixo meu perfil mais atrativo?"),
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, "Invista em foto profissional, descrição detalhada, liste suas especialidades e certificações. Quanto mais completo, mais confiança você passa.")
+                                ),
+                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Como funciona o cadastro de um serviço?"),
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, "No Dashboard, aba \"Serviços\", clique em \"Novo Serviço\". Preencha os dados do cliente e do serviço. Um link de avaliação exclusivo será gerado.")
+                                ),
+                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Como envio o link de avaliação?"),
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, "Você pode copiar o link e enviar manualmente ou usar o botão WhatsApp, que envia uma mensagem automática com todas as instruções.")
+                                )
                             )
                         ),
                         
-                        // Funcionamento da Plataforma e Serviços
                         React.createElement('div', null,
-                            React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 pb-2 border-b border-[#c0dfc0]" }, "3. Funcionamento da Plataforma e Serviços"),
+                            React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 pb-2 border-b border-[#c0dfc0]" }, "3. Avaliações e Reputação"),
                             React.createElement('div', { className: "space-y-4" },
-                                faqItems.filter(function(item, index) { return index >= 5 && index < 8; }).map(function(item, idx) {
-                                    return React.createElement('div', { key: idx, className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                        React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, item.question),
-                                        React.createElement('p', { className: "text-sm text-slate-600 leading-relaxed" }, item.answer)
-                                    );
-                                })
+                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Como é calculada minha reputação?"),
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, "É a média de todas as notas (1 a 5 estrelas) que você recebeu dos clientes em serviços avaliados.")
+                                ),
+                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "O que fazer com uma avaliação negativa?"),
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, "Analise o feedback, reflita e use como aprendizado. Continue prestando serviços de excelência para equilibrar sua nota.")
+                                )
                             )
                         ),
                         
-                        // Avaliações e Reputação
                         React.createElement('div', null,
-                            React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 pb-2 border-b border-[#c0dfc0]" }, "4. Avaliações e Reputação"),
+                            React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 pb-2 border-b border-[#c0dfc0]" }, "4. Pagamentos e Planos"),
                             React.createElement('div', { className: "space-y-4" },
-                                faqItems.filter(function(item, index) { return index >= 8 && index < 10; }).map(function(item, idx) {
-                                    return React.createElement('div', { key: idx, className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                        React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, item.question),
-                                        React.createElement('p', { className: "text-sm text-slate-600 leading-relaxed" }, item.answer)
-                                    );
-                                })
-                            )
-                        ),
-                        
-                        // Pagamentos e Planos
-                        React.createElement('div', null,
-                            React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 pb-2 border-b border-[#c0dfc0]" }, "5. Pagamentos e Planos"),
-                            React.createElement('div', { className: "space-y-4" },
-                                faqItems.filter(function(item, index) { return index >= 10 && index < 11; }).map(function(item, idx) {
-                                    return React.createElement('div', { key: idx, className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0]" },
-                                        React.createElement('h3', { className: "font-semibold text-[#F09030] mb-2" }, item.question),
-                                        React.createElement('p', { className: "text-sm text-slate-600 leading-relaxed" }, item.answer)
-                                    );
-                                })
-                            )
-                        ),
-                        
-                        // Suporte e Problemas Técnicos
-                        React.createElement('div', null,
-                            React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 pb-2 border-b border-[#c0dfc0]" }, "6. Suporte e Problemas Técnicos"),
-                            React.createElement('div', { className: "space-y-4" },
-                                faqItems.filter(function(item, index) { return index >= 11; }).map(function(item, idx) {
-                                    return React.createElement('div', { key: idx, className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                        React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, item.question),
-                                        React.createElement('p', { className: "text-sm text-slate-600 leading-relaxed" }, item.answer)
-                                    );
-                                })
+                                React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#F09030] mb-2" }, "Como funciona a mensalidade?"),
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, "O SemLimites cobra uma mensalidade acessível para manter seu perfil ativo. O pagamento é processado pelo Mercado Pago. Você pode cancelar sua assinatura a qualquer momento.")
+                                ),
+                                React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#F09030] mb-2" }, "Como faço para excluir minha conta?"),
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, "No Dashboard, vá até a \"Zona de Perigo\", clique em \"Excluir minha conta permanentemente\", confirme com seu nome e a frase \"EXCLUIR PERMANENTEMENTE\". Sua assinatura será cancelada automaticamente.")
+                                )
                             )
                         )
                     ),
                     
-                    // Botão de contato
                     React.createElement('div', { className: "mt-8 p-6 bg-gradient-to-r from-[#f0f7f0] to-[#fff8e7] rounded-xl border border-[#c0dfc0] text-center" },
                         React.createElement('p', { className: "text-sm md:text-base text-slate-600 mb-4" },
                             "Não encontrou o que procura? Entre em contato conosco!"
@@ -6899,77 +6674,11 @@
         function FaqClientes(props) {
             var onVoltar = props.onVoltar;
             
-            var faqItems = [
-                {
-                    question: "Preciso me cadastrar para buscar profissionais?",
-                    answer: "Não! A busca por profissionais no SemLimites é aberta e gratuita para todos. Você pode pesquisar, filtrar e visualizar perfis sem precisar fazer login. No entanto, para usar funcionalidades exclusivas como favoritar profissionais, é necessário criar uma conta gratuita."
-                },
-                {
-                    question: "Como faço para me cadastrar como cliente?",
-                    answer: "É muito rápido! No canto superior direito, clique em \"Entrar\" e depois em \"Criar conta\". Escolha a opção \"Cliente\", preencha seu e-mail e crie uma senha. Pronto! Sua conta estará criada e você poderá começar a curtir e salvar seus profissionais favoritos."
-                },
-                {
-                    question: "O cadastro de cliente é gratuito?",
-                    answer: "Sim! O cadastro e todas as funcionalidades para clientes são 100% gratuitos. Você nunca pagará nada para buscar, curtir, favoritar ou entrar em contato com prestadores."
-                },
-                {
-                    question: "Como encontro um profissional perto de mim?",
-                    answer: "Na página inicial, utilize o filtro de \"Cidade\" para buscar profissionais na sua região. Você pode digitar o nome da sua cidade e refinar ainda mais com o filtro de estado."
-                },
-                {
-                    question: "Quais filtros posso usar na busca?",
-                    answer: "Temos filtros inteligentes: Cidade (localize profissionais próximos), Categoria (escolha o tipo de serviço), Serviço Específico (refine ainda mais), Nome ou Palavra-chave (busque por profissional ou especialidade)."
-                },
-                {
-                    question: "Como posso avaliar um profissional que contratei?",
-                    answer: "O prestador enviará para você um link exclusivo de avaliação (geralmente via WhatsApp). Ao clicar no link, você precisará confirmar seu e-mail (o mesmo que informou ao profissional) e poderá dar uma nota de 1 a 5 estrelas e deixar um comentário sobre o serviço realizado."
-                },
-                {
-                    question: "Preciso estar logado para avaliar?",
-                    answer: "Não! A avaliação é feita através do link exclusivo, que é único para cada serviço. Você só precisará confirmar seu e-mail para garantir a autenticidade."
-                },
-                {
-                    question: "O que significa \"Curtir\" um profissional?",
-                    answer: "Curtir é uma forma de você demonstrar que gostou do perfil daquele profissional e quer guardá-lo para referência futura. É como um \"favorito\". Cada curtida também serve como um reconhecimento público para o prestador."
-                },
-                {
-                    question: "Onde encontro os profissionais que curti?",
-                    answer: "Todos os profissionais que você curtiu ficam salvos no seu Dashboard do Cliente, na seção \"Meus Favoritos\". Para acessar, clique no botão \"Favoritos ❤️\" no cabeçalho do site (quando estiver logado)."
-                },
-                {
-                    question: "Posso remover um profissional dos meus favoritos?",
-                    answer: "Claro! Dentro do seu Dashboard de Cliente, cada profissional favorito tem um botão para ser removido da lista. Basta clicar e confirmar."
-                },
-                {
-                    question: "Como entro em contato com um profissional?",
-                    answer: "No perfil de cada prestador, você encontrará um botão verde de WhatsApp. Com apenas um clique, você será redirecionado para uma conversa com ele, já com uma mensagem prontinha para solicitar um orçamento."
-                },
-                {
-                    question: "A plataforma cobra alguma taxa sobre o valor do serviço?",
-                    answer: "Não! O SemLimites é 100% gratuito para clientes. Você não paga nada para buscar, entrar em contato ou contratar. A negociação financeira é feita diretamente entre você e o prestador."
-                },
-                {
-                    question: "O SemLimites garante a qualidade do serviço prestado?",
-                    answer: "A plataforma atua como um canal de conexão e divulgação, oferecendo todas as ferramentas para você escolher com segurança (avaliações, perfis detalhados). No entanto, a responsabilidade pela execução do serviço é integralmente do prestador contratado."
-                },
-                {
-                    question: "Como faço para excluir minha conta de cliente?",
-                    answer: "Dentro do seu Dashboard do Cliente, na seção \"Zona de Perigo\", você encontrará a opção para iniciar o processo de exclusão permanente. Será necessário confirmar seu e-mail e digitar a frase \"EXCLUIR PERMANENTEMENTE\" para proteção contra exclusões acidentais."
-                },
-                {
-                    question: "Meus dados pessoais estão seguros?",
-                    answer: "Totalmente! Utilizamos as melhores práticas de segurança e criptografia para proteger suas informações. Seguimos rigorosamente a Lei Geral de Proteção de Dados (LGPD) e nunca compartilhamos seus dados sem sua autorização."
-                }
-            ];
-            
             return React.createElement('div', { className: "max-w-4xl mx-auto px-4 py-8 md:py-12" },
                 React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-6 md:p-8 shadow-sm" },
                     
-                    // Cabeçalho
                     React.createElement('div', { className: "flex items-center justify-between mb-8" },
-                        React.createElement('h1', { className: "text-2xl md:text-3xl font-bold text-[#3d7a3d]" }, 
-                            "❓ FAQ para Clientes"
-                        ),
+                        React.createElement('h1', { className: "text-2xl md:text-3xl font-bold text-[#3d7a3d]" }, "❓ FAQ para Clientes"),
                         React.createElement('button', {
                             onClick: onVoltar,
                             className: "text-sm text-[#4a8a4a] hover:text-[#2d5a2d] flex items-center gap-1"
@@ -6985,88 +6694,96 @@
                         "Perguntas frequentes para quem contrata serviços"
                     ),
 
-                    // Categorias de FAQ
                     React.createElement('div', { className: "space-y-6" },
-                        // Primeiros Passos e Cadastro
                         React.createElement('div', null,
                             React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 pb-2 border-b border-[#c0dfc0]" }, "1. Primeiros Passos e Cadastro"),
                             React.createElement('div', { className: "space-y-4" },
-                                faqItems.filter(function(item, index) { return index < 3; }).map(function(item, idx) {
-                                    return React.createElement('div', { key: idx, className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                        React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, item.question),
-                                        React.createElement('p', { className: "text-sm text-slate-600 leading-relaxed" }, item.answer)
-                                    );
-                                })
+                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Preciso me cadastrar para buscar profissionais?"),
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, "Não! A busca é aberta e gratuita. Para favoritar profissionais, você precisa criar uma conta gratuita.")
+                                ),
+                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Como faço para me cadastrar como cliente?"),
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, "Clique em \"Entrar\" e depois em \"Criar conta\". Escolha \"Cliente\", preencha e-mail e senha. É gratuito!")
+                                ),
+                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "O cadastro de cliente é gratuito?"),
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, "Sim! 100% gratuito. Você nunca pagará nada para buscar, curtir ou entrar em contato com prestadores.")
+                                )
                             )
                         ),
                         
-                        // Buscando Profissionais
                         React.createElement('div', null,
                             React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 pb-2 border-b border-[#c0dfc0]" }, "2. Buscando Profissionais"),
                             React.createElement('div', { className: "space-y-4" },
-                                faqItems.filter(function(item, index) { return index >= 3 && index < 5; }).map(function(item, idx) {
-                                    return React.createElement('div', { key: idx, className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                        React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, item.question),
-                                        React.createElement('p', { className: "text-sm text-slate-600 leading-relaxed" }, item.answer)
-                                    );
-                                })
+                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Como encontro um profissional perto de mim?"),
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, "Use o filtro de \"Cidade\" na página inicial para buscar profissionais na sua região.")
+                                ),
+                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Quais filtros posso usar?"),
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, "Cidade, Categoria, Serviço Específico e Nome/Palavra-chave para refinar sua busca.")
+                                )
                             )
                         ),
                         
-                        // Avaliações e Transparência
                         React.createElement('div', null,
                             React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 pb-2 border-b border-[#c0dfc0]" }, "3. Avaliações e Transparência"),
                             React.createElement('div', { className: "space-y-4" },
-                                faqItems.filter(function(item, index) { return index >= 5 && index < 7; }).map(function(item, idx) {
-                                    return React.createElement('div', { key: idx, className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                        React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, item.question),
-                                        React.createElement('p', { className: "text-sm text-slate-600 leading-relaxed" }, item.answer)
-                                    );
-                                })
+                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Como posso avaliar um profissional?"),
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, "O prestador enviará um link exclusivo. Clique, confirme seu e-mail e avalie com notas e comentários.")
+                                ),
+                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Preciso estar logado para avaliar?"),
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, "Não! A avaliação é feita pelo link. Basta confirmar seu e-mail para autenticidade.")
+                                )
                             )
                         ),
                         
-                        // Favoritos e Curtidas
                         React.createElement('div', null,
                             React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 pb-2 border-b border-[#c0dfc0]" }, "4. Favoritos e Curtidas"),
                             React.createElement('div', { className: "space-y-4" },
-                                faqItems.filter(function(item, index) { return index >= 7 && index < 10; }).map(function(item, idx) {
-                                    return React.createElement('div', { key: idx, className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0]" },
-                                        React.createElement('h3', { className: "font-semibold text-[#F09030] mb-2" }, item.question),
-                                        React.createElement('p', { className: "text-sm text-slate-600 leading-relaxed" }, item.answer)
-                                    );
-                                })
+                                React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#F09030] mb-2" }, "O que significa \"Curtir\" um profissional?"),
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, "É como um favorito. Você guarda o profissional para referência futura e ele recebe um reconhecimento público.")
+                                ),
+                                React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#F09030] mb-2" }, "Onde encontro os profissionais que curti?"),
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, "No Dashboard do Cliente, clicando em \"Favoritos ❤️\" no cabeçalho.")
+                                )
                             )
                         ),
                         
-                        // Contato e Contratação
                         React.createElement('div', null,
                             React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 pb-2 border-b border-[#c0dfc0]" }, "5. Contato e Contratação"),
                             React.createElement('div', { className: "space-y-4" },
-                                faqItems.filter(function(item, index) { return index >= 10 && index < 12; }).map(function(item, idx) {
-                                    return React.createElement('div', { key: idx, className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                        React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, item.question),
-                                        React.createElement('p', { className: "text-sm text-slate-600 leading-relaxed" }, item.answer)
-                                    );
-                                })
+                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Como entro em contato com um profissional?"),
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, "No perfil, clique no botão verde de WhatsApp. Uma conversa será iniciada com mensagem pronta.")
+                                ),
+                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "A plataforma cobra alguma taxa?"),
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, "Não! O SemLimites é 100% gratuito para clientes. A negociação é direta com o prestador.")
+                                )
                             )
                         ),
                         
-                        // Suporte e Problemas Técnicos
                         React.createElement('div', null,
                             React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 pb-2 border-b border-[#c0dfc0]" }, "6. Suporte e Problemas Técnicos"),
                             React.createElement('div', { className: "space-y-4" },
-                                faqItems.filter(function(item, index) { return index >= 12 && index < 15; }).map(function(item, idx) {
-                                    return React.createElement('div', { key: idx, className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                        React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, item.question),
-                                        React.createElement('p', { className: "text-sm text-slate-600 leading-relaxed" }, item.answer)
-                                    );
-                                })
+                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Como faço para excluir minha conta de cliente?"),
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, "No Dashboard, vá até a \"Zona de Perigo\", clique em \"Excluir minha conta permanentemente\", confirme com seu e-mail e a frase \"EXCLUIR PERMANENTEMENTE\".")
+                                ),
+                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Meus dados pessoais estão seguros?"),
+                                    React.createElement('p', { className: "text-sm text-slate-600" }, "Sim! Utilizamos criptografia e seguimos a LGPD. Nunca compartilhamos seus dados sem autorização.")
+                                )
                             )
                         )
                     ),
                     
-                    // Botão de ação
                     React.createElement('div', { className: "mt-8 p-6 bg-gradient-to-r from-[#f0f7f0] to-[#fff8e7] rounded-xl border border-[#c0dfc0] text-center" },
                         React.createElement('p', { className: "text-sm md:text-base text-slate-600 mb-4" },
                             "Pronto para encontrar o profissional ideal?"
@@ -7078,8 +6795,7 @@
                     )
                 )
             );
-        }
-
+        } 
         // ========== COMPONENTE DE RODAPÉ ==========
         function Rodape(props) {
             var onNavigate = props.onNavigate;
