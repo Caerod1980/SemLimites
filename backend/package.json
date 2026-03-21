@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "create-admin": "node scripts/createAdmin.js",
-    "reset-admin": "node scripts/resetAdminPassword.js",
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "popular-categorias": "node src/scripts/popularCategorias.js"
+    "popular-categorias": "node src/scripts/popularCategorias.js",
+    "create-admin": "node src/scripts/createAdmin.js",
+    "reset-admin": "node src/scripts/resetAdminPassword.js"
   },
   "dependencies": {
     "@azure/storage-blob": "^12.26.0",
