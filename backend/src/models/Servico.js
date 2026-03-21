@@ -36,7 +36,7 @@ const servicoSchema = new mongoose.Schema({
   
   clienteEmail: { 
     type: String,
-    required: true, // <---- ADICIONADO: AGORA É OBRIGATÓRIO
+    required: true,
     trim: true,
     lowercase: true,
     match: [/^\S+@\S+\.\S+$/, 'E-mail inválido']
@@ -46,7 +46,8 @@ const servicoSchema = new mongoose.Schema({
   titulo: { 
     type: String, 
     required: true,
-    trim: true
+    trim: true,
+    maxlength: 20
   },
   
   descricao: { 
@@ -62,7 +63,8 @@ const servicoSchema = new mongoose.Schema({
   
   valor: {
     type: Number,
-    min: 0
+    min: 0,
+    default: null
   },
 
   // ========== TOKEN DE AVALIAÇÃO ==========
@@ -132,7 +134,8 @@ const servicoSchema = new mongoose.Schema({
 // ========== VIRTUAIS ==========
 servicoSchema.virtual('linkAvaliacao').get(function() {
   if (!this.avaliacaoToken) return null;
-  return `${process.env.FRONTEND_URL}/avaliar/${this.avaliacaoToken}`;
+  const frontendUrl = process.env.FRONTEND_URL || 'https://semlimites.com.br';
+  return `${frontendUrl}/avaliar/${this.avaliacaoToken}`;
 });
 
 servicoSchema.virtual('mensagemWhatsApp').get(function() {
@@ -147,6 +150,8 @@ servicoSchema.virtual('mensagemWhatsApp').get(function() {
 servicoSchema.index({ prestadorId: 1, status: 1 });
 servicoSchema.index({ prestadorId: 1, createdAt: -1 });
 servicoSchema.index({ avaliacaoToken: 1 }, { unique: true, sparse: true });
+servicoSchema.index({ status: 1, 'avaliacao.dataAvaliacao': -1 }); // NOVO: para admin - últimas avaliações
+servicoSchema.index({ prestadorId: 1, createdAt: -1, status: 1 }); // NOVO: para consultas combinadas
 
 // ========== MIDDLEWARES ==========
 servicoSchema.pre('save', function(next) {
@@ -165,6 +170,22 @@ servicoSchema.methods.gerarTokenAvaliacao = function() {
   this.avaliacaoToken = token;
   this.tokenExpiracao = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 dias
   this.tokenUsado = false;
+  this.status = 'aguardando';
+  
+  return token;
+};
+
+/**
+ * Regenerar token (para reenvio)
+ * @returns {string} Novo token gerado
+ */
+servicoSchema.methods.regenerarToken = function() {
+  const token = crypto.randomBytes(16).toString('hex');
+  
+  this.avaliacaoToken = token;
+  this.tokenExpiracao = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 dias
+  this.tokenUsado = false;
+  this.status = 'aguardando';
   
   return token;
 };
@@ -238,7 +259,7 @@ servicoSchema.statics.findByToken = async function(token) {
     tokenUsado: false,
     tokenExpiracao: { $gt: new Date() },
     status: 'aguardando'
-  }).populate('prestadorId', 'nome categoria cidade');
+  }).populate('prestadorId', 'nome categoria cidade estado foto');
 };
 
 /**
@@ -264,7 +285,94 @@ servicoSchema.statics.findByPrestador = async function(prestadorId, options = {}
 };
 
 /**
+ * Buscar serviços de um cliente (por email)
+ * @param {string} email - Email do cliente
+ * @param {Object} options - Opções de paginação/filtro
+ */
+servicoSchema.statics.findByClienteEmail = async function(email, options = {}) {
+  const { page = 1, limit = 20, status } = options;
+  
+  const query = { clienteEmail: email.toLowerCase() };
+  if (status) query.status = status;
+  
+  const [servicos, total] = await Promise.all([
+    this.find(query)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip((page - 1) * limit)
+      .populate('prestadorId', 'nome categoria cidade estado foto'),
+    this.countDocuments(query)
+  ]);
+  
+  return { servicos, total, page, totalPages: Math.ceil(total / limit) };
+};
+
+// ========== MÉTODOS ADMIN ==========
+
+/**
+ * Obter últimas avaliações (para painel admin)
+ * @param {number} limit - Quantidade máxima de resultados
+ * @returns {Promise<Array>} Lista de avaliações recentes
+ */
+servicoSchema.statics.getUltimasAvaliacoes = async function(limit = 10) {
+  const avaliacoes = await this.find({
+    status: 'avaliado',
+    'avaliacao.estrelas': { $exists: true }
+  })
+    .sort({ 'avaliacao.dataAvaliacao': -1 })
+    .limit(limit)
+    .populate('prestadorId', 'nome email cidade estado')
+    .select('clienteNome avaliacao prestadorId titulo dataRealizacao');
+  
+  return avaliacoes.map(servico => ({
+    id: servico._id,
+    estrelas: servico.avaliacao.estrelas,
+    comentario: servico.avaliacao.comentario || '',
+    cliente: servico.clienteNome,
+    profissional: servico.prestadorId?.nome || 'Profissional',
+    profissionalId: servico.prestadorId?._id,
+    profissionalEmail: servico.prestadorId?.email,
+    tituloServico: servico.titulo,
+    data: servico.avaliacao.dataAvaliacao,
+    dataRealizacao: servico.dataRealizacao
+  }));
+};
+
+/**
+ * Obter estatísticas de avaliações (para admin)
+ * @returns {Promise<Object>} Estatísticas consolidadas
+ */
+servicoSchema.statics.getEstatisticasAvaliacoes = async function() {
+  const [total, media, distribuicao] = await Promise.all([
+    this.countDocuments({ status: 'avaliado' }),
+    this.aggregate([
+      { $match: { status: 'avaliado', 'avaliacao.estrelas': { $exists: true } } },
+      { $group: { _id: null, media: { $avg: '$avaliacao.estrelas' } } }
+    ]),
+    this.aggregate([
+      { $match: { status: 'avaliado', 'avaliacao.estrelas': { $exists: true } } },
+      { $group: { _id: '$avaliacao.estrelas', count: { $sum: 1 } } },
+      { $sort: { _id: 1 } }
+    ])
+  ]);
+  
+  const distribuicaoMap = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  distribuicao.forEach(item => {
+    if (item._id >= 1 && item._id <= 5) {
+      distribuicaoMap[item._id] = item.count;
+    }
+  });
+  
+  return {
+    total,
+    media: media[0]?.media || 0,
+    distribuicao: distribuicaoMap
+  };
+};
+
+/**
  * Limpar tokens expirados (job diário)
+ * @returns {Promise<Object>} Resultado da operação
  */
 servicoSchema.statics.cleanExpiredTokens = async function() {
   const result = await this.updateMany(
@@ -277,6 +385,17 @@ servicoSchema.statics.cleanExpiredTokens = async function() {
   );
   
   console.log(`🧹 Limpeza de tokens: ${result.modifiedCount} serviços expirados`);
+  return result;
+};
+
+/**
+ * Excluir todos os serviços de um prestador (para exclusão de conta)
+ * @param {string} prestadorId - ID do prestador
+ * @returns {Promise<Object>} Resultado da operação
+ */
+servicoSchema.statics.excluirPorPrestador = async function(prestadorId) {
+  const result = await this.deleteMany({ prestadorId });
+  console.log(`🗑️ ${result.deletedCount} serviços excluídos para prestador ${prestadorId}`);
   return result;
 };
 
