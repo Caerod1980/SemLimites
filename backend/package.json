@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "create-admin": "node scripts/createAdmin.js",
+    "reset-admin": "node scripts/resetAdminPassword.js",
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
     "popular-categorias": "node src/scripts/popularCategorias.js"
