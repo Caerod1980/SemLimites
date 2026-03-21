@@ -1,4 +1,4 @@
-// models/User.js - ATUALIZADO COM SUPORTE ADMIN
+// models/User.js - ATUALIZADO COM SUPORTE PAINEL ADMIN
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
