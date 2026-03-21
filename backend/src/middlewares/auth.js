@@ -1,8 +1,12 @@
 // /src/middlewares/auth.js
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import Prestador from '../models/Prestador.js'; // IMPORTANTE: Importar o modelo Prestador
+import Prestador from '../models/Prestador.js';
 
+/**
+ * Middleware de autenticação
+ * Suporta usuários normais (cliente/prestador) e administradores
+ */
 const authMiddleware = async (req, res, next) => {
   try {
     // Verificar se o token foi enviado
@@ -39,13 +43,15 @@ const authMiddleware = async (req, res, next) => {
     // Anexar usuário à requisição com todos os campos necessários
     req.usuario = {
       id: user._id,
-      userId: user._id, // Para compatibilidade
+      userId: user._id,
       email: user.email,
       tipo: user.tipo,
       prestadorId: user.prestadorId || decoded.prestadorId,
-      planoStatus: planoStatus, // NOVO: Status do plano
-      prestador: prestadorData, // NOVO: Dados completos do prestador
-      decodedId: decoded.userId || decoded.id
+      planoStatus: planoStatus,
+      prestador: prestadorData,
+      decodedId: decoded.userId || decoded.id,
+      // Campos adicionais para admin
+      isAdmin: user.tipo === 'admin'
     };
 
     // ===== PROTEÇÃO DE ACESSO BASEADA NO STATUS DO PLANO =====
@@ -60,7 +66,8 @@ const authMiddleware = async (req, res, next) => {
         '/upload',          // Upload de fotos
         '/webhooks',        // Webhooks (público)
         '/health',          // Health check
-        '/test'             // Rotas de teste
+        '/test',            // Rotas de teste
+        '/admin'            // Rotas admin (separadas, mas com verificação própria)
       ];
       
       // Verificar se a rota atual está na lista de permitidas
@@ -84,7 +91,8 @@ const authMiddleware = async (req, res, next) => {
         email: user.email,
         tipo: user.tipo,
         prestadorId: user.prestadorId,
-        planoStatus: planoStatus
+        planoStatus: planoStatus,
+        isAdmin: user.tipo === 'admin'
       });
     }
 
@@ -103,6 +111,49 @@ const authMiddleware = async (req, res, next) => {
     console.error('❌ Erro no middleware de autenticação:', error);
     return res.status(500).json({ error: 'Erro interno no servidor' });
   }
+};
+
+/**
+ * Middleware específico para verificar se o usuário é administrador
+ * Deve ser usado APÓS o authMiddleware
+ */
+export const isAdmin = async (req, res, next) => {
+  // Verificar se o usuário já foi autenticado pelo authMiddleware
+  if (!req.usuario) {
+    return res.status(401).json({ error: 'Autenticação necessária' });
+  }
+  
+  // Verificar se o usuário é admin
+  if (req.usuario.tipo !== 'admin') {
+    console.warn(`🚫 Acesso negado: Usuário ${req.usuario.id} (${req.usuario.tipo}) tentou acessar rota admin`);
+    return res.status(403).json({ error: 'Acesso negado. Área restrita a administradores.' });
+  }
+  
+  // Log de acesso admin
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`🛡️ Acesso admin autorizado: ${req.usuario.email}`);
+  }
+  
+  next();
+};
+
+/**
+ * Middleware para rotas que exigem que o prestador tenha plano ativo
+ */
+export const planoAtivo = async (req, res, next) => {
+  if (req.usuario.tipo !== 'prestador') {
+    return next();
+  }
+  
+  if (req.usuario.planoStatus !== 'ativo') {
+    return res.status(403).json({
+      error: 'Acesso negado',
+      planoStatus: req.usuario.planoStatus,
+      message: 'Seu plano não está ativo. Complete o pagamento para acessar esta funcionalidade.'
+    });
+  }
+  
+  next();
 };
 
 export default authMiddleware;
