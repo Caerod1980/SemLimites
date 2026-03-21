@@ -1,4 +1,4 @@
-// app.js - VERSÃO CORRIGIDA
+// app.js - VERSÃO ATUALIZADA COM ROTAS ADMIN
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -9,13 +9,13 @@ import servicosRoutes from './routes/servicos.js';
 import categoriasRoutes from './routes/categorias.js';
 import favoritosRoutes from './routes/favoritos.js';
 import usuarioRoutes from './routes/usuarios.js';
-import uploadRoutes from './routes/upload.js';;
+import uploadRoutes from './routes/upload.js';
+import adminRoutes from './routes/admin.js';  // NOVO: Importar rotas admin
 
-// ===== NOVAS IMPORTAÇÕES PARA AS ASSINATURAS =====
+// ===== IMPORTAÇÕES PARA AS ASSINATURAS =====
 import assinaturaRoutes from './routes/assinatura.js';
-// REMOVA esta linha - webhooksRoutes não existe
-// import webhooksRoutes from './routes/webhooks.js';
 import { verificarAssinatura } from './middlewares/assinatura.js';
+import authMiddleware from './middlewares/auth.js'; // Para proteger rotas admin
 
 dotenv.config();
 
@@ -73,25 +73,30 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ===== ORDEM CORRETA DAS ROTAS =====
+
 // 1. Primeiro, rotas públicas (NÃO aplicam verificação de assinatura)
 app.use('/api/auth', authRoutes);
 app.use('/api/categorias', categoriasRoutes);
 
 // 2. Rotas de assinatura (algumas públicas, outras privadas)
-// As rotas públicas dentro de assinaturaRoutes virão primeiro
 app.use('/api/assinatura', assinaturaRoutes);
 
-// 3. Rota pública para chave do Mercado Pago (pode estar dentro de assinaturaRoutes)
-
-// 4. Middleware de verificação de assinatura (APÓS rotas públicas)
+// 3. Middleware de verificação de assinatura (APÓS rotas públicas)
 app.use(verificarAssinatura);
 
-// 5. Rotas protegidas que exigem assinatura
+// 4. Rotas protegidas que exigem assinatura (para prestadores)
 app.use('/api/prestadores', prestadoresRoutes);
 app.use('/api/servicos', servicosRoutes);
 app.use('/api/favoritos', favoritosRoutes);
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/upload', uploadRoutes);
+
+// ===== ROTAS ADMINISTRATIVAS =====
+// NOTA: As rotas admin são protegidas por authMiddleware e isAdmin
+// O middleware isAdmin está dentro do adminRoutes, mas precisamos garantir
+// que o authMiddleware seja aplicado primeiro.
+// Por isso, aplicamos o authMiddleware antes do adminRoutes.
+app.use('/api/admin', authMiddleware, adminRoutes);
 
 // Health check (público)
 app.get('/health', (req, res) => {
@@ -102,6 +107,7 @@ app.get('/health', (req, res) => {
     cors: 'enabled',
     upload: 'enabled',
     assinaturas: 'enabled',
+    admin: 'enabled',  // NOVO: indicar que rotas admin estão ativas
     ambiente: process.env.NODE_ENV || 'development'
   });
 });
@@ -137,6 +143,24 @@ app.get('/test-mercado-pago-config', (req, res) => {
   });
 });
 
+// Rota de teste admin (pública, apenas para verificar se as rotas admin estão carregadas)
+app.get('/test-admin-routes', (req, res) => {
+  res.json({
+    admin_routes_loaded: true,
+    message: 'Rotas admin configuradas. Acesse /api/admin após autenticação.',
+    endpoints: [
+      'GET /api/admin/stats',
+      'GET /api/admin/prestadores-por-cidade',
+      'GET /api/admin/prestadores/cidade/:cidade',
+      'GET /api/admin/buscar-prestador?q=',
+      'DELETE /api/admin/excluir-prestador/:id',
+      'GET /api/admin/buscar-cliente?email=',
+      'DELETE /api/admin/excluir-cliente/:id',
+      'GET /api/admin/avaliacoes-recentes?limit='
+    ]
+  });
+});
+
 // Rota de teste assinatura (pública para teste)
 app.get('/test-assinatura-status/:prestadorId', async (req, res) => {
   try {
@@ -161,9 +185,6 @@ app.get('/test-assinatura-status/:prestadorId', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
-// Webhook do Mercado Pago (deve ser público e estar dentro de assinaturaRoutes)
-// Se precisar de um webhook separado, crie o arquivo ou use a rota dentro de assinaturaRoutes
 
 // Rota 404
 app.use((req, res) => {
@@ -191,10 +212,24 @@ app.listen(PORT, () => {
   console.log(`🏷️ Ambiente: ${process.env.NODE_ENV || 'development'}`);
   
   // Mostrar rotas de assinatura disponíveis
-  console.log(`📋 Rotas de assinatura:`);
+  console.log(`\n📋 Rotas de assinatura:`);
   console.log(`   - POST /api/assinatura/criar-preferencia (pública)`);
   console.log(`   - POST /api/assinatura/associar (privada)`);
   console.log(`   - GET /api/assinatura/status-prestador/:prestadorId (privada)`);
   console.log(`   - GET /api/mercadopago/public-key (pública)`);
   console.log(`   - POST /api/assinatura/webhooks/mercadopago (pública)`);
+  
+  // Mostrar rotas administrativas
+  console.log(`\n🛡️ Rotas administrativas:`);
+  console.log(`   - GET /api/admin/stats`);
+  console.log(`   - GET /api/admin/prestadores-por-cidade`);
+  console.log(`   - GET /api/admin/prestadores/cidade/:cidade`);
+  console.log(`   - GET /api/admin/buscar-prestador?q=`);
+  console.log(`   - DELETE /api/admin/excluir-prestador/:id`);
+  console.log(`   - GET /api/admin/buscar-cliente?email=`);
+  console.log(`   - DELETE /api/admin/excluir-cliente/:id`);
+  console.log(`   - GET /api/admin/avaliacoes-recentes?limit=`);
+  
+  // Teste de conexão
+  console.log(`\n✅ Servidor pronto! Teste em: http://localhost:${PORT}/health`);
 });
