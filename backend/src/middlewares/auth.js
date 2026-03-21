@@ -54,7 +54,7 @@ const authMiddleware = async (req, res, next) => {
       isAdmin: user.tipo === 'admin'
     };
 
-    // ===== PROTEÇÃO DE ACESSO BASEADA NO STATUS DO PLANO =====
+    // ===== PROTEÇÃO DE ACESSO BASEADA NO STATUS DO PLANO DO PRESTADOR=====
     // Se for prestador com plano pendente, bloquear acesso a rotas protegidas
     if (user.tipo === 'prestador' && planoStatus !== 'ativo') {
       
