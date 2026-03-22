@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import readline from 'readline';
-import User from '../src/models/User.js';
+import User from '../models/User.js';
 
 // Carregar variáveis de ambiente
 dotenv.config();
