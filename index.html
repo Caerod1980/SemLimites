@@ -7502,13 +7502,14 @@
             return React.createElement('div', { className: "min-h-screen bg-gradient-to-b from-[#fcf8f3] to-white overflow-guard" },
                 header,
                 React.createElement('main', null, content),
-                rodape
-            );
-              React.createElement(ModalLoginAdmin, { 
+                rodape,
+                // ===== MODAL DE ADMIN CORRETAMENTE RENDERIZADO =====
+                React.createElement(ModalLoginAdmin, { 
                     isOpen: adminModalOpen, 
                     onClose: function() { setAdminModalOpen(false); }, 
                     onLoginSuccess: handleLoginSuccess 
-                });
+                })
+            );
         }
 
         ReactDOM.render(React.createElement(App), document.getElementById('root'));
