@@ -7302,215 +7302,226 @@
         }
 
         // ========== APP PRINCIPAL ==========
-        function App() {
-            var [adminModalOpen, setAdminModalOpen] = useState(false);
-            var [modo, setModo] = useState('busca');
-            var [usuario, setUsuario] = useState(null);
-            var [prestadorSelecionado, setPrestadorSelecionado] = useState(null);
-            var [prestadorId, setPrestadorId] = useState(null);
+       function App() {
+    var [adminModalOpen, setAdminModalOpen] = useState(false);
+    var [modo, setModo] = useState('busca');
+    var [usuario, setUsuario] = useState(null);
+    var [prestadorSelecionado, setPrestadorSelecionado] = useState(null);
+    var [prestadorId, setPrestadorId] = useState(null);
 
-            window.appSetModo = setModo;
+    window.appSetModo = setModo;
 
-            useEffect(function() {
-                var path = window.location.pathname.replace(BASE_PATH, '') || '/';
-                console.log('📍 Path atual:', path);
-                
-                if (path.startsWith('/avaliar/')) {
-                    setModo('avaliar');
-                } else if (path === '/login') {
-                    setModo('login');
-                } else if (path === '/cadastro') {
-                    setModo('cadastro');
-                } else if (path === '/dashboard') {
-                    setModo('dashboard');
-                } else if (path === '/dashboard-cliente') {
-                    setModo('dashboard-cliente');
-                } else if (path.startsWith('/perfil/')) {
-                    var id = path.split('/')[2];
-                    console.log('📌 ID do perfil da URL:', id);
-                    if (id) {
-                        setPrestadorId(id);
-                        setPrestadorSelecionado(null);
-                        setModo('perfil');
-                    } else {
-                        setModo('busca');
-                    }
-                } else if (path === '/esqueci-senha') {
-                    setModo('esqueci-senha');
-                } else if (path.startsWith('/resetar-senha/')) {
-                    setModo('resetar-senha');
-                } 
-                else if (path === '/termos') {
-                    setModo('termos');
-                } else if (path === '/privacidade') {
-                    setModo('privacidade');
-                } else if (path === '/cookies') {
-                    setModo('cookies');
-                } else if (path === '/contato') {
-                    setModo('contato');
-                } else if (path === '/sobre') {
-                    setModo('sobre');
-                } else if (path === '/como-funciona') {
-                    setModo('como-funciona');
-                } else if (path === '/faq-prestador') {
-                    setModo('faq-prestador');
-                } else if (path === '/faq-cliente') {
-                    setModo('faq-cliente');
-                } else if (path === '/sobre-dashboard-prestador') {
-                    setModo('sobre-dashboard-prestador');
-                } else if (path === '/meus-favoritos') {
-                    setModo('meus-favoritos');
-                } else if (path === '/admin') {
-                    setModo('admin');
-                } else {
-                    setModo('busca');
-                }
-                
-                var token = localStorage.getItem('token');
-                if (token) {
-                    fetch(API_URL + '/auth/me', {
-                        headers: { 'Authorization': 'Bearer ' + token }
-                    })
-                        .then(function(response) { return response.json(); })
-                        .then(function(data) {
-                            if (!data.error) {
-                                setUsuario(data);
-                                localStorage.setItem('user', JSON.stringify(data));
-                            }
-                        })
-                        .catch(function(error) { console.error(error); });
-                }
-            }, []);
-
-            function voltarParaBusca() {
-                window.scrollTo(0, 0);
-                navigate('/');
-                setPrestadorId(null);
+    useEffect(function() {
+        var path = window.location.pathname.replace(BASE_PATH, '') || '/';
+        console.log('📍 Path atual:', path);
+        
+        if (path.startsWith('/avaliar/')) {
+            setModo('avaliar');
+        } else if (path === '/login') {
+            setModo('login');
+        } else if (path === '/cadastro') {
+            setModo('cadastro');
+        } else if (path === '/dashboard') {
+            setModo('dashboard');
+        } else if (path === '/dashboard-cliente') {
+            setModo('dashboard-cliente');
+        } else if (path.startsWith('/perfil/')) {
+            var id = path.split('/')[2];
+            console.log('📌 ID do perfil da URL:', id);
+            if (id) {
+                setPrestadorId(id);
                 setPrestadorSelecionado(null);
-            }
-
-            function handleVerPerfil(prestador) {
-                console.log('👤 App recebeu prestador para ver perfil:', prestador.nome);
-                setPrestadorSelecionado(prestador);
-                setPrestadorId(null);
-                navigate('/perfil/' + prestador._id);
-            }
-
-            function handleLoginSuccess(userData, prestadorParaCurtir) {
-                setUsuario(userData);
-                
-                if (prestadorParaCurtir) {
-                    navigate('/perfil/' + prestadorParaCurtir);
-                } else if (userData.tipo === 'cliente') {
-                    navigate('/dashboard-cliente');
-                } else {
-                    navigate('/dashboard');
-                }
-            }
-
-            function handleCadastroSucesso() {
-                navigate('/');
-            }
-
-            function handleSair() {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                setUsuario(null);
-                navigate('/');
-            }
-            function handleAdminLogout() {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                setUsuario(null);
-                navigate('/');
-            }
-            var header = modo !== 'avaliar' ? React.createElement(Header, {
-                usuario: usuario,
-                onVoltar: voltarParaBusca,
-                onNavigate: navigate
-            }) : null;
-
-            var content = null;
-            if (modo === 'busca') {
-                content = React.createElement(TelaBusca, { onVerPerfil: handleVerPerfil });
-            } else if (modo === 'admin') {
-                content = React.createElement(PainelAdmin, { onSair: function() { handleAdminLogout(); } });
-            } else if (modo === 'perfil') {
-                content = React.createElement(TelaPerfil, { 
-                    prestador: prestadorSelecionado, 
-                    prestadorId: prestadorId,
-                    onVoltar: voltarParaBusca 
-                });
-            } else if (modo === 'login') {
-                content = React.createElement(Login, { onLoginSuccess: handleLoginSuccess, onVoltar: voltarParaBusca });
-            } else if (modo === 'cadastro') {
-                content = React.createElement(CadastroPrestador, { onCadastroSucesso: handleCadastroSucesso, onVoltar: voltarParaBusca });
-            } else if (modo === 'dashboard') {
-                content = React.createElement(DashboardPrestador, { usuario: usuario, onSair: handleSair });
-            } else if (modo === 'dashboard-cliente') {
-                content = React.createElement(DashboardCliente, { 
-                    usuario: usuario, 
-                    onSair: handleSair,
-                    onVerPerfil: handleVerPerfil 
-                });
-            } else if (modo === 'avaliar') {
-                content = React.createElement(AvaliarServico);
-            } else if (modo === 'esqueci-senha') {
-                content = React.createElement(EsqueciSenha, { 
-                    onVoltar: voltarParaBusca 
-                });
-            } else if (modo === 'resetar-senha') {
-                content = React.createElement(ResetarSenha, { 
-                    onVoltar: voltarParaBusca,
-                    onSucesso: function() { navigate('/login'); }
-                });
-            } 
-            else if (modo === 'termos') {
-                content = React.createElement(TermosDeUso, { onVoltar: voltarParaBusca });
-            } else if (modo === 'privacidade') {
-                content = React.createElement(PoliticaPrivacidade, { onVoltar: voltarParaBusca });
-            } else if (modo === 'cookies') {
-                content = React.createElement(PoliticaCookies, { onVoltar: voltarParaBusca });
-            } else if (modo === 'sobre') {
-                content = React.createElement(SobreNos, { onVoltar: voltarParaBusca });
-            } else if (modo === 'sobre-dashboard-prestador') {
-                content = React.createElement(SobreDashboardPrestador, { onVoltar: voltarParaBusca });
-            } else if (modo === 'como-funciona') {
-                content = React.createElement(ComoFunciona, { onVoltar: voltarParaBusca });
-            } else if (modo === 'meus-favoritos') {
-                content = React.createElement(MeusFavoritos, { onVoltar: voltarParaBusca });
-            } else if (modo === 'contato') {
-                content = React.createElement(ContatoSuporte, { onVoltar: voltarParaBusca });
-            } else if (modo === 'faq-prestador') {
-                content = React.createElement(FaqPrestadores, { onVoltar: voltarParaBusca });
-            } else if (modo === 'faq-cliente') {
-                content = React.createElement(FaqClientes, { onVoltar: voltarParaBusca });
+                setModo('perfil');
             } else {
-                content = React.createElement('div', { className: "text-center py-12" },
-                    React.createElement('div', { className: "w-10 h-10 border-4 border-[#FFD966] border-t-[#FFB347] rounded-full animate-spin mx-auto mb-4" }),
-                    React.createElement('p', { className: "text-[#4a8a4a]" }, "Redirecionando...")
-                );
+                setModo('busca');
             }
-
-            var rodape = modo !== 'avaliar' ? React.createElement(Rodape, { 
-                onNavigate: navigate, 
-                onOpenAdminModal: function() { setAdminModalOpen(true); },
-                isAdminLoggedIn: usuario?.tipo === 'admin',
-                onAdminLogout: handleAdminLogout
-            }) : null;
-
-            return React.createElement('div', { className: "min-h-screen bg-gradient-to-b from-[#fcf8f3] to-white overflow-guard" },
-                header,
-                React.createElement('main', null, content),
-                rodape,
-                // ===== MODAL DE ADMIN CORRETAMENTE RENDERIZADO =====
-                React.createElement(ModalLoginAdmin, { 
-                    isOpen: adminModalOpen, 
-                    onClose: function() { setAdminModalOpen(false); }, 
-                    onLoginSuccess: handleLoginSuccess 
-                })
-            );
+        } else if (path === '/esqueci-senha') {
+            setModo('esqueci-senha');
+        } else if (path.startsWith('/resetar-senha/')) {
+            setModo('resetar-senha');
+        } 
+        else if (path === '/termos') {
+            setModo('termos');
+        } else if (path === '/privacidade') {
+            setModo('privacidade');
+        } else if (path === '/cookies') {
+            setModo('cookies');
+        } else if (path === '/contato') {
+            setModo('contato');
+        } else if (path === '/sobre') {
+            setModo('sobre');
+        } else if (path === '/como-funciona') {
+            setModo('como-funciona');
+        } else if (path === '/faq-prestador') {
+            setModo('faq-prestador');
+        } else if (path === '/faq-cliente') {
+            setModo('faq-cliente');
+        } else if (path === '/sobre-dashboard-prestador') {
+            setModo('sobre-dashboard-prestador');
+        } else if (path === '/meus-favoritos') {
+            setModo('meus-favoritos');
+        } else if (path === '/admin') {
+            setModo('admin');
+        } else {
+            setModo('busca');
         }
+        
+        var token = localStorage.getItem('token');
+        if (token) {
+            fetch(API_URL + '/auth/me', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            })
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    if (!data.error) {
+                        setUsuario(data);
+                        localStorage.setItem('user', JSON.stringify(data));
+                    }
+                })
+                .catch(function(error) { console.error(error); });
+        }
+    }, []);
+
+    function voltarParaBusca() {
+        window.scrollTo(0, 0);
+        navigate('/');
+        setPrestadorId(null);
+        setPrestadorSelecionado(null);
+    }
+
+    function handleVerPerfil(prestador) {
+        console.log('👤 App recebeu prestador para ver perfil:', prestador.nome);
+        setPrestadorSelecionado(prestador);
+        setPrestadorId(null);
+        navigate('/perfil/' + prestador._id);
+    }
+
+    // ===== FUNÇÃO CORRIGIDA - ADMIN VAI PARA PAINEL ADMIN =====
+    function handleLoginSuccess(userData, prestadorParaCurtir) {
+        setUsuario(userData);
+        
+        // Se for admin, vai direto para o painel administrativo
+        if (userData.tipo === 'admin') {
+            navigate('/admin');
+            return;
+        }
+        
+        if (prestadorParaCurtir) {
+            navigate('/perfil/' + prestadorParaCurtir);
+        } else if (userData.tipo === 'cliente') {
+            navigate('/dashboard-cliente');
+        } else if (userData.tipo === 'prestador') {
+            navigate('/dashboard');
+        } else {
+            navigate('/');
+        }
+    }
+
+    function handleCadastroSucesso() {
+        navigate('/');
+    }
+
+    function handleSair() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setUsuario(null);
+        navigate('/');
+    }
+    
+    function handleAdminLogout() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setUsuario(null);
+        navigate('/');
+    }
+    
+    var header = modo !== 'avaliar' ? React.createElement(Header, {
+        usuario: usuario,
+        onVoltar: voltarParaBusca,
+        onNavigate: navigate
+    }) : null;
+
+    var content = null;
+    if (modo === 'busca') {
+        content = React.createElement(TelaBusca, { onVerPerfil: handleVerPerfil });
+    } else if (modo === 'admin') {
+        content = React.createElement(PainelAdmin, { onSair: function() { handleAdminLogout(); } });
+    } else if (modo === 'perfil') {
+        content = React.createElement(TelaPerfil, { 
+            prestador: prestadorSelecionado, 
+            prestadorId: prestadorId,
+            onVoltar: voltarParaBusca 
+        });
+    } else if (modo === 'login') {
+        content = React.createElement(Login, { onLoginSuccess: handleLoginSuccess, onVoltar: voltarParaBusca });
+    } else if (modo === 'cadastro') {
+        content = React.createElement(CadastroPrestador, { onCadastroSucesso: handleCadastroSucesso, onVoltar: voltarParaBusca });
+    } else if (modo === 'dashboard') {
+        content = React.createElement(DashboardPrestador, { usuario: usuario, onSair: handleSair });
+    } else if (modo === 'dashboard-cliente') {
+        content = React.createElement(DashboardCliente, { 
+            usuario: usuario, 
+            onSair: handleSair,
+            onVerPerfil: handleVerPerfil 
+        });
+    } else if (modo === 'avaliar') {
+        content = React.createElement(AvaliarServico);
+    } else if (modo === 'esqueci-senha') {
+        content = React.createElement(EsqueciSenha, { 
+            onVoltar: voltarParaBusca 
+        });
+    } else if (modo === 'resetar-senha') {
+        content = React.createElement(ResetarSenha, { 
+            onVoltar: voltarParaBusca,
+            onSucesso: function() { navigate('/login'); }
+        });
+    } 
+    else if (modo === 'termos') {
+        content = React.createElement(TermosDeUso, { onVoltar: voltarParaBusca });
+    } else if (modo === 'privacidade') {
+        content = React.createElement(PoliticaPrivacidade, { onVoltar: voltarParaBusca });
+    } else if (modo === 'cookies') {
+        content = React.createElement(PoliticaCookies, { onVoltar: voltarParaBusca });
+    } else if (modo === 'sobre') {
+        content = React.createElement(SobreNos, { onVoltar: voltarParaBusca });
+    } else if (modo === 'sobre-dashboard-prestador') {
+        content = React.createElement(SobreDashboardPrestador, { onVoltar: voltarParaBusca });
+    } else if (modo === 'como-funciona') {
+        content = React.createElement(ComoFunciona, { onVoltar: voltarParaBusca });
+    } else if (modo === 'meus-favoritos') {
+        content = React.createElement(MeusFavoritos, { onVoltar: voltarParaBusca });
+    } else if (modo === 'contato') {
+        content = React.createElement(ContatoSuporte, { onVoltar: voltarParaBusca });
+    } else if (modo === 'faq-prestador') {
+        content = React.createElement(FaqPrestadores, { onVoltar: voltarParaBusca });
+    } else if (modo === 'faq-cliente') {
+        content = React.createElement(FaqClientes, { onVoltar: voltarParaBusca });
+    } else {
+        content = React.createElement('div', { className: "text-center py-12" },
+            React.createElement('div', { className: "w-10 h-10 border-4 border-[#FFD966] border-t-[#FFB347] rounded-full animate-spin mx-auto mb-4" }),
+            React.createElement('p', { className: "text-[#4a8a4a]" }, "Redirecionando...")
+        );
+    }
+
+    var rodape = modo !== 'avaliar' ? React.createElement(Rodape, { 
+        onNavigate: navigate, 
+        onOpenAdminModal: function() { setAdminModalOpen(true); },
+        isAdminLoggedIn: usuario?.tipo === 'admin',
+        onAdminLogout: handleAdminLogout
+    }) : null;
+
+    return React.createElement('div', { className: "min-h-screen bg-gradient-to-b from-[#fcf8f3] to-white overflow-guard" },
+        header,
+        React.createElement('main', null, content),
+        rodape,
+        // ===== MODAL DE ADMIN =====
+        React.createElement(ModalLoginAdmin, { 
+            isOpen: adminModalOpen, 
+            onClose: function() { setAdminModalOpen(false); }, 
+            onLoginSuccess: handleLoginSuccess 
+        })
+    );
+}
 
         ReactDOM.render(React.createElement(App), document.getElementById('root'));
     </script>
