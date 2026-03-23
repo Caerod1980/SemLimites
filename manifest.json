@@ -1,7 +1,7 @@
 {
   "name": "SemLimites - Prestadores de Serviço",
   "short_name": "SemLimites",
-  "description": "Conectando você a profissionais de confiança. Encontre eletricistas, encanadores, pintores e muito mais.",
+  "description": "Conectando você a profissionais de confiança",
   "start_url": "/SemLimites/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -10,37 +10,30 @@
   "scope": "/SemLimites/",
   "icons": [
     {
-      "src": "/icons/icon-192x192.png",
+      "src": "/SemLimites/icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-384x384.png",
-      "sizes": "384x384",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-512x512.png",
+      "src": "/SemLimites/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-192x192-maskable.png",
+      "src": "/SemLimites/icons/icon-192x192-maskable.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/icons/icon-512x512-maskable.png",
+      "src": "/SemLimites/icons/icon-512x512-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }
   ],
   "categories": ["business", "productivity"],
-  "lang": "pt-BR",
-  "dir": "ltr"
+  "lang": "pt-BR"
 }
