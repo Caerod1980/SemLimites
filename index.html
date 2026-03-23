@@ -462,19 +462,21 @@
             );
         }
 
-                       // ========== COMPONENTE DE BANNERS DE PATROCÍNIO ==========
+                             // ========== COMPONENTE DE BANNERS DE PATROCÍNIO ==========
         function BannersPatrocinio() {
             // Lista de banners configurada com seus links
             var [banners, setBanners] = useState([
                 {
                     id: 1,
                     imagem: 'https://raw.githubusercontent.com/Caerod1980/Imagens-Sem-Limites/11c96f4e31ea7b982d58b4e2b78bc2b01c097d0f/patrocinador1.png',
+                    imagemMobile: 'https://raw.githubusercontent.com/Caerod1980/Imagens-Sem-Limites/6e6d6d2b3c9f46bb483bd66b3a0fcdfd47c3e7b9/patrocinio1mobile.png',
                     link: 'https://bebidasecompanhia.com.br/',
                     alt: 'Bebidas e Companhia'
                 },
                 {
                     id: 2,
                     imagem: 'https://raw.githubusercontent.com/Caerod1980/Imagens-Sem-Limites/11c96f4e31ea7b982d58b4e2b78bc2b01c097d0f/patrocinador2.png',
+                    imagemMobile: 'https://raw.githubusercontent.com/Caerod1980/Imagens-Sem-Limites/6e6d6d2b3c9f46bb483bd66b3a0fcdfd47c3e7b9/patrocinio2mobile.png',
                     link: 'https://open.spotify.com/album/03l9BroOBrYWE2ld3QwjaU?si=OpMLAWlqRFy9t-rTL-E7Og',
                     alt: 'Spotify - Playlist Sem Limites'
                 }
@@ -483,6 +485,17 @@
             var [bannerAtual, setBannerAtual] = useState(0);
             var [pausado, setPausado] = useState(false);
             var [progresso, setProgresso] = useState(0);
+            var [isMobile, setIsMobile] = useState(false);
+            
+            // Detectar se é mobile
+            useEffect(function() {
+                function verificarMobile() {
+                    setIsMobile(window.innerWidth < 768);
+                }
+                verificarMobile();
+                window.addEventListener('resize', verificarMobile);
+                return function() { window.removeEventListener('resize', verificarMobile); };
+            }, []);
             
             // Tempo de exibição de cada banner (5 segundos)
             var tempoExibicao = 5000;
@@ -526,6 +539,20 @@
             
             var banner = banners[bannerAtual];
             
+            // Escolhe a imagem correta baseado no dispositivo
+            var imagemSrc = (isMobile && banner.imagemMobile) ? banner.imagemMobile : banner.imagem;
+            
+            // Classes de altura responsiva
+            var imgClasses = "w-full transition-transform duration-500 group-hover:scale-105";
+            
+            if (isMobile) {
+                // Mobile: usa imagem específica com altura automática
+                imgClasses += " h-auto object-contain bg-gray-900";
+            } else {
+                // Desktop: mantém altura fixa de 130px (igual à sua imagem original)
+                imgClasses += " h-[130px] object-contain bg-gray-900";
+            }
+            
             return React.createElement('div', { 
                 className: "w-full overflow-hidden rounded-xl md:rounded-2xl shadow-lg mb-6 md:mb-8 group",
                 onMouseEnter: function() { setPausado(true); },
@@ -538,14 +565,14 @@
                 },
                     // Imagem do banner
                     React.createElement('img', {
-                        src: banner.imagem,
+                        src: imagemSrc,
                         alt: banner.alt,
-                        className: "w-full h-auto max-h-[140px] object-cover transition-transform duration-500 group-hover:scale-105",
+                        className: imgClasses,
                         onError: function(e) {
                             // Fallback caso a imagem não carregue
                             e.target.style.display = 'none';
                             var fallbackDiv = document.createElement('div');
-                            fallbackDiv.className = "bg-gradient-to-r from-[#3d7a3d] to-[#FFB347] text-white text-center py-12";
+                            fallbackDiv.className = "bg-gradient-to-r from-[#3d7a3d] to-[#FFB347] text-white text-center flex items-center justify-center min-h-[130px]";
                             fallbackDiv.innerHTML = '<span class="text-xl font-bold">Espaço Patrocinado</span>';
                             e.target.parentElement.appendChild(fallbackDiv);
                         }
