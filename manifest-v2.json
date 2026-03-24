@@ -2,21 +2,21 @@
   "name": "SemLimites - Prestadores de Serviço",
   "short_name": "SemLimites",
   "description": "Conectando você a profissionais de confiança",
-  "start_url": "/SemLimites/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3d7a3d",
   "orientation": "portrait-primary",
-  "scope": "/SemLimites/",
+  "scope": "./",
   "icons": [
     {
-      "src": "/SemLimites/icons/icon-192x192.png",
+      "src": "./icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/SemLimites/icons/icon-512x512.png",
+      "src": "./icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
