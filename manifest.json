@@ -1,7 +1,7 @@
 {
   "name": "SemLimites - Prestadores de Serviço",
   "short_name": "SemLimites",
-  "description": "Conectando você a profissionais de confiança",
+  "description": "Conectando você a profissionais de confiança. Encontre eletricistas, encanadores, pintores e muito mais.",
   "start_url": "/SemLimites/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -16,12 +16,31 @@
       "purpose": "any"
     },
     {
+      "src": "/SemLimites/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
       "src": "/SemLimites/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/SemLimites/icons/icon-192x192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/SemLimites/icons/icon-512x512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "categories": ["business", "productivity"],
-  "lang": "pt-BR"
+  "lang": "pt-BR",
+  "dir": "ltr"
 }
