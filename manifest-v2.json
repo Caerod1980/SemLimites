@@ -1,7 +1,7 @@
 {
   "name": "SemLimites - Prestadores de Serviço",
   "short_name": "SemLimites",
-  "description": "Conectando você a profissionais de confiança",
+  "description": "Conectando você a profissionais",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#ffffff",
