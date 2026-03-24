@@ -13,7 +13,8 @@
 
     <!-- ==================== PWA META TAGS ==================== -->
     <!-- Ícones -->
-    <link rel="icon" type="image/png" href="/SemLimites/favicon.png" sizes="48x48">
+    <link rel="icon" type="image/png" sizes="48x48" href="/SemLimites/favicon.png">
+    <link rel="shortcut icon" href="/SemLimites/favicon.png" type="image/png">
     <link rel="icon" type="image/png" sizes="192x192" href="/SemLimites/icons/icon-192x192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="/SemLimites/icons/icon-512x512.png">
     <link rel="apple-touch-icon" href="/SemLimites/icons/icon-180x180.png">
@@ -33,8 +34,8 @@
         (function() {
             var redirect = sessionStorage.redirect;
             delete sessionStorage.redirect;
-            if (redirect && redirect != location.href) {
-                history.replaceState(null, null, redirect);
+            if (redirect && redirect !== location.href) {
+                history.replaceState(null, '', redirect);
             }
         })();
     </script>
