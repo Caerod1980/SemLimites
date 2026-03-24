@@ -1,4 +1,4 @@
-// sw.js - Service Worker para PWA SemLimites
+// sw.js - Service Worker para PWA SemLimites dominio personalisado
 const CACHE_NAME = 'semlimites-v2';
 const urlsToCache = [
   '/',
