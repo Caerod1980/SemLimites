@@ -63,6 +63,49 @@ router.post('/criar-preferencia', async (req, res) => {
 });
 
 /**
+ * @route   GET /api/assinatura/status-preferencia/:preferenceId
+ * @desc    Buscar status de uma preferência pelo ID (para monitoramento do frontend)
+ * @access  Public
+ */
+router.get('/status-preferencia/:preferenceId', async (req, res) => {
+  try {
+    const { preferenceId } = req.params;
+    
+    console.log(`🔍 Buscando status da preferência: ${preferenceId}`);
+    
+    // Buscar prestador que tenha esta preferenceId
+    const prestador = await Prestador.findOne({ preferenceId });
+    
+    if (prestador) {
+      // Se encontrou prestador com esta preferenceId, verifica o status
+      console.log(`✅ Prestador encontrado: ${prestador._id}, status: ${prestador.planoStatus}`);
+      
+      return res.json({
+        status: prestador.planoStatus === 'ativo' ? 'approved' : 'pending',
+        pagamentoConfirmado: prestador.planoStatus === 'ativo',
+        preferenceId,
+        prestadorId: prestador._id
+      });
+    }
+    
+    // Se não encontrou prestador, retorna pending (ainda aguardando pagamento)
+    console.log(`⏳ Nenhum prestador encontrado para preferenceId: ${preferenceId}`);
+    res.json({
+      status: 'pending',
+      pagamentoConfirmado: false,
+      preferenceId
+    });
+    
+  } catch (error) {
+    console.error('❌ Erro ao buscar status da preferência:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+/**
  * @route   POST /api/assinatura/associar
  * @desc    Associar uma preferência existente ao prestador
  * @access  Private
@@ -117,6 +160,7 @@ router.post('/associar', authMiddleware, async (req, res) => {
     // Atualizar status do prestador
     prestador.planoStatus = 'pendente';
     prestador.planoId = preferenceId;
+    prestador.preferenceId = preferenceId; // Adicionar campo para busca
     prestador.planoHistorico = prestador.planoHistorico || [];
     prestador.planoHistorico.push({
       data: new Date(),
@@ -155,6 +199,7 @@ router.post('/webhooks/mercadopago', async (req, res) => {
     
     const resultado = await processarNotificacao(req.body);
     
+    // Se o webhook processou com sucesso e tem prestadorId, atualiza
     if (resultado.success && resultado.prestadorId) {
       console.log(`✅ Webhook processado para prestador: ${resultado.prestadorId}`);
       
@@ -185,6 +230,18 @@ router.post('/webhooks/mercadopago', async (req, res) => {
         
         console.log(`📊 Status do prestador ${resultado.prestadorId}: ${statusAnterior} -> ${prestador.planoStatus}`);
       }
+    } 
+    // Se o webhook confirmou pagamento mas não tem prestadorId (prestador será criado pelo frontend)
+    else if (resultado.success && resultado.pagamentoConfirmado) {
+      console.log(`✅ Pagamento confirmado via webhook! Dados:`, {
+        paymentId: resultado.paymentId,
+        email: resultado.email,
+        status: resultado.status
+      });
+      
+      // Não faz nada aqui - o frontend que vai criar o prestador
+      // Mas podemos armazenar o paymentId para referência futura
+      console.log(`ℹ️ Aguardando frontend criar prestador para paymentId: ${resultado.paymentId}`);
     }
     
     // Sempre retornar 200 para o Mercado Pago
@@ -236,6 +293,7 @@ router.get('/status-prestador/:prestadorId', authMiddleware, async (req, res) =>
       success: true,
       planoStatus: prestador.planoStatus || 'inativo',
       planoId: prestador.planoId,
+      preferenceId: prestador.preferenceId,
       planoHistorico: prestador.planoHistorico || []
     });
     
