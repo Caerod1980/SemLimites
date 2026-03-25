@@ -3109,7 +3109,7 @@
                 }
             }, [etapa, preferenceId, mp, carregandoMP]);
 
-            function renderBrickPagamento(mpInstance, prefId) {
+                        function renderBrickPagamento(mpInstance, prefId) {
                 const bricksBuilder = mpInstance.bricks();
                 
                 const renderComponent = async () => {
@@ -3130,6 +3130,11 @@
                                 visual: {
                                     buttonBackground: 'default',
                                     borderRadius: '8px'
+                                },
+                                backUrls: {
+                                    success: "https://www.semlimitesprestadores.com.br/dashboard?pagamento=sucesso",
+                                    failure: "https://www.semlimitesprestadores.com.br/dashboard?pagamento=erro",
+                                    pending: "https://www.semlimitesprestadores.com.br/dashboard?pagamento=pending"
                                 }
                             },
                             callbacks: {
