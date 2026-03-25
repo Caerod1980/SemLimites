@@ -3156,7 +3156,7 @@
                 renderComponent();
             }
 
-                        // ===== FUNÇÃO PARA VERIFICAR STATUS DO PAGAMENTO =====
+                                   // ===== FUNÇÃO PARA VERIFICAR STATUS DO PAGAMENTO =====
             function iniciarMonitoramentoPagamento() {
                 if (!preferenceId) return;
                 
@@ -3180,8 +3180,10 @@
                                 clearInterval(interval);
                                 setIntervalId(null);
                                 
-                                // Criar o prestador após confirmação do pagamento
-                                criarPrestadorAposPagamento();
+                                // NÃO criar o prestador aqui - deixar o useEffect do App cuidar
+                                // Apenas redirecionar para a URL com parâmetro
+                                console.log('🔄 Redirecionando para dashboard com status sucesso...');
+                                window.location.href = BASE_PATH + '/dashboard?pagamento=sucesso';
                             }
                         })
                         .catch(function(error) {
