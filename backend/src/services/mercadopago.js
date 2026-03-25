@@ -221,15 +221,32 @@ export async function processarNotificacao(notificacao) {
       metadata: paymentData.metadata
     });
     
-    // Extrair ID do prestador dos metadados
+    // ===== CORREÇÃO: PERMITIR PAGAMENTO SEM PRESTADOR_ID =====
+    // O prestador pode não existir ainda (será criado pelo frontend após pagamento)
     const prestadorId = paymentData.metadata?.prestador_id;
     
     if (!prestadorId) {
-      console.error('❌ prestador_id não encontrado nos metadados');
-      return { success: false, error: 'prestador_id não encontrado' };
+      console.log('ℹ️ Pagamento sem prestador_id - prestador será criado pelo frontend');
+      
+      // Retorna os dados do pagamento para que o frontend possa criar o prestador
+      return {
+        success: true,
+        pagamentoConfirmado: true,
+        paymentId: paymentData.id,
+        status: paymentData.status,
+        status_detail: paymentData.status_detail,
+        valor: paymentData.transaction_amount,
+        dataPagamento: new Date(),
+        email: paymentData.payer?.email,
+        nome: paymentData.metadata?.nome,
+        preferenceId: paymentData.metadata?.preference_id || paymentData.order?.id,
+        metadata: paymentData.metadata
+      };
     }
     
-    // Retornar dados para atualização no banco
+    // Se tiver prestador_id, atualiza normalmente
+    console.log(`✅ Pagamento associado ao prestador: ${prestadorId}`);
+    
     return {
       success: true,
       prestadorId,
