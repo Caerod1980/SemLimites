@@ -3109,7 +3109,7 @@
                 }
             }, [etapa, preferenceId, mp, carregandoMP]);
 
-                        function renderBrickPagamento(mpInstance, prefId) {
+                       function renderBrickPagamento(mpInstance, prefId) {
     const bricksBuilder = mpInstance.bricks();
     
     const renderComponent = async () => {
@@ -3120,7 +3120,7 @@
             await bricksBuilder.create('wallet', 'paymentBrick_container', {
                 initialization: {
                     preferenceId: prefId,
-                    redirectMode: 'self'  // Mudei de 'blank' para 'self' para redirecionar na mesma aba
+                    redirectMode: 'self'
                 },
                 customization: {
                     texts: {
@@ -3140,10 +3140,9 @@
                         console.error('❌ Erro no brick:', error);
                         setErro('Erro ao carregar pagamento. Use o link alternativo abaixo.');
                     },
-                    // ===== CORREÇÃO: onComplete é onde deve ficar o redirecionamento =====
                     onComplete: function(data) {
                         console.log('✅ Pagamento concluído!', data);
-                        // Redirecionar após pagamento bem-sucedido
+                        // ===== CORREÇÃO: Redirecionar para a RAIZ, não para /SemLimites/ =====
                         window.location.href = 'https://www.semlimitesprestadores.com.br/dashboard?pagamento=sucesso';
                     }
                 }
