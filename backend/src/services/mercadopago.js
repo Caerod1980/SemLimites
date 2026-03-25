@@ -53,9 +53,9 @@ export async function criarPreferenciaPublica({ email, nome, plano = 'mensal', v
         name: nome
       },
       back_urls: {
-         success: `${process.env.FRONTEND_URL}/dashboard?pagamento=sucesso`,
-         failure: `${process.env.FRONTEND_URL}/dashboard?pagamento=erro`,
-         pending: `${process.env.FRONTEND_URL}/dashboard?pagamento=pending`
+        success: `${process.env.FRONTEND_URL}/dashboard?pagamento=sucesso`,
+        failure: `${process.env.FRONTEND_URL}/dashboard?pagamento=erro`,
+        pending: `${process.env.FRONTEND_URL}/dashboard?pagamento=pending`
       },
       auto_return: 'approved',
       payment_methods: {
@@ -71,7 +71,7 @@ export async function criarPreferenciaPublica({ email, nome, plano = 'mensal', v
         nome: nome,
         ambiente: process.env.NODE_ENV || 'production'
       },
-      notification_url: `${process.env.BACKEND_URL || 'https://semlimites-api-rodrigo-b5ckghhkbxdqd7a8.canadacentral-01.azurewebsites.net'}/api/webhooks/mercadopago`
+      notification_url: `${process.env.BACKEND_URL || 'https://semlimites-api-rodrigo-b5ckghhkbxdqd7a8.canadacentral-01.azurewebsites.net'}/api/assinatura/webhooks/mercadopago`
     };
     
     const response = await preference.create({ body });
@@ -136,9 +136,9 @@ export async function criarAssinatura(dados) {
         name: nome
       },
       back_urls: {
-        success: `${process.env.FRONTEND_URL || 'https://caerod1980.github.io'}/SemLimites/dashboard?pagamento=sucesso`,
-        failure: `${process.env.FRONTEND_URL || 'https://caerod1980.github.io'}/SemLimites/dashboard?pagamento=erro`,
-        pending: `${process.env.FRONTEND_URL || 'https://caerod1980.github.io'}/SemLimites/dashboard?pagamento=pending`
+        success: `${process.env.FRONTEND_URL}/dashboard?pagamento=sucesso`,
+        failure: `${process.env.FRONTEND_URL}/dashboard?pagamento=erro`,
+        pending: `${process.env.FRONTEND_URL}/dashboard?pagamento=pending`
       },
       auto_return: 'approved',
       payment_methods: {
@@ -153,7 +153,7 @@ export async function criarAssinatura(dados) {
         tipo: 'assinatura_mensal',
         ambiente: process.env.NODE_ENV || 'production'
       },
-      notification_url: `${process.env.BACKEND_URL || 'https://semlimites-api-rodrigo-b5ckghhkbxdqd7a8.canadacentral-01.azurewebsites.net'}/api/webhooks/mercadopago`
+      notification_url: `${process.env.BACKEND_URL || 'https://semlimites-api-rodrigo-b5ckghhkbxdqd7a8.canadacentral-01.azurewebsites.net'}/api/assinatura/webhooks/mercadopago`
     };
     
     // Se tiver customerId, associar
