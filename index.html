@@ -3156,51 +3156,59 @@
     
     renderComponent();
 }
-                                   // ===== FUNÇÃO PARA VERIFICAR STATUS DO PAGAMENTO =====
-            function iniciarMonitoramentoPagamento() {
-                if (!preferenceId) return;
+                                 // ===== FUNÇÃO PARA VERIFICAR STATUS DO PAGAMENTO =====
+function iniciarMonitoramentoPagamento() {
+    if (!preferenceId) return;
+    
+    console.log('🔍 Iniciando monitoramento de pagamento para preferência:', preferenceId);
+    
+    // Limpar intervalo anterior se existir
+    if (intervalId) {
+        clearInterval(intervalId);
+    }
+    
+    const interval = setInterval(function() {
+        console.log('🔄 Verificando status do pagamento...');
+        
+        fetch(API_URL + '/assinatura/status-preferencia/' + preferenceId)
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                console.log('📊 Status do pagamento:', data);
                 
-                console.log('🔍 Iniciando monitoramento de pagamento para preferência:', preferenceId);
-                
-                // Limpar intervalo anterior se existir
-                if (intervalId) {
-                    clearInterval(intervalId);
-                }
-                
-                const interval = setInterval(function() {
-                    console.log('🔄 Verificando status do pagamento...');
+                // Verificar se o pagamento foi confirmado
+                if (data.status === 'approved' || data.pagamentoConfirmado === true) {
+                    console.log('✅ Pagamento confirmado via monitoramento!');
+                    clearInterval(interval);
+                    setIntervalId(null);
                     
-                    fetch(API_URL + '/assinatura/status-preferencia/' + preferenceId)
-                        .then(function(response) { return response.json(); })
-                        .then(function(data) {
-                            console.log('📊 Status do pagamento:', data);
-                            
-                            if (data.status === 'approved' || data.pagamentoConfirmado === true) {
-                                console.log('✅ Pagamento confirmado!');
-                                clearInterval(interval);
-                                setIntervalId(null);
-                                
-                                // NÃO criar o prestador aqui - deixar o useEffect do App cuidar
-                                // Apenas redirecionar para a URL com parâmetro
-                                console.log('🔄 Redirecionando para dashboard com status sucesso...');
-                                window.location.href = BASE_PATH + '/dashboard?pagamento=sucesso';
-                            }
-                        })
-                        .catch(function(error) {
-                            console.error('❌ Erro ao verificar status:', error);
-                        });
-                }, 3000);
-                
-                setIntervalId(interval);
-                
-                // Parar após 10 minutos
-                setTimeout(function() { 
-                    if (intervalId) {
-                        clearInterval(intervalId);
-                        setIntervalId(null);
+                    // ===== FORÇAR REDIRECIONAMENTO PARA O FRONTEND =====
+                    console.log('🔄 Forçando redirecionamento para criar prestador...');
+                    
+                    // Em vez de esperar o webhook, criar o prestador imediatamente
+                    const dados = dadosPendentes;
+                    if (dados) {
+                        criarPrestadorAposPagamento();
+                    } else {
+                        // Se não tiver dados, redirecionar com parâmetro
+                        window.location.href = BASE_PATH + '/dashboard?pagamento=sucesso';
                     }
-                }, 600000);
-            }
+                }
+            })
+            .catch(function(error) {
+                console.error('❌ Erro ao verificar status:', error);
+            });
+    }, 3000);
+    
+    setIntervalId(interval);
+    
+    // Parar após 10 minutos
+    setTimeout(function() { 
+        if (intervalId) {
+            clearInterval(intervalId);
+            setIntervalId(null);
+        }
+    }, 600000);
+}
                        // ===== FUNÇÃO PARA CRIAR PRESTADOR APÓS PAGAMENTO =====
             function criarPrestadorAposPagamento() {
                 console.log('🚀 FUNÇÃO criarPrestadorAposPagamento FOI CHAMADA!');
@@ -7636,97 +7644,94 @@ function App() {
         }
     }, []);
 
-    // ===== DETECTAR REDIRECIONAMENTO DE PAGAMENTO =====
-    useEffect(function() {
-        console.log('🔍 [App] Executando useEffect de redirecionamento');
-        console.log('🔍 [App] URL atual:', window.location.href);
+   // ===== CAPTURAR QUALQUER REDIRECIONAMENTO =====
+useEffect(function() {
+    console.log('🔍 [App] Verificando URL para pagamento...');
+    
+    const url = window.location.href;
+    const urlParams = new URLSearchParams(window.location.search);
+    const pagamentoStatus = urlParams.get('pagamento');
+    
+    // Se já está processando, não repetir
+    if (window.pagamentoProcessando) return;
+    
+    // Verificar se tem dados pendentes no sessionStorage
+    const dadosSalvos = sessionStorage.getItem('cadastroPendente');
+    
+    if (dadosSalvos && !localStorage.getItem('token')) {
+        console.log('📦 [App] Dados pendentes encontrados!');
         
-        const urlParams = new URLSearchParams(window.location.search);
-        const pagamentoStatus = urlParams.get('pagamento');
-        
-        console.log('🔍 [App] Status do pagamento na URL:', pagamentoStatus);
-        
-        if (pagamentoStatus === 'sucesso') {
-            console.log('✅ [App] Pagamento retornou com sucesso via URL!');
+        // Se tem parâmetro de sucesso OU estamos em uma URL que indica pagamento
+        if (pagamentoStatus === 'sucesso' || url.includes('dashboard')) {
+            console.log('✅ [App] Pagamento detectado! Criando prestador...');
+            window.pagamentoProcessando = true;
             
-            const dadosSalvos = sessionStorage.getItem('cadastroPendente');
-            console.log('🔍 [App] Dados pendentes no sessionStorage:', dadosSalvos ? 'SIM' : 'NÃO');
+            const dados = JSON.parse(dadosSalvos);
             
-            if (dadosSalvos && !localStorage.getItem('token')) {
-                console.log('📝 [App] Dados encontrados, criando prestador...');
-                const dados = JSON.parse(dadosSalvos);
+            async function criarPrestador() {
+                console.log('📝 [App] Criando prestador...');
                 
-                async function criarPrestador() {
-                    console.log('📝 [App] Criando prestador após redirecionamento...');
-                    
-                    var dadosEnvio = {
-                        nome: dados.nome,
-                        email: dados.email,
-                        senha: dados.senha,
-                        tipo: 'prestador',
-                        tipoPessoa: dados.tipoPessoa,
-                        cidade: dados.cidade,
-                        estado: dados.estado,
-                        whatsapp: dados.whatsapp,
-                        telefone: dados.telefone || '',
-                        descricao: dados.descricao || '',
-                        tags: dados.tags || [],
-                        categoriaPrincipal: dados.categoriaPrincipal,
-                        servicos: dados.servicos,
-                        aceitouTermos: true,
-                        preferenceId: dados.preferenceId,
-                        planoStatus: 'ativo',
-                        planoAtivo: true,
-                        assinaturaAtivadaEm: new Date().toISOString()
-                    };
-                    
-                    if (dados.tipoPessoa === 'fisica') {
-                        dadosEnvio.cpf = dados.cpf;
-                    } else {
-                        dadosEnvio.cnpj = dados.cnpj;
-                        dadosEnvio.responsavel = dados.responsavel;
-                        if (dados.cnpjVerificado) {
-                            dadosEnvio.cnpjVerificado = true;
-                            dadosEnvio.razaoSocialVerificada = dados.razaoSocialVerificada;
-                        }
+                var dadosEnvio = {
+                    nome: dados.nome,
+                    email: dados.email,
+                    senha: dados.senha,
+                    tipo: 'prestador',
+                    tipoPessoa: dados.tipoPessoa,
+                    cidade: dados.cidade,
+                    estado: dados.estado,
+                    whatsapp: dados.whatsapp,
+                    telefone: dados.telefone || '',
+                    descricao: dados.descricao || '',
+                    tags: dados.tags || [],
+                    categoriaPrincipal: dados.categoriaPrincipal,
+                    servicos: dados.servicos,
+                    aceitouTermos: true,
+                    preferenceId: dados.preferenceId,
+                    planoStatus: 'ativo',
+                    planoAtivo: true,
+                    assinaturaAtivadaEm: new Date().toISOString()
+                };
+                
+                if (dados.tipoPessoa === 'fisica') {
+                    dadosEnvio.cpf = dados.cpf;
+                } else {
+                    dadosEnvio.cnpj = dados.cnpj;
+                    dadosEnvio.responsavel = dados.responsavel;
+                    if (dados.cnpjVerificado) {
+                        dadosEnvio.cnpjVerificado = true;
+                        dadosEnvio.razaoSocialVerificada = dados.razaoSocialVerificada;
                     }
+                }
+                
+                try {
+                    const response = await fetch(API_URL + '/auth/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(dadosEnvio)
+                    });
                     
-                    try {
-                        const response = await fetch(API_URL + '/auth/register', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(dadosEnvio)
-                        });
-                        
-                        const registerData = await response.json();
-                        
-                        if (registerData.error) {
-                            throw new Error(registerData.error);
-                        }
-                        
-                        console.log('✅ [App] Prestador cadastrado com sucesso!');
+                    const registerData = await response.json();
+                    
+                    if (registerData.token) {
+                        console.log('✅ Prestador criado com sucesso!');
                         localStorage.setItem('token', registerData.token);
                         localStorage.setItem('user', JSON.stringify(registerData.user));
                         sessionStorage.removeItem('cadastroPendente');
                         
-                        console.log('🚀 [App] Redirecionando para dashboard...');
+                        console.log('🚀 Redirecionando para dashboard...');
                         window.location.href = BASE_PATH + '/dashboard';
-                        
-                    } catch (error) {
-                        console.error('❌ [App] Erro no cadastro pós-pagamento:', error);
-                        alert('Erro ao finalizar cadastro. Entre em contato com o suporte.');
+                    } else {
+                        console.error('Erro ao criar prestador:', registerData);
                     }
+                } catch (error) {
+                    console.error('Erro:', error);
                 }
-                
-                criarPrestador();
-            } else if (localStorage.getItem('token')) {
-                console.log('⚠️ [App] Usuário já possui token, redirecionando para dashboard');
-                window.location.href = BASE_PATH + '/dashboard';
-            } else {
-                console.log('⚠️ [App] Nenhum dado pendente encontrado no sessionStorage');
             }
+            
+            criarPrestador();
         }
-    }, []);
+    }
+}, []);
 
     function voltarParaBusca() {
         window.scrollTo(0, 0);
