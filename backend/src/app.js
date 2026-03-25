@@ -1,4 +1,4 @@
-// app.js - VERSÃO ATUALIZADA COM ROTAS ADMIN
+// app.js - VERSÃO CORRIGIDA COM CORS PARA NOVO DOMÍNIO
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -27,6 +27,8 @@ connectDB().catch(err => console.error('Erro no MongoDB:', err));
 // ===== CONFIGURAÇÃO CORS - DEVE SER O PRIMEIRO MIDDLEWARE =====
 const allowedOrigins = [
   'https://caerod1980.github.io',
+  'https://www.semlimitesprestadores.com.br',  // ← NOVO DOMÍNIO ADICIONADO
+  'https://semlimitesprestadores.com.br',      // ← DOMÍNIO SEM WWW TAMBÉM
   'http://localhost:3000',
   'http://127.0.0.1:3000',
   'https://semlimites.com.br'
@@ -35,12 +37,30 @@ const allowedOrigins = [
 // Configuração CORS permissiva para desenvolvimento
 app.use(cors({
   origin: function(origin, callback) {
+    // Permitir requisições sem origin (como Postman, apps mobile)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('github.io') || origin.includes('caerod1980')) {
+    
+    // Verificar se a origem está na lista permitida
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      console.log(`✅ CORS permitido para: ${origin}`);
       callback(null, true);
-    } else {
-      console.log('⚠️ Origem bloqueada por CORS:', origin);
-      callback(null, true); // Permitindo para teste
+    } 
+    // Permitir domínios que contenham github.io (para desenvolvimento)
+    else if (origin.includes('github.io') || origin.includes('caerod1980')) {
+      console.log(`✅ CORS permitido para (github.io): ${origin}`);
+      callback(null, true);
+    }
+    // Permitir o novo domínio explicitamente
+    else if (origin === 'https://www.semlimitesprestadores.com.br' || origin === 'https://semlimitesprestadores.com.br') {
+      console.log(`✅ CORS permitido para: ${origin}`);
+      callback(null, true);
+    }
+    else {
+      console.log(`⚠️ Origem bloqueada por CORS: ${origin}`);
+      // Em produção, retornar erro. Em desenvolvimento, permitir para teste.
+      // Descomente a linha abaixo para bloquear em produção
+      // callback(new Error('Not allowed by CORS'));
+      callback(null, true); // Permitindo para teste (remova em produção)
     }
   },
   credentials: true,
@@ -49,7 +69,17 @@ app.use(cors({
 
 // Middleware adicional para headers CORS
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  const origin = req.headers.origin;
+  // Permitir se a origem for permitida ou se for o novo domínio
+  if (origin && (allowedOrigins.includes(origin) || 
+      origin === 'https://www.semlimitesprestadores.com.br' || 
+      origin === 'https://semlimitesprestadores.com.br')) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else if (origin && (origin.includes('github.io') || origin.includes('caerod1980'))) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else if (!origin) {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-ms-blob-type');
   res.header('Access-Control-Allow-Credentials', 'true');
