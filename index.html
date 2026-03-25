@@ -7553,7 +7553,7 @@
             }
         }
 
-        // ========== APP PRINCIPAL ==========
+               // ========== APP PRINCIPAL ==========
        function App() {
     var [adminModalOpen, setAdminModalOpen] = useState(false);
     var [modo, setModo] = useState('busca');
@@ -7631,6 +7631,89 @@
                     }
                 })
                 .catch(function(error) { console.error(error); });
+        }
+    }, []);
+
+    // ===== DETECTAR REDIRECIONAMENTO DE PAGAMENTO =====
+    useEffect(function() {
+        // Verificar se veio de redirecionamento de pagamento
+        const urlParams = new URLSearchParams(window.location.search);
+        const pagamentoStatus = urlParams.get('pagamento');
+        
+        if (pagamentoStatus === 'sucesso') {
+            console.log('✅ Pagamento retornou com sucesso via URL!');
+            
+            // Verificar se há dados pendentes no sessionStorage
+            const dadosSalvos = sessionStorage.getItem('cadastroPendente');
+            if (dadosSalvos && !localStorage.getItem('token')) {
+                console.log('📝 Dados encontrados, criando prestador...');
+                const dados = JSON.parse(dadosSalvos);
+                
+                // Criar uma função temporária para criar o prestador
+                async function criarPrestador() {
+                    console.log('📝 Criando prestador após redirecionamento...');
+                    
+                    var dadosEnvio = {
+                        nome: dados.nome,
+                        email: dados.email,
+                        senha: dados.senha,
+                        tipo: 'prestador',
+                        tipoPessoa: dados.tipoPessoa,
+                        cidade: dados.cidade,
+                        estado: dados.estado,
+                        whatsapp: dados.whatsapp,
+                        telefone: dados.telefone || '',
+                        descricao: dados.descricao || '',
+                        tags: dados.tags || [],
+                        categoriaPrincipal: dados.categoriaPrincipal,
+                        servicos: dados.servicos,
+                        aceitouTermos: true,
+                        preferenceId: dados.preferenceId,
+                        planoStatus: 'ativo',
+                        planoAtivo: true,
+                        assinaturaAtivadaEm: new Date().toISOString()
+                    };
+                    
+                    if (dados.tipoPessoa === 'fisica') {
+                        dadosEnvio.cpf = dados.cpf;
+                    } else {
+                        dadosEnvio.cnpj = dados.cnpj;
+                        dadosEnvio.responsavel = dados.responsavel;
+                        if (dados.cnpjVerificado) {
+                            dadosEnvio.cnpjVerificado = true;
+                            dadosEnvio.razaoSocialVerificada = dados.razaoSocialVerificada;
+                        }
+                    }
+                    
+                    try {
+                        const response = await fetch(API_URL + '/auth/register', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(dadosEnvio)
+                        });
+                        
+                        const registerData = await response.json();
+                        
+                        if (registerData.error) {
+                            throw new Error(registerData.error);
+                        }
+                        
+                        console.log('✅ Prestador cadastrado com sucesso!');
+                        localStorage.setItem('token', registerData.token);
+                        localStorage.setItem('user', JSON.stringify(registerData.user));
+                        sessionStorage.removeItem('cadastroPendente');
+                        
+                        // Redirecionar para dashboard
+                        window.location.href = BASE_PATH + '/dashboard';
+                        
+                    } catch (error) {
+                        console.error('❌ Erro:', error);
+                        alert('Erro ao finalizar cadastro. Entre em contato com o suporte.');
+                    }
+                }
+                
+                criarPrestador();
+            }
         }
     }, []);
 
