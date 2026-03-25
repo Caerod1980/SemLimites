@@ -2954,7 +2954,7 @@
             );
         }
 
-               // ========== TELA DE CADASTRO COM PAGAMENTO (FLUXO CORRETO) ==========
+                     // ========== TELA DE CADASTRO COM PAGAMENTO (FLUXO CORRETO) ==========
         function CadastroPrestador(props) {
             var onCadastroSucesso = props.onCadastroSucesso;
             var onVoltar = props.onVoltar;
@@ -3074,6 +3074,43 @@
                 }
             }, [categoriaSelecionada]);
 
+            // ===== DETECTAR RETORNO DO MERCADO PAGO =====
+            useEffect(function() {
+                console.log('🔍 [Cadastro] Verificando retorno do Mercado Pago...');
+                
+                const urlParams = new URLSearchParams(window.location.search);
+                const retorno = urlParams.get('retorno');
+                
+                console.log('🔍 [Cadastro] Parâmetro retorno:', retorno);
+                
+                if (retorno === 'sucesso' || retorno === 'erro' || retorno === 'pending') {
+                    console.log('✅ [Cadastro] Retorno do Mercado Pago detectado! Status:', retorno);
+                    
+                    const preferenceIdSalvo = sessionStorage.getItem('preferenceId');
+                    const dadosSalvos = sessionStorage.getItem('cadastroPendente');
+                    
+                    console.log('🔍 [Cadastro] preferenceId salvo:', preferenceIdSalvo ? 'SIM' : 'NÃO');
+                    console.log('🔍 [Cadastro] dadosSalvos:', dadosSalvos ? 'SIM' : 'NÃO');
+                    
+                    if (preferenceIdSalvo && dadosSalvos && retorno === 'sucesso') {
+                        console.log('📦 [Cadastro] Dados encontrados, iniciando verificação do pagamento...');
+                        iniciarMonitoramentoPagamento();
+                    } else if (retorno === 'erro') {
+                        setErro('Ocorreu um erro no pagamento. Tente novamente.');
+                        setEtapa('form');
+                    } else if (retorno === 'pending') {
+                        setErro('Pagamento pendente. Aguarde e tente novamente.');
+                        setEtapa('form');
+                    } else {
+                        console.error('❌ [Cadastro] Nenhum dado encontrado no sessionStorage');
+                        setErro('Erro ao processar retorno. Entre em contato com o suporte.');
+                        setEtapa('form');
+                    }
+                    
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            }, []);
+
             // ===== INICIALIZAR MERCADO PAGO =====
             useEffect(function() {
                 if (etapa === 'pagamento' && window.MercadoPago && !mp && !carregandoMP && preferenceId) {
@@ -3109,202 +3146,134 @@
                 }
             }, [etapa, preferenceId, mp, carregandoMP]);
 
-                       function renderBrickPagamento(mpInstance, prefId) {
-    const bricksBuilder = mpInstance.bricks();
-    
-    const renderComponent = async () => {
-        const container = document.getElementById('paymentBrick_container');
-        if (container) container.innerHTML = '';
-        
-        try {
-            await bricksBuilder.create('wallet', 'paymentBrick_container', {
-                initialization: {
-                    preferenceId: prefId,
-                    redirectMode: 'self'  // Redirecionar na mesma aba
-                },
-                customization: {
-                    texts: {
-                        action: 'Pagar agora',
-                        valueProp: 'Segurança Mercado Pago'
-                    },
-                    visual: {
-                        buttonBackground: 'default',
-                        borderRadius: '8px'
-                    },
-                    // IMPORTANTE: backUrls deve estar aqui, não no onComplete
-                    backUrls: {
-                        success: "https://www.semlimitesprestadores.com.br/dashboard?pagamento=sucesso",
-                        failure: "https://www.semlimitesprestadores.com.br/dashboard?pagamento=erro",
-                        pending: "https://www.semlimitesprestadores.com.br/dashboard?pagamento=pending"
-                    }
-                },
-                callbacks: {
-                    onReady: function() {
-                        console.log('✅ Brick de pagamento pronto');
-                    },
-                    onError: function(error) {
-                        console.error('❌ Erro no brick:', error);
-                        setErro('Erro ao carregar pagamento. Use o link alternativo abaixo.');
-                    }
-                }
-            });
-            console.log('✅ Brick renderizado com sucesso');
-        } catch (error) {
-            console.error('❌ Erro ao renderizar brick:', error);
-        }
-    };
-    
-    renderComponent();
-}
-                               // ===== FUNÇÃO PARA VERIFICAR STATUS DO PAGAMENTO =====
-function iniciarMonitoramentoPagamento() {
-    if (!preferenceId) return;
-    
-    console.log('🔍 Iniciando monitoramento de pagamento para preferência:', preferenceId);
-    
-    if (intervalId) {
-        clearInterval(intervalId);
-    }
-    
-    const interval = setInterval(function() {
-        console.log('🔄 Verificando status do pagamento...');
-        
-        fetch(API_URL + '/assinatura/status-preferencia/' + preferenceId)
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
-                console.log('📊 Status do pagamento:', data);
+            function renderBrickPagamento(mpInstance, prefId) {
+                const bricksBuilder = mpInstance.bricks();
                 
-                if (data.status === 'approved' || data.pagamentoConfirmado === true) {
-                    console.log('✅ Pagamento confirmado!');
-                    clearInterval(interval);
-                    setIntervalId(null);
+                const renderComponent = async () => {
+                    const container = document.getElementById('paymentBrick_container');
+                    if (container) container.innerHTML = '';
                     
-                    // ===== CRIAR PRESTADOR IMEDIATAMENTE =====
-                    console.log('🚀 Criando prestador agora...');
-                    
-                    var dados = dadosPendentes;
-                    if (!dados) {
-                        var dadosSalvos = sessionStorage.getItem('cadastroPendente');
-                        if (dadosSalvos) {
-                            dados = JSON.parse(dadosSalvos);
-                            console.log('📦 Dados recuperados do sessionStorage');
-                        }
-                    }
-                    
-                    if (dados) {
-                        console.log('📝 Dados encontrados, criando prestador...');
-                        
-                        var dadosEnvio = {
-                            nome: dados.nome,
-                            email: dados.email,
-                            senha: dados.senha,
-                            tipo: 'prestador',
-                            tipoPessoa: dados.tipoPessoa,
-                            cidade: dados.cidade,
-                            estado: dados.estado,
-                            whatsapp: dados.whatsapp,
-                            telefone: dados.telefone || '',
-                            descricao: dados.descricao || '',
-                            tags: dados.tags || [],
-                            categoriaPrincipal: dados.categoriaPrincipal,
-                            servicos: dados.servicos,
-                            aceitouTermos: true,
-                            preferenceId: dados.preferenceId,
-                            planoStatus: 'ativo',
-                            planoAtivo: true,
-                            assinaturaAtivadaEm: new Date().toISOString()
-                        };
-                        
-                        if (dados.tipoPessoa === 'fisica') {
-                            dadosEnvio.cpf = dados.cpf;
-                        } else {
-                            dadosEnvio.cnpj = dados.cnpj;
-                            dadosEnvio.responsavel = dados.responsavel;
-                            if (dados.cnpjVerificado) {
-                                dadosEnvio.cnpjVerificado = true;
-                                dadosEnvio.razaoSocialVerificada = dados.razaoSocialVerificada;
+                    try {
+                        await bricksBuilder.create('wallet', 'paymentBrick_container', {
+                            initialization: {
+                                preferenceId: prefId,
+                                redirectMode: 'self'
+                            },
+                            customization: {
+                                texts: {
+                                    action: 'Pagar agora',
+                                    valueProp: 'Segurança Mercado Pago'
+                                },
+                                visual: {
+                                    buttonBackground: 'default',
+                                    borderRadius: '8px'
+                                },
+                                backUrls: {
+                                    success: "https://www.semlimitesprestadores.com.br/cadastro?retorno=sucesso",
+                                    failure: "https://www.semlimitesprestadores.com.br/cadastro?retorno=erro",
+                                    pending: "https://www.semlimitesprestadores.com.br/cadastro?retorno=pending"
+                                }
+                            },
+                            callbacks: {
+                                onReady: function() {
+                                    console.log('✅ Brick de pagamento pronto');
+                                },
+                                onError: function(error) {
+                                    console.error('❌ Erro no brick:', error);
+                                    setErro('Erro ao carregar pagamento. Use o link alternativo abaixo.');
+                                }
                             }
-                        }
-                        
-                        fetch(API_URL + '/auth/register', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(dadosEnvio)
+                        });
+                        console.log('✅ Brick renderizado com sucesso');
+                    } catch (error) {
+                        console.error('❌ Erro ao renderizar brick:', error);
+                    }
+                };
+                
+                renderComponent();
+            }
+
+            // ===== FUNÇÃO PARA VERIFICAR STATUS DO PAGAMENTO =====
+            function iniciarMonitoramentoPagamento() {
+                const preferenceIdSalvo = sessionStorage.getItem('preferenceId');
+                const dadosSalvos = sessionStorage.getItem('cadastroPendente');
+                
+                if (!preferenceIdSalvo) {
+                    console.error('❌ PreferenceId não encontrado no sessionStorage');
+                    return;
+                }
+                
+                if (!dadosSalvos) {
+                    console.error('❌ Dados de cadastro não encontrados no sessionStorage');
+                    return;
+                }
+                
+                console.log('🔍 Iniciando monitoramento de pagamento para preferência:', preferenceIdSalvo);
+                
+                if (window.monitoramentoInterval) {
+                    clearInterval(window.monitoramentoInterval);
+                }
+                
+                let tentativas = 0;
+                const maxTentativas = 20;
+                
+                window.monitoramentoInterval = setInterval(function() {
+                    tentativas++;
+                    console.log(`🔄 Verificando status do pagamento (tentativa ${tentativas}/${maxTentativas})...`);
+                    
+                    fetch(API_URL + '/assinatura/status-preferencia/' + preferenceIdSalvo)
+                        .then(function(response) { 
+                            if (!response.ok) {
+                                throw new Error('Erro na requisição: ' + response.status);
+                            }
+                            return response.json(); 
                         })
-                        .then(function(response) { return response.json(); })
-                        .then(function(registerData) {
-                            if (registerData.token) {
-                                console.log('✅ Prestador criado com sucesso!');
-                                localStorage.setItem('token', registerData.token);
-                                localStorage.setItem('user', JSON.stringify(registerData.user));
-                                sessionStorage.removeItem('cadastroPendente');
-                                setDadosPendentes(null);
-                                
-                                setEtapa('sucesso');
-                                setLoading(false);
-                                
-                                setTimeout(function() {
-                                    onCadastroSucesso();
-                                }, 2000);
-                            } else {
-                                console.error('❌ Erro ao criar prestador:', registerData);
-                                setErro('Erro ao finalizar cadastro. Entre em contato com o suporte.');
+                        .then(function(data) {
+                            console.log('📊 Status do pagamento:', data);
+                            
+                            if (data.status === 'approved' || data.pagamentoConfirmado === true) {
+                                console.log('✅ Pagamento confirmado!');
+                                clearInterval(window.monitoramentoInterval);
+                                window.monitoramentoInterval = null;
+                                criarPrestadorAposPagamento();
+                            } else if (tentativas >= maxTentativas) {
+                                console.log('⏰ Tempo limite excedido. Pagamento não confirmado.');
+                                clearInterval(window.monitoramentoInterval);
+                                window.monitoramentoInterval = null;
+                                setErro('Tempo limite excedido. Entre em contato com o suporte.');
                                 setEtapa('form');
+                            } else {
+                                console.log(`⏳ Pagamento ainda não confirmado. Tentativa ${tentativas}/${maxTentativas}`);
                             }
                         })
                         .catch(function(error) {
-                            console.error('❌ Erro na requisição:', error);
-                            setErro('Erro ao finalizar cadastro. Entre em contato com o suporte.');
-                            setEtapa('form');
+                            console.error('❌ Erro ao verificar status:', error);
+                            if (tentativas >= maxTentativas) {
+                                clearInterval(window.monitoramentoInterval);
+                                window.monitoramentoInterval = null;
+                                setErro('Erro ao verificar pagamento. Entre em contato com o suporte.');
+                                setEtapa('form');
+                            }
                         });
-                    } else {
-                        console.error('❌ Nenhum dado encontrado para criar prestador');
-                        setErro('Erro ao finalizar cadastro. Entre em contato com o suporte.');
-                        setEtapa('form');
-                    }
-                }
-            })
-            .catch(function(error) {
-                console.error('❌ Erro ao verificar status:', error);
-            });
-    }, 3000);
-    
-    setIntervalId(interval);
-    
-    setTimeout(function() { 
-        if (intervalId) {
-            clearInterval(intervalId);
-            setIntervalId(null);
-        }
-    }, 600000);
-}
-                       // ===== FUNÇÃO PARA CRIAR PRESTADOR APÓS PAGAMENTO =====
+                }, 3000);
+            }
+
+            // ===== FUNÇÃO PARA CRIAR PRESTADOR APÓS PAGAMENTO =====
             function criarPrestadorAposPagamento() {
                 console.log('🚀 FUNÇÃO criarPrestadorAposPagamento FOI CHAMADA!');
                 
-                var dados = dadosPendentes;
+                var dadosSalvos = sessionStorage.getItem('cadastroPendente');
                 
-                // Tentar recuperar do sessionStorage se dadosPendentes estiver vazio
-                if (!dados) {
-                    console.log('⚠️ dadosPendentes vazio, tentando sessionStorage...');
-                    var dadosSalvos = sessionStorage.getItem('cadastroPendente');
-                    if (dadosSalvos) {
-                        dados = JSON.parse(dadosSalvos);
-                        console.log('✅ Dados recuperados do sessionStorage');
-                    }
-                }
-                
-                if (!dados) {
-                    console.error('❌ Dados de cadastro não encontrados');
+                if (!dadosSalvos) {
+                    console.error('❌ Dados de cadastro não encontrados no sessionStorage');
                     setErro('Erro ao finalizar cadastro. Entre em contato com o suporte.');
                     setEtapa('form');
                     return;
                 }
                 
-                console.log('📝 Criando prestador após pagamento confirmado');
-                console.log('📦 Dados:', dados);
+                var dados = JSON.parse(dadosSalvos);
+                console.log('📦 Dados recuperados:', { nome: dados.nome, email: dados.email, preferenceId: dados.preferenceId });
                 
-                // Preparar dados para envio
                 var dadosEnvio = {
                     nome: dados.nome,
                     email: dados.email,
@@ -3360,20 +3329,18 @@ function iniciarMonitoramentoPagamento() {
                         console.log('✅ Prestador cadastrado com sucesso após pagamento!');
                         console.log('📋 Dados do prestador:', registerData.user);
                         
-                        // Salvar token e usuário
                         localStorage.setItem('token', registerData.token);
                         localStorage.setItem('user', JSON.stringify(registerData.user));
                         
-                        // Limpar dados temporários
                         sessionStorage.removeItem('cadastroPendente');
+                        sessionStorage.removeItem('preferenceId');
                         setDadosPendentes(null);
                         
                         setEtapa('sucesso');
                         setLoading(false);
                         
-                        // Redirecionar após 2 segundos
                         setTimeout(function() {
-                            onCadastroSucesso();
+                            window.location.href = BASE_PATH + '/dashboard';
                         }, 2000);
                     })
                     .catch(function(error) {
@@ -3381,7 +3348,7 @@ function iniciarMonitoramentoPagamento() {
                         setErro('Erro ao finalizar cadastro. Entre em contato com o suporte.');
                         setEtapa('form');
                     });
-            } 
+            }
 
             // ===== FUNÇÕES DE FORMATAÇÃO =====
             function formatarCPF(valor) {
@@ -3472,7 +3439,7 @@ function iniciarMonitoramentoPagamento() {
                 });
             }
 
-                        // ===== FUNÇÃO handleSubmit - FLUXO CORRETO =====
+            // ===== FUNÇÃO handleSubmit =====
             function handleSubmit(e) {
                 e.preventDefault();
                 
@@ -3529,7 +3496,6 @@ function iniciarMonitoramentoPagamento() {
                     }
                 }
 
-                // ===== PREPARAR DADOS PARA GUARDAR =====
                 var dadosPendentesTemp = {
                     nome: formData.nome,
                     email: formData.email,
@@ -3559,7 +3525,6 @@ function iniciarMonitoramentoPagamento() {
 
                 console.log('📤 Dados de cadastro salvos (aguardando pagamento)');
 
-                // ===== PASSO 1: CRIAR PREFERÊNCIA DE PAGAMENTO =====
                 setEtapa('processando');
                 
                 fetch(API_URL + '/assinatura/criar-preferencia', {
@@ -3584,23 +3549,22 @@ function iniciarMonitoramentoPagamento() {
                         if (pagamentoData.success) {
                             console.log('✅ Preferência de pagamento criada:', pagamentoData);
                             
-                            // Usar sandboxInitPoint para testes (mais seguro)
+                            // Salvar preferenceId no sessionStorage
+                            sessionStorage.setItem('preferenceId', pagamentoData.preferenceId);
+                            
                             var linkParaAbrir = pagamentoData.sandboxInitPoint || pagamentoData.initPoint;
                             
                             setLinkPagamento(linkParaAbrir);
                             setPreferenceId(pagamentoData.preferenceId);
                             
-                            // Adicionar preferenceId aos dados pendentes
                             dadosPendentesTemp.preferenceId = pagamentoData.preferenceId;
                             setDadosPendentes(dadosPendentesTemp);
                             
-                            // Salvar também no sessionStorage como backup
                             sessionStorage.setItem('cadastroPendente', JSON.stringify(dadosPendentesTemp));
                             
                             setEtapa('pagamento');
                             setLoading(false);
                             
-                            // Iniciar monitoramento do pagamento
                             iniciarMonitoramentoPagamento();
                             
                             window.scrollTo({ top: 0, behavior: 'smooth' });
