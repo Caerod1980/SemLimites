@@ -5,12 +5,10 @@ import crypto from 'crypto';
 
 dotenv.config();
 
-// Verificar se as variáveis de ambiente estão configuradas corretamente
 if (!process.env.MERCADO_PAGO_ACCESS_TOKEN) {
   console.error('❌ MERCADO_PAGO_ACCESS_TOKEN não configurado!');
 }
 
-// Configuração do cliente Mercado Pago - NOVA FORMA DE CONFIGURAÇÃO
 const client = new MercadoPagoConfig({
   accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN,
   options: { 
@@ -19,15 +17,11 @@ const client = new MercadoPagoConfig({
   }
 });
 
-// Instâncias dos serviços
 const preference = new Preference(client);
 const payment = new Payment(client);
 const customer = new Customer(client);
 const merchantOrder = new MerchantOrder(client);
 
-/**
- * Cria uma preferência de pagamento (pública - para cadastro)
- */
 export async function criarPreferenciaPublica({ email, nome, plano = 'mensal', valor = 9.90 }) {
   try {
     console.log(`📝 Criando preferência pública para: ${email}`);
@@ -92,9 +86,6 @@ export async function criarPreferenciaPublica({ email, nome, plano = 'mensal', v
   }
 }
 
-/**
- * Cria uma assinatura (ordem) para o prestador
- */
 export async function criarAssinatura(dados) {
   try {
     const { prestadorId, email, nome, cpf, plano = 'mensal', valor = 9.90 } = dados;
@@ -183,7 +174,7 @@ export async function criarAssinatura(dados) {
 }
 
 /**
- * Processa notificação de pagamento recebida via webhook
+ * Processa notificação de pagamento recebida via webhook - CORRIGIDO
  */
 export async function processarNotificacao(notificacao) {
   try {
@@ -199,11 +190,25 @@ export async function processarNotificacao(notificacao) {
     }
     
     let paymentId = data?.id;
+    let preferenceId = null;
+    let emailPagador = null;
+    let nomePagador = null;
     
-    if (!paymentId && resource && typeof resource === 'string') {
-      const matches = resource.match(/\/(\d+)$/);
-      if (matches) {
-        paymentId = matches[1];
+    // Tentar extrair preferenceId da notificação
+    if (resource && typeof resource === 'string') {
+      // Tentar encontrar preferenceId na URL
+      const prefMatch = resource.match(/pref_id=([^&]+)/);
+      if (prefMatch) {
+        preferenceId = prefMatch[1];
+        console.log(`📌 PreferenceId extraído da URL: ${preferenceId}`);
+      }
+      
+      // Extrair paymentId se não veio em data.id
+      if (!paymentId) {
+        const paymentMatch = resource.match(/\/(\d+)$/);
+        if (paymentMatch) {
+          paymentId = paymentMatch[1];
+        }
       }
     }
     
@@ -216,21 +221,17 @@ export async function processarNotificacao(notificacao) {
     
     let paymentData;
     let pagamentoAprovado = false;
-    let emailPagador = null;
-    let nomePagador = null;
-    let preferenceId = null;
     
     try {
       paymentData = await payment.get({ id: paymentId });
       pagamentoAprovado = paymentData.status === 'approved';
       emailPagador = paymentData.payer?.email;
       nomePagador = paymentData.metadata?.nome || paymentData.payer?.name;
-      preferenceId = paymentData.metadata?.preference_id || paymentData.order?.id;
+      preferenceId = paymentData.metadata?.preference_id || paymentData.order?.id || preferenceId;
       
       console.log('📊 Dados do pagamento:', {
         id: paymentData.id,
         status: paymentData.status,
-        status_detail: paymentData.status_detail,
         email: emailPagador,
         metadata: paymentData.metadata
       });
@@ -238,10 +239,20 @@ export async function processarNotificacao(notificacao) {
       console.error(`⚠️ Pagamento ${paymentId} não encontrado via API:`, error.message);
       console.log(`ℹ️ Considerando pagamento ${paymentId} como aprovado (modo sandbox)`);
       pagamentoAprovado = true;
+      
+      // Em modo sandbox, tentar extrair dados do body da notificação
+      if (notificacao.data?.id) {
+        paymentId = notificacao.data.id;
+      }
+      
+      // Tentar extrair email da notificação original
+      if (notificacao.originalBody?.payer?.email) {
+        emailPagador = notificacao.originalBody.payer.email;
+      }
     }
     
     if (!pagamentoAprovado) {
-      console.log(`⏸️ Pagamento ${paymentId} não aprovado, status: ${paymentData?.status}`);
+      console.log(`⏸️ Pagamento ${paymentId} não aprovado`);
       return { success: true, message: 'Pagamento pendente', pagamentoConfirmado: false };
     }
     
@@ -252,12 +263,16 @@ export async function processarNotificacao(notificacao) {
     
     let prestadorExistente = null;
     
+    // Buscar por preferenceId
     if (preferenceId) {
       prestadorExistente = await Prestador.findOne({ preferenceId });
+      console.log(`🔍 Buscando por preferenceId ${preferenceId}: ${prestadorExistente ? 'ENCONTRADO' : 'NÃO ENCONTRADO'}`);
     }
     
+    // Buscar por email
     if (!prestadorExistente && emailPagador) {
       prestadorExistente = await Prestador.findOne({ email: emailPagador });
+      console.log(`🔍 Buscando por email ${emailPagador}: ${prestadorExistente ? 'ENCONTRADO' : 'NÃO ENCONTRADO'}`);
     }
     
     if (prestadorExistente) {
@@ -277,7 +292,7 @@ export async function processarNotificacao(notificacao) {
         success: true,
         prestadorId: prestadorExistente._id,
         status: 'ativado',
-        paymentId: paymentData?.id || paymentId,
+        paymentId: paymentId,
         message: 'Prestador ativado com sucesso'
       };
     }
@@ -287,7 +302,7 @@ export async function processarNotificacao(notificacao) {
     return {
       success: true,
       pagamentoConfirmado: true,
-      paymentId: paymentData?.id || paymentId,
+      paymentId: paymentId,
       status: 'approved',
       email: emailPagador,
       nome: nomePagador,
@@ -304,9 +319,6 @@ export async function processarNotificacao(notificacao) {
   }
 }
 
-/**
- * Busca status de uma assinatura
- */
 export async function buscarStatusAssinatura(paymentId) {
   try {
     const paymentData = await payment.get({ id: paymentId });
@@ -327,9 +339,6 @@ export async function buscarStatusAssinatura(paymentId) {
   }
 }
 
-/**
- * Cancela uma assinatura no Mercado Pago
- */
 export async function cancelarAssinatura(paymentId) {
   try {
     console.log(`🔄 Tentando cancelar assinatura: ${paymentId}`);
