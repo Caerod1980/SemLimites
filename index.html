@@ -3156,13 +3156,12 @@
     
     renderComponent();
 }
-                                 // ===== FUNÇÃO PARA VERIFICAR STATUS DO PAGAMENTO =====
+                               // ===== FUNÇÃO PARA VERIFICAR STATUS DO PAGAMENTO =====
 function iniciarMonitoramentoPagamento() {
     if (!preferenceId) return;
     
     console.log('🔍 Iniciando monitoramento de pagamento para preferência:', preferenceId);
     
-    // Limpar intervalo anterior se existir
     if (intervalId) {
         clearInterval(intervalId);
     }
@@ -3175,22 +3174,93 @@ function iniciarMonitoramentoPagamento() {
             .then(function(data) {
                 console.log('📊 Status do pagamento:', data);
                 
-                // Verificar se o pagamento foi confirmado
                 if (data.status === 'approved' || data.pagamentoConfirmado === true) {
-                    console.log('✅ Pagamento confirmado via monitoramento!');
+                    console.log('✅ Pagamento confirmado!');
                     clearInterval(interval);
                     setIntervalId(null);
                     
-                    // ===== FORÇAR REDIRECIONAMENTO PARA O FRONTEND =====
-                    console.log('🔄 Forçando redirecionamento para criar prestador...');
+                    // ===== CRIAR PRESTADOR IMEDIATAMENTE =====
+                    console.log('🚀 Criando prestador agora...');
                     
-                    // Em vez de esperar o webhook, criar o prestador imediatamente
-                    const dados = dadosPendentes;
+                    var dados = dadosPendentes;
+                    if (!dados) {
+                        var dadosSalvos = sessionStorage.getItem('cadastroPendente');
+                        if (dadosSalvos) {
+                            dados = JSON.parse(dadosSalvos);
+                            console.log('📦 Dados recuperados do sessionStorage');
+                        }
+                    }
+                    
                     if (dados) {
-                        criarPrestadorAposPagamento();
+                        console.log('📝 Dados encontrados, criando prestador...');
+                        
+                        var dadosEnvio = {
+                            nome: dados.nome,
+                            email: dados.email,
+                            senha: dados.senha,
+                            tipo: 'prestador',
+                            tipoPessoa: dados.tipoPessoa,
+                            cidade: dados.cidade,
+                            estado: dados.estado,
+                            whatsapp: dados.whatsapp,
+                            telefone: dados.telefone || '',
+                            descricao: dados.descricao || '',
+                            tags: dados.tags || [],
+                            categoriaPrincipal: dados.categoriaPrincipal,
+                            servicos: dados.servicos,
+                            aceitouTermos: true,
+                            preferenceId: dados.preferenceId,
+                            planoStatus: 'ativo',
+                            planoAtivo: true,
+                            assinaturaAtivadaEm: new Date().toISOString()
+                        };
+                        
+                        if (dados.tipoPessoa === 'fisica') {
+                            dadosEnvio.cpf = dados.cpf;
+                        } else {
+                            dadosEnvio.cnpj = dados.cnpj;
+                            dadosEnvio.responsavel = dados.responsavel;
+                            if (dados.cnpjVerificado) {
+                                dadosEnvio.cnpjVerificado = true;
+                                dadosEnvio.razaoSocialVerificada = dados.razaoSocialVerificada;
+                            }
+                        }
+                        
+                        fetch(API_URL + '/auth/register', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(dadosEnvio)
+                        })
+                        .then(function(response) { return response.json(); })
+                        .then(function(registerData) {
+                            if (registerData.token) {
+                                console.log('✅ Prestador criado com sucesso!');
+                                localStorage.setItem('token', registerData.token);
+                                localStorage.setItem('user', JSON.stringify(registerData.user));
+                                sessionStorage.removeItem('cadastroPendente');
+                                setDadosPendentes(null);
+                                
+                                setEtapa('sucesso');
+                                setLoading(false);
+                                
+                                setTimeout(function() {
+                                    onCadastroSucesso();
+                                }, 2000);
+                            } else {
+                                console.error('❌ Erro ao criar prestador:', registerData);
+                                setErro('Erro ao finalizar cadastro. Entre em contato com o suporte.');
+                                setEtapa('form');
+                            }
+                        })
+                        .catch(function(error) {
+                            console.error('❌ Erro na requisição:', error);
+                            setErro('Erro ao finalizar cadastro. Entre em contato com o suporte.');
+                            setEtapa('form');
+                        });
                     } else {
-                        // Se não tiver dados, redirecionar com parâmetro
-                        window.location.href = BASE_PATH + '/dashboard?pagamento=sucesso';
+                        console.error('❌ Nenhum dado encontrado para criar prestador');
+                        setErro('Erro ao finalizar cadastro. Entre em contato com o suporte.');
+                        setEtapa('form');
                     }
                 }
             })
@@ -3201,7 +3271,6 @@ function iniciarMonitoramentoPagamento() {
     
     setIntervalId(interval);
     
-    // Parar após 10 minutos
     setTimeout(function() { 
         if (intervalId) {
             clearInterval(intervalId);
