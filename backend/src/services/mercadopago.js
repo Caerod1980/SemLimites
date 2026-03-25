@@ -14,7 +14,7 @@ if (!process.env.MERCADO_PAGO_ACCESS_TOKEN) {
 const client = new MercadoPagoConfig({
   accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN,
   options: { 
-    timeout: 10000, // Aumentei o timeout para 10 segundos
+    timeout: 10000,
     idempotencyKey: crypto.randomUUID()
   }
 });
@@ -27,14 +27,11 @@ const merchantOrder = new MerchantOrder(client);
 
 /**
  * Cria uma preferência de pagamento (pública - para cadastro)
- * @param {Object} dados - Dados do cliente
- * @returns {Promise<Object>} Dados da preferência
  */
 export async function criarPreferenciaPublica({ email, nome, plano = 'mensal', valor = 9.90 }) {
   try {
     console.log(`📝 Criando preferência pública para: ${email}`);
     
-    // Criar preferência de pagamento
     const body = {
       items: [
         {
@@ -53,9 +50,9 @@ export async function criarPreferenciaPublica({ email, nome, plano = 'mensal', v
         name: nome
       },
       back_urls: {
-        success: `${process.env.FRONTEND_URL}/dashboard?pagamento=sucesso`,
-        failure: `${process.env.FRONTEND_URL}/dashboard?pagamento=erro`,
-        pending: `${process.env.FRONTEND_URL}/dashboard?pagamento=pending`
+        success: `https://www.semlimitesprestadores.com.br/dashboard?pagamento=sucesso`,
+        failure: `https://www.semlimitesprestadores.com.br/dashboard?pagamento=erro`,
+        pending: `https://www.semlimitesprestadores.com.br/dashboard?pagamento=pending`
       },
       auto_return: 'approved',
       payment_methods: {
@@ -97,8 +94,6 @@ export async function criarPreferenciaPublica({ email, nome, plano = 'mensal', v
 
 /**
  * Cria uma assinatura (ordem) para o prestador
- * @param {Object} dados - Dados do prestador e plano
- * @returns {Promise<Object>} Dados da assinatura criada
  */
 export async function criarAssinatura(dados) {
   try {
@@ -106,7 +101,6 @@ export async function criarAssinatura(dados) {
     
     console.log(`📝 Criando assinatura para prestador: ${prestadorId}`);
     
-    // 1. Criar ou buscar cliente no Mercado Pago
     let customerId = null;
     try {
       const customerResponse = await customer.search({ email });
@@ -118,7 +112,6 @@ export async function criarAssinatura(dados) {
       console.log('Cliente não encontrado, criando novo...');
     }
     
-    // 2. Criar preferência de pagamento
     const body = {
       items: [
         {
@@ -136,9 +129,9 @@ export async function criarAssinatura(dados) {
         name: nome
       },
       back_urls: {
-        success: `${process.env.FRONTEND_URL}/dashboard?pagamento=sucesso`,
-        failure: `${process.env.FRONTEND_URL}/dashboard?pagamento=erro`,
-        pending: `${process.env.FRONTEND_URL}/dashboard?pagamento=pending`
+        success: `https://www.semlimitesprestadores.com.br/dashboard?pagamento=sucesso`,
+        failure: `https://www.semlimitesprestadores.com.br/dashboard?pagamento=erro`,
+        pending: `https://www.semlimitesprestadores.com.br/dashboard?pagamento=pending`
       },
       auto_return: 'approved',
       payment_methods: {
@@ -156,12 +149,10 @@ export async function criarAssinatura(dados) {
       notification_url: `${process.env.BACKEND_URL || 'https://semlimites-api-rodrigo-b5ckghhkbxdqd7a8.canadacentral-01.azurewebsites.net'}/api/assinatura/webhooks/mercadopago`
     };
     
-    // Se tiver customerId, associar
     if (customerId) {
       body.payer.id = customerId;
     }
     
-    // Se tiver CPF, adicionar identificação
     if (cpf) {
       body.payer.identification = {
         type: 'CPF',
@@ -193,8 +184,6 @@ export async function criarAssinatura(dados) {
 
 /**
  * Processa notificação de pagamento recebida via webhook
- * @param {Object} notificacao - Dados da notificação
- * @returns {Promise<Object>} Resultado do processamento
  */
 export async function processarNotificacao(notificacao) {
   try {
@@ -202,7 +191,6 @@ export async function processarNotificacao(notificacao) {
     
     const { action, data, type, topic, resource } = notificacao;
     
-    // Verificar tipo de notificação (aceita tanto 'payment' quanto 'payment' no topic)
     const tipoNotificacao = type || topic;
     
     if (tipoNotificacao !== 'payment') {
@@ -210,7 +198,6 @@ export async function processarNotificacao(notificacao) {
       return { success: true, message: 'Tipo ignorado' };
     }
     
-    // Extrair paymentId (pode vir em data.id ou resource)
     let paymentId = data?.id;
     
     if (!paymentId && resource && typeof resource === 'string') {
@@ -261,23 +248,19 @@ export async function processarNotificacao(notificacao) {
     console.log(`✅ Pagamento ${paymentId} confirmado!`);
     
     // ===== CRIAÇÃO AUTOMÁTICA DO PRESTADOR =====
-    // Importar modelo Prestador dinamicamente para evitar circular dependency
     const Prestador = (await import('../models/Prestador.js')).default;
     
-    // Tentar buscar prestador pelo preferenceId nos metadados
     let prestadorExistente = null;
     
     if (preferenceId) {
       prestadorExistente = await Prestador.findOne({ preferenceId });
     }
     
-    // Se não encontrou, tentar buscar pelo email do pagador
     if (!prestadorExistente && emailPagador) {
       prestadorExistente = await Prestador.findOne({ email: emailPagador });
     }
     
     if (prestadorExistente) {
-      // Se já existe, apenas ativar a assinatura
       console.log(`✅ Prestador existente encontrado: ${prestadorExistente._id}`);
       
       prestadorExistente.planoStatus = 'ativo';
@@ -299,8 +282,6 @@ export async function processarNotificacao(notificacao) {
       };
     }
     
-    // Se não existe prestador, retornamos que o frontend deve criar
-    // Mas agora com os dados necessários
     console.log('ℹ️ Pagamento confirmado mas prestador não existe - frontend deve criar');
     
     return {
@@ -325,8 +306,6 @@ export async function processarNotificacao(notificacao) {
 
 /**
  * Busca status de uma assinatura
- * @param {string} paymentId - ID do pagamento
- * @returns {Promise<Object>} Status da assinatura
  */
 export async function buscarStatusAssinatura(paymentId) {
   try {
@@ -350,17 +329,13 @@ export async function buscarStatusAssinatura(paymentId) {
 
 /**
  * Cancela uma assinatura no Mercado Pago
- * @param {string} paymentId - ID do pagamento/preferência
- * @returns {Promise<Object>} Resultado do cancelamento
  */
 export async function cancelarAssinatura(paymentId) {
   try {
     console.log(`🔄 Tentando cancelar assinatura: ${paymentId}`);
     
-    // Verificar se é uma preferência ou um pagamento
     if (paymentId.includes('-')) {
       console.log(`ℹ️ É uma preferência. Não é possível cancelar diretamente.`);
-      
       return {
         success: true,
         message: 'Preferência marcada como cancelada no sistema',
