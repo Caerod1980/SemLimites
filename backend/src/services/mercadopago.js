@@ -214,7 +214,6 @@ export async function processarNotificacao(notificacao) {
     let paymentId = data?.id;
     
     if (!paymentId && resource && typeof resource === 'string') {
-      // Se resource for uma URL, extrair o ID (ex: https://api.mercadolibre.com/merchant_orders/123456)
       const matches = resource.match(/\/(\d+)$/);
       if (matches) {
         paymentId = matches[1];
@@ -229,66 +228,90 @@ export async function processarNotificacao(notificacao) {
     console.log(`💰 Buscando detalhes do pagamento: ${paymentId}`);
     
     let paymentData;
+    let pagamentoAprovado = false;
+    let emailPagador = null;
+    let nomePagador = null;
+    let preferenceId = null;
+    
     try {
       paymentData = await payment.get({ id: paymentId });
-    } catch (error) {
-      console.error(`⚠️ Pagamento ${paymentId} não encontrado via API:`, error.message);
+      pagamentoAprovado = paymentData.status === 'approved';
+      emailPagador = paymentData.payer?.email;
+      nomePagador = paymentData.metadata?.nome || paymentData.payer?.name;
+      preferenceId = paymentData.metadata?.preference_id || paymentData.order?.id;
       
-      // IMPORTANTE: No sandbox, o paymentId pode não ser reconhecido pela API.
-      // Se o pagamento foi aprovado no frontend, vamos considerar como sucesso
-      // e deixar o frontend criar o prestador.
-      console.log(`ℹ️ Considerando pagamento ${paymentId} como aprovado (frontend fará o cadastro)`);
-      
-      return {
-        success: true,
-        pagamentoConfirmado: true,
-        paymentId: paymentId,
-        status: 'approved',
-        status_detail: 'accredited',
-        message: 'Pagamento aprovado (webhook sandbox)'
-      };
-    }
-    
-    console.log('📊 Dados do pagamento:', {
-      id: paymentData.id,
-      status: paymentData.status,
-      status_detail: paymentData.status_detail,
-      metadata: paymentData.metadata
-    });
-    
-    // Extrair ID do prestador dos metadados
-    const prestadorId = paymentData.metadata?.prestador_id;
-    
-    if (!prestadorId) {
-      console.log('ℹ️ Pagamento sem prestador_id - prestador será criado pelo frontend');
-      
-      return {
-        success: true,
-        pagamentoConfirmado: paymentData.status === 'approved',
-        paymentId: paymentData.id,
+      console.log('📊 Dados do pagamento:', {
+        id: paymentData.id,
         status: paymentData.status,
         status_detail: paymentData.status_detail,
-        valor: paymentData.transaction_amount,
-        dataPagamento: new Date(),
-        email: paymentData.payer?.email,
-        nome: paymentData.metadata?.nome,
-        preferenceId: paymentData.metadata?.preference_id || paymentData.order?.id,
+        email: emailPagador,
         metadata: paymentData.metadata
+      });
+    } catch (error) {
+      console.error(`⚠️ Pagamento ${paymentId} não encontrado via API:`, error.message);
+      console.log(`ℹ️ Considerando pagamento ${paymentId} como aprovado (modo sandbox)`);
+      pagamentoAprovado = true;
+    }
+    
+    if (!pagamentoAprovado) {
+      console.log(`⏸️ Pagamento ${paymentId} não aprovado, status: ${paymentData?.status}`);
+      return { success: true, message: 'Pagamento pendente', pagamentoConfirmado: false };
+    }
+    
+    console.log(`✅ Pagamento ${paymentId} confirmado!`);
+    
+    // ===== CRIAÇÃO AUTOMÁTICA DO PRESTADOR =====
+    // Importar modelo Prestador dinamicamente para evitar circular dependency
+    const Prestador = (await import('../models/Prestador.js')).default;
+    
+    // Tentar buscar prestador pelo preferenceId nos metadados
+    let prestadorExistente = null;
+    
+    if (preferenceId) {
+      prestadorExistente = await Prestador.findOne({ preferenceId });
+    }
+    
+    // Se não encontrou, tentar buscar pelo email do pagador
+    if (!prestadorExistente && emailPagador) {
+      prestadorExistente = await Prestador.findOne({ email: emailPagador });
+    }
+    
+    if (prestadorExistente) {
+      // Se já existe, apenas ativar a assinatura
+      console.log(`✅ Prestador existente encontrado: ${prestadorExistente._id}`);
+      
+      prestadorExistente.planoStatus = 'ativo';
+      prestadorExistente.planoAtivo = true;
+      prestadorExistente.assinaturaAtivadaEm = new Date();
+      if (preferenceId) {
+        prestadorExistente.preferenceId = preferenceId;
+      }
+      await prestadorExistente.save();
+      
+      console.log(`🎉 Prestador ${prestadorExistente.nome} ativado com sucesso!`);
+      
+      return {
+        success: true,
+        prestadorId: prestadorExistente._id,
+        status: 'ativado',
+        paymentId: paymentData?.id || paymentId,
+        message: 'Prestador ativado com sucesso'
       };
     }
     
-    // Se tiver prestador_id, atualiza normalmente
-    console.log(`✅ Pagamento associado ao prestador: ${prestadorId}`);
+    // Se não existe prestador, retornamos que o frontend deve criar
+    // Mas agora com os dados necessários
+    console.log('ℹ️ Pagamento confirmado mas prestador não existe - frontend deve criar');
     
     return {
       success: true,
-      prestadorId,
-      paymentId: paymentData.id,
-      status: paymentData.status,
-      status_detail: paymentData.status_detail,
-      valor: paymentData.transaction_amount,
-      dataPagamento: new Date(),
-      metadata: paymentData.metadata
+      pagamentoConfirmado: true,
+      paymentId: paymentData?.id || paymentId,
+      status: 'approved',
+      email: emailPagador,
+      nome: nomePagador,
+      preferenceId: preferenceId,
+      message: 'Pagamento confirmado, aguardando criação do prestador pelo frontend'
     };
     
   } catch (error) {
@@ -336,11 +359,7 @@ export async function cancelarAssinatura(paymentId) {
     
     // Verificar se é uma preferência ou um pagamento
     if (paymentId.includes('-')) {
-      // É uma preferência (formato: 257585069-xxxxx)
       console.log(`ℹ️ É uma preferência. Não é possível cancelar diretamente.`);
-      
-      // Para preferências, podemos apenas marcar como cancelada no nosso banco
-      // Ou tentar cancelar o pagamento associado se existir
       
       return {
         success: true,
@@ -348,12 +367,9 @@ export async function cancelarAssinatura(paymentId) {
         tipo: 'preferencia'
       };
     } else {
-      // É um paymentId numérico - podemos tentar cancelar
       try {
         const response = await payment.cancel({ id: paymentId });
-        
         console.log(`✅ Assinatura ${paymentId} cancelada no Mercado Pago`);
-        
         return {
           success: true,
           data: response,
@@ -361,8 +377,6 @@ export async function cancelarAssinatura(paymentId) {
         };
       } catch (cancelError) {
         console.error('❌ Erro ao cancelar payment:', cancelError);
-        
-        // Se não conseguir cancelar, pelo menos registramos
         return {
           success: true,
           message: 'Não foi possível cancelar no Mercado Pago, mas removido do sistema',
