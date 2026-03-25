@@ -44,9 +44,9 @@ export async function criarPreferenciaPublica({ email, nome, plano = 'mensal', v
         name: nome
       },
       back_urls: {
-        success: `https://www.semlimitesprestadores.com.br/dashboard?pagamento=sucesso`,
-        failure: `https://www.semlimitesprestadores.com.br/dashboard?pagamento=erro`,
-        pending: `https://www.semlimitesprestadores.com.br/dashboard?pagamento=pending`
+        success: `https://www.semlimitesprestadores.com.br/cadastro?retorno=sucesso`,
+        failure: `https://www.semlimitesprestadores.com.br/cadastro?retorno=erro`,
+        pending: `https://www.semlimitesprestadores.com.br/cadastro?retorno=pending`
       },
       auto_return: 'approved',
       payment_methods: {
@@ -120,9 +120,9 @@ export async function criarAssinatura(dados) {
         name: nome
       },
       back_urls: {
-        success: `https://www.semlimitesprestadores.com.br/dashboard?pagamento=sucesso`,
-        failure: `https://www.semlimitesprestadores.com.br/dashboard?pagamento=erro`,
-        pending: `https://www.semlimitesprestadores.com.br/dashboard?pagamento=pending`
+        success: `https://www.semlimitesprestadores.com.br/cadastro?retorno=sucesso`,
+        failure: `https://www.semlimitesprestadores.com.br/cadastro?retorno=erro`,
+        pending: `https://www.semlimitesprestadores.com.br/cadastro?retorno=pending`
       },
       auto_return: 'approved',
       payment_methods: {
@@ -196,14 +196,12 @@ export async function processarNotificacao(notificacao) {
     
     // Tentar extrair preferenceId da notificação
     if (resource && typeof resource === 'string') {
-      // Tentar encontrar preferenceId na URL
       const prefMatch = resource.match(/pref_id=([^&]+)/);
       if (prefMatch) {
         preferenceId = prefMatch[1];
         console.log(`📌 PreferenceId extraído da URL: ${preferenceId}`);
       }
       
-      // Extrair paymentId se não veio em data.id
       if (!paymentId) {
         const paymentMatch = resource.match(/\/(\d+)$/);
         if (paymentMatch) {
@@ -240,12 +238,10 @@ export async function processarNotificacao(notificacao) {
       console.log(`ℹ️ Considerando pagamento ${paymentId} como aprovado (modo sandbox)`);
       pagamentoAprovado = true;
       
-      // Em modo sandbox, tentar extrair dados do body da notificação
       if (notificacao.data?.id) {
         paymentId = notificacao.data.id;
       }
       
-      // Tentar extrair email da notificação original
       if (notificacao.originalBody?.payer?.email) {
         emailPagador = notificacao.originalBody.payer.email;
       }
@@ -258,18 +254,15 @@ export async function processarNotificacao(notificacao) {
     
     console.log(`✅ Pagamento ${paymentId} confirmado!`);
     
-    // ===== CRIAÇÃO AUTOMÁTICA DO PRESTADOR =====
     const Prestador = (await import('../models/Prestador.js')).default;
     
     let prestadorExistente = null;
     
-    // Buscar por preferenceId
     if (preferenceId) {
       prestadorExistente = await Prestador.findOne({ preferenceId });
       console.log(`🔍 Buscando por preferenceId ${preferenceId}: ${prestadorExistente ? 'ENCONTRADO' : 'NÃO ENCONTRADO'}`);
     }
     
-    // Buscar por email
     if (!prestadorExistente && emailPagador) {
       prestadorExistente = await Prestador.findOne({ email: emailPagador });
       console.log(`🔍 Buscando por email ${emailPagador}: ${prestadorExistente ? 'ENCONTRADO' : 'NÃO ENCONTRADO'}`);
