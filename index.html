@@ -2954,7 +2954,7 @@
             );
         }
 
-                     // ========== TELA DE CADASTRO COM PAGAMENTO (FLUXO CORRETO) ==========
+                             // ========== TELA DE CADASTRO COM PAGAMENTO (FLUXO CORRETO) ==========
         function CadastroPrestador(props) {
             var onCadastroSucesso = props.onCadastroSucesso;
             var onVoltar = props.onVoltar;
@@ -2995,7 +2995,7 @@
             var [emailVerificado, setEmailVerificado] = useState(false);
             var [cnpjVerificadoExistente, setCnpjVerificadoExistente] = useState(false);
             var [dadosPendentes, setDadosPendentes] = useState(null);
-            var [intervalId, setIntervalId] = useState(null);
+            var [monitoramentoAtivo, setMonitoramentoAtivo] = useState(false);
 
             var erroElement = null;
             if (erro) {
@@ -3083,8 +3083,8 @@
                 
                 console.log('🔍 [Cadastro] Parâmetro retorno:', retorno);
                 
-                if (retorno === 'sucesso' || retorno === 'erro' || retorno === 'pending') {
-                    console.log('✅ [Cadastro] Retorno do Mercado Pago detectado! Status:', retorno);
+                if (retorno === 'sucesso') {
+                    console.log('✅ [Cadastro] Retorno do Mercado Pago detectado! Status: sucesso');
                     
                     const preferenceIdSalvo = sessionStorage.getItem('preferenceId');
                     const dadosSalvos = sessionStorage.getItem('cadastroPendente');
@@ -3092,22 +3092,24 @@
                     console.log('🔍 [Cadastro] preferenceId salvo:', preferenceIdSalvo ? 'SIM' : 'NÃO');
                     console.log('🔍 [Cadastro] dadosSalvos:', dadosSalvos ? 'SIM' : 'NÃO');
                     
-                    if (preferenceIdSalvo && dadosSalvos && retorno === 'sucesso') {
+                    if (preferenceIdSalvo && dadosSalvos) {
                         console.log('📦 [Cadastro] Dados encontrados, iniciando verificação do pagamento...');
+                        // SÓ AQUI INICIA O MONITORAMENTO - APENAS UMA VEZ
                         iniciarMonitoramentoPagamento();
-                    } else if (retorno === 'erro') {
-                        setErro('Ocorreu um erro no pagamento. Tente novamente.');
-                        setEtapa('form');
-                    } else if (retorno === 'pending') {
-                        setErro('Pagamento pendente. Aguarde e tente novamente.');
-                        setEtapa('form');
                     } else {
                         console.error('❌ [Cadastro] Nenhum dado encontrado no sessionStorage');
                         setErro('Erro ao processar retorno. Entre em contato com o suporte.');
                         setEtapa('form');
                     }
                     
+                    // Limpar parâmetros da URL para não executar novamente
                     window.history.replaceState({}, document.title, window.location.pathname);
+                } else if (retorno === 'erro') {
+                    setErro('Ocorreu um erro no pagamento. Tente novamente.');
+                    setEtapa('form');
+                } else if (retorno === 'pending') {
+                    setErro('Pagamento pendente. Aguarde e tente novamente.');
+                    setEtapa('form');
                 }
             }, []);
 
@@ -3193,8 +3195,14 @@
                 renderComponent();
             }
 
-            // ===== FUNÇÃO PARA VERIFICAR STATUS DO PAGAMENTO =====
+            // ===== FUNÇÃO PARA VERIFICAR STATUS DO PAGAMENTO (SÓ APÓS RETORNO) =====
             function iniciarMonitoramentoPagamento() {
+                // IMPEDIR MÚLTIPLOS MONITORAMENTOS
+                if (monitoramentoAtivo) {
+                    console.log('⚠️ Monitoramento já ativo, ignorando nova tentativa');
+                    return;
+                }
+                
                 const preferenceIdSalvo = sessionStorage.getItem('preferenceId');
                 const dadosSalvos = sessionStorage.getItem('cadastroPendente');
                 
@@ -3208,10 +3216,13 @@
                     return;
                 }
                 
-                console.log('🔍 Iniciando monitoramento de pagamento para preferência:', preferenceIdSalvo);
+                console.log('🔥 MONITORAMENTO ATIVO - INICIADO');
+                setMonitoramentoAtivo(true);
                 
+                // Limpar intervalo anterior se existir
                 if (window.monitoramentoInterval) {
                     clearInterval(window.monitoramentoInterval);
+                    window.monitoramentoInterval = null;
                 }
                 
                 let tentativas = 0;
@@ -3235,15 +3246,15 @@
                                 console.log('✅ Pagamento confirmado!');
                                 clearInterval(window.monitoramentoInterval);
                                 window.monitoramentoInterval = null;
+                                setMonitoramentoAtivo(false);
                                 criarPrestadorAposPagamento();
                             } else if (tentativas >= maxTentativas) {
                                 console.log('⏰ Tempo limite excedido. Pagamento não confirmado.');
                                 clearInterval(window.monitoramentoInterval);
                                 window.monitoramentoInterval = null;
+                                setMonitoramentoAtivo(false);
                                 setErro('Tempo limite excedido. Entre em contato com o suporte.');
                                 setEtapa('form');
-                            } else {
-                                console.log(`⏳ Pagamento ainda não confirmado. Tentativa ${tentativas}/${maxTentativas}`);
                             }
                         })
                         .catch(function(error) {
@@ -3251,6 +3262,7 @@
                             if (tentativas >= maxTentativas) {
                                 clearInterval(window.monitoramentoInterval);
                                 window.monitoramentoInterval = null;
+                                setMonitoramentoAtivo(false);
                                 setErro('Erro ao verificar pagamento. Entre em contato com o suporte.');
                                 setEtapa('form');
                             }
@@ -3439,7 +3451,7 @@
                 });
             }
 
-            // ===== FUNÇÃO handleSubmit =====
+            // ===== FUNÇÃO handleSubmit (SEM MONITORAMENTO, SEM NOVA ABA) =====
             function handleSubmit(e) {
                 e.preventDefault();
                 
@@ -3565,13 +3577,13 @@
                             setEtapa('pagamento');
                             setLoading(false);
                             
-                            iniciarMonitoramentoPagamento();
-                            
                             window.scrollTo({ top: 0, behavior: 'smooth' });
                             
+                            // ===== CORREÇÃO CRÍTICA: REDIRECIONAR NA MESMA ABA =====
+                            // NÃO usar window.open com nova aba!
                             setTimeout(function() {
-                                window.open(linkParaAbrir, '_blank');
-                            }, 1000);
+                                window.location.href = linkParaAbrir;
+                            }, 500);
                         } else {
                             throw new Error(pagamentoData.error || 'Erro ao criar pagamento');
                         }
@@ -3651,17 +3663,15 @@
                             ),
                             React.createElement('a', {
                                 href: linkPagamento,
-                                target: "_blank",
-                                rel: "noopener noreferrer",
                                 className: "inline-block px-8 py-4 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white font-bold rounded-xl hover:shadow-lg transition text-lg md:text-xl transform hover:scale-105"
                             }, "PAGAR AGORA →"),
                             React.createElement('p', { className: "text-xs text-amber-600 mt-4" },
-                                "Após o pagamento, aguarde alguns segundos. Sua conta será criada automaticamente."
+                                "Após o pagamento, você será redirecionado automaticamente."
                             )
                         ),
 
                         React.createElement('p', { className: "text-xs text-slate-400 text-center mt-6" },
-                            "Não feche esta página. Estamos monitorando o status do seu pagamento."
+                            "Você será redirecionado após o pagamento."
                         )
                     )
                 );
