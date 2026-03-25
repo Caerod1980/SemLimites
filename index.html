@@ -2954,7 +2954,7 @@
             );
         }
 
-        // ========== TELA DE CADASTRO COM PAGAMENTO ==========
+               // ========== TELA DE CADASTRO COM PAGAMENTO (FLUXO CORRETO) ==========
         function CadastroPrestador(props) {
             var onCadastroSucesso = props.onCadastroSucesso;
             var onVoltar = props.onVoltar;
@@ -2981,11 +2981,10 @@
                 tags: ''
             });
             
-            var [etapa, setEtapa] = useState('form'); // 'form', 'processando', 'pagamento', 'sucesso'
+            var [etapa, setEtapa] = useState('form');
             var [verificacaoCNPJ, setVerificacaoCNPJ] = useState(null);
             var [loading, setLoading] = useState(false);
             var [erro, setErro] = useState('');
-            var [cpfValido, setCpfValido] = useState(true);
             
             // ===== ESTADOS PARA PAGAMENTO =====
             var [aceitouTermos, setAceitouTermos] = useState(false);
@@ -2995,10 +2994,9 @@
             var [carregandoMP, setCarregandoMP] = useState(false);
             var [emailVerificado, setEmailVerificado] = useState(false);
             var [cnpjVerificadoExistente, setCnpjVerificadoExistente] = useState(false);
-            var [dadosCadastro, setDadosCadastro] = useState(null);
-            var [pagamentoConfirmado, setPagamentoConfirmado] = useState(false);
+            var [dadosPendentes, setDadosPendentes] = useState(null);
+            var [intervalId, setIntervalId] = useState(null);
 
-            // ===== VARIÁVEL erroElement =====
             var erroElement = null;
             if (erro) {
                 erroElement = React.createElement('div', { className: "mb-4 p-3 rounded-lg bg-red-50 border border-red-200" },
@@ -3006,7 +3004,7 @@
                 );
             }
 
-            // ===== FUNÇÕES PARA VERIFICAR DUPLICATAS =====
+            // ===== VERIFICAÇÕES =====
             function verificarEmail() {
                 if (!formData.email || formData.email.length < 5) return;
                 
@@ -3059,7 +3057,6 @@
                     });
             }, []);
 
-            // ===== CARREGAR SERVIÇOS QUANDO CATEGORIA MUDA =====
             useEffect(function() {
                 if (categoriaSelecionada) {
                     fetch(API_URL + '/categorias/' + categoriaSelecionada + '/servicos')
@@ -3112,7 +3109,6 @@
                 }
             }, [etapa, preferenceId, mp, carregandoMP]);
 
-            // ===== FUNÇÃO PARA RENDERIZAR BRICK DE PAGAMENTO =====
             function renderBrickPagamento(mpInstance, prefId) {
                 const bricksBuilder = mpInstance.bricks();
                 
@@ -3156,48 +3152,100 @@
             }
 
             // ===== FUNÇÃO PARA VERIFICAR STATUS DO PAGAMENTO =====
-            function verificarStatusPagamento() {
+            function iniciarMonitoramentoPagamento() {
                 if (!preferenceId) return;
                 
                 console.log('🔍 Iniciando monitoramento de pagamento para preferência:', preferenceId);
                 
-                const interval = setInterval(async () => {
-                    try {
-                        const response = await fetch(API_URL + '/assinatura/status-preferencia/' + preferenceId);
-                        const data = await response.json();
-                        
-                        console.log('📊 Status do pagamento:', data);
-                        
-                        if (data.status === 'approved' || data.pagamentoConfirmado) {
-                            console.log('✅ Pagamento confirmado!');
-                            clearInterval(interval);
-                            setPagamentoConfirmado(true);
-                            
-                            // Agora sim, cadastrar o usuário
-                            cadastrarUsuarioAposPagamento();
-                        }
-                    } catch (error) {
-                        console.error('Erro ao verificar status:', error);
-                    }
-                }, 5000);
+                // Limpar intervalo anterior se existir
+                if (intervalId) {
+                    clearInterval(intervalId);
+                }
                 
-                setTimeout(function() { clearInterval(interval); }, 600000);
+                const interval = setInterval(function() {
+                    console.log('🔄 Verificando status do pagamento...');
+                    
+                    fetch(API_URL + '/assinatura/status-preferencia/' + preferenceId)
+                        .then(function(response) { return response.json(); })
+                        .then(function(data) {
+                            console.log('📊 Status do pagamento:', data);
+                            
+                            if (data.status === 'approved' || data.pagamentoConfirmado) {
+                                console.log('✅ Pagamento confirmado!');
+                                clearInterval(interval);
+                                setIntervalId(null);
+                                
+                                // Criar o prestador após confirmação do pagamento
+                                criarPrestadorAposPagamento();
+                            }
+                        })
+                        .catch(function(error) {
+                            console.error('❌ Erro ao verificar status:', error);
+                        });
+                }, 3000);
+                
+                setIntervalId(interval);
+                
+                // Parar após 10 minutos
+                setTimeout(function() { 
+                    if (intervalId) {
+                        clearInterval(intervalId);
+                        setIntervalId(null);
+                    }
+                }, 600000);
             }
 
-            // ===== FUNÇÃO PARA CADASTRAR USUÁRIO APÓS PAGAMENTO =====
-            function cadastrarUsuarioAposPagamento() {
-                if (!dadosCadastro) {
+            // ===== FUNÇÃO PARA CRIAR PRESTADOR APÓS PAGAMENTO =====
+            function criarPrestadorAposPagamento() {
+                var dados = dadosPendentes;
+                
+                if (!dados) {
                     console.error('❌ Dados de cadastro não encontrados');
                     setErro('Erro ao finalizar cadastro. Entre em contato com o suporte.');
+                    setEtapa('form');
                     return;
                 }
                 
-                console.log('📝 Cadastrando usuário após pagamento confirmado');
+                console.log('📝 Criando prestador após pagamento confirmado');
+                console.log('📦 Dados:', dados);
+                
+                // Preparar dados para envio
+                var dadosEnvio = {
+                    nome: dados.nome,
+                    email: dados.email,
+                    senha: dados.senha,
+                    tipo: 'prestador',
+                    tipoPessoa: dados.tipoPessoa,
+                    cidade: dados.cidade,
+                    estado: dados.estado,
+                    whatsapp: dados.whatsapp,
+                    telefone: dados.telefone || '',
+                    descricao: dados.descricao || '',
+                    tags: dados.tags || [],
+                    categoriaPrincipal: dados.categoriaPrincipal,
+                    servicos: dados.servicos,
+                    aceitouTermos: true,
+                    preferenceId: dados.preferenceId,
+                    planoStatus: 'ativo',
+                    planoAtivo: true,
+                    assinaturaAtivadaEm: new Date().toISOString()
+                };
+                
+                if (dados.tipoPessoa === 'fisica') {
+                    dadosEnvio.cpf = dados.cpf;
+                } else {
+                    dadosEnvio.cnpj = dados.cnpj;
+                    dadosEnvio.responsavel = dados.responsavel;
+                    if (dados.cnpjVerificado) {
+                        dadosEnvio.cnpjVerificado = true;
+                        dadosEnvio.razaoSocialVerificada = dados.razaoSocialVerificada;
+                    }
+                }
                 
                 fetch(API_URL + '/auth/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(dadosCadastro)
+                    body: JSON.stringify(dadosEnvio)
                 })
                     .then(function(response) { 
                         if (!response.ok) {
@@ -3218,12 +3266,17 @@
                         localStorage.setItem('token', registerData.token);
                         localStorage.setItem('user', JSON.stringify(registerData.user));
                         
+                        // Limpar dados temporários
+                        sessionStorage.removeItem('cadastroPendente');
+                        setDadosPendentes(null);
+                        
                         setEtapa('sucesso');
                         setLoading(false);
                         
+                        // Redirecionar após 2 segundos
                         setTimeout(function() {
                             onCadastroSucesso();
-                        }, 3000);
+                        }, 2000);
                     })
                     .catch(function(error) {
                         console.error('❌ Erro no cadastro pós-pagamento:', error);
@@ -3272,7 +3325,6 @@
                 }
             }
 
-            // ===== FUNÇÃO PARA VERIFICAR CNPJ NA RECEITA =====
             function verificarCNPJ() {
                 var cnpjNumeros = formData.cnpj.replace(/\D/g, '');
                 if (cnpjNumeros.length !== 14) {
@@ -3322,11 +3374,10 @@
                 });
             }
 
-            // ===== FUNÇÃO handleSubmit CORRIGIDA (SÓ CRIA PREFERÊNCIA) =====
+            // ===== FUNÇÃO handleSubmit - FLUXO CORRETO =====
             function handleSubmit(e) {
                 e.preventDefault();
                 
-                // ===== VERIFICAÇÕES INICIAIS =====
                 if (!categoriaSelecionada) {
                     setErro('Selecione uma categoria principal');
                     return;
@@ -3345,7 +3396,6 @@
                 setLoading(true);
                 setErro('');
 
-                // ===== VALIDAÇÕES BÁSICAS =====
                 if (formData.senha.length < 6) {
                     setErro('A senha deve ter pelo menos 6 caracteres');
                     setLoading(false);
@@ -3365,7 +3415,6 @@
                     return;
                 }
 
-                // ===== VALIDAÇÕES DE DOCUMENTO =====
                 if (formData.tipoPessoa === 'fisica') {
                     var cpfNumeros = formData.cpf.replace(/\D/g, '');
                     if (cpfNumeros.length !== 11) {
@@ -3382,12 +3431,11 @@
                     }
                 }
 
-                // ===== DADOS PARA ENVIO (guardar para usar após pagamento) =====
-                var dadosEnvio = {
+                // ===== PREPARAR DADOS PARA GUARDAR =====
+                var dadosPendentesTemp = {
                     nome: formData.nome,
                     email: formData.email,
                     senha: formData.senha,
-                    tipo: 'prestador',
                     tipoPessoa: formData.tipoPessoa,
                     cidade: formData.cidade,
                     estado: formData.estado,
@@ -3396,28 +3444,24 @@
                     descricao: formData.descricao || '',
                     tags: formData.tags.split(',').map(function(t) { return t.trim(); }).filter(function(t) { return t; }),
                     categoriaPrincipal: categoriaSelecionada,
-                    servicos: servicosSelecionados,
-                    aceitouTermos: true
+                    servicos: servicosSelecionados
                 };
 
                 if (formData.tipoPessoa === 'fisica') {
-                    dadosEnvio.cpf = formData.cpf.replace(/\D/g, '');
+                    dadosPendentesTemp.cpf = formData.cpf.replace(/\D/g, '');
                 } else {
-                    dadosEnvio.cnpj = formData.cnpj.replace(/\D/g, '');
-                    dadosEnvio.responsavel = formData.responsavel;
+                    dadosPendentesTemp.cnpj = formData.cnpj.replace(/\D/g, '');
+                    dadosPendentesTemp.responsavel = formData.responsavel;
                     
                     if (verificacaoCNPJ && verificacaoCNPJ.status === 'ativo') {
-                        dadosEnvio.cnpjVerificado = true;
-                        dadosEnvio.razaoSocialVerificada = verificacaoCNPJ.razaoSocial;
+                        dadosPendentesTemp.cnpjVerificado = true;
+                        dadosPendentesTemp.razaoSocialVerificada = verificacaoCNPJ.razaoSocial;
                     }
                 }
 
-                console.log('📤 Dados de cadastro prontos (aguardando pagamento):', dadosEnvio);
-                
-                // Guardar dados para usar após pagamento
-                setDadosCadastro(dadosEnvio);
+                console.log('📤 Dados de cadastro salvos (aguardando pagamento)');
 
-                // ===== PASSO 1: CRIAR APENAS A PREFERÊNCIA DE PAGAMENTO =====
+                // ===== PASSO 1: CRIAR PREFERÊNCIA DE PAGAMENTO =====
                 setEtapa('processando');
                 
                 fetch(API_URL + '/assinatura/criar-preferencia', {
@@ -3445,17 +3489,21 @@
                             setLinkPagamento(pagamentoData.initPoint);
                             setPreferenceId(pagamentoData.preferenceId);
                             
-                            // ===== PASSO 2: REDIRECIONAR PARA PAGAMENTO =====
+                            // Adicionar preferenceId aos dados pendentes
+                            dadosPendentesTemp.preferenceId = pagamentoData.preferenceId;
+                            setDadosPendentes(dadosPendentesTemp);
+                            
+                            // Salvar também no sessionStorage como backup
+                            sessionStorage.setItem('cadastroPendente', JSON.stringify(dadosPendentesTemp));
+                            
                             setEtapa('pagamento');
                             setLoading(false);
                             
                             // Iniciar monitoramento do pagamento
-                            verificarStatusPagamento();
+                            iniciarMonitoramentoPagamento();
                             
-                            // Rolar para o topo
                             window.scrollTo({ top: 0, behavior: 'smooth' });
                             
-                            // Abrir link em nova aba automaticamente
                             setTimeout(function() {
                                 window.open(pagamentoData.initPoint, '_blank');
                             }, 1000);
@@ -3532,7 +3580,6 @@
                             React.createElement('p', { className: "text-xs text-[#4a8a4a]" }, "Carregando opções de pagamento...")
                         ),
 
-                        // Link direto para pagamento (SEMPRE visível)
                         linkPagamento && React.createElement('div', { className: "text-center mt-6 p-6 bg-amber-50 rounded-xl border-2 border-amber-300" },
                             React.createElement('p', { className: "text-base text-amber-800 mb-4 font-semibold" },
                                 "👇 Clique no botão abaixo para pagar com Mercado Pago"
@@ -3609,7 +3656,6 @@
                             )
                         ),
 
-                        // Campos específicos por tipo
                         formData.tipoPessoa === 'fisica' ? 
                             React.createElement('div', { className: "mb-4" },
                                 React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "CPF *"),
@@ -3670,7 +3716,6 @@
                                 )
                             ),
 
-                        // Nome / Razão Social
                         React.createElement('div', { className: "mb-4" },
                             React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, 
                                 formData.tipoPessoa === 'fisica' ? 'Nome Completo *' : 'Razão Social *'
@@ -3685,7 +3730,6 @@
                             })
                         ),
 
-                        // Email e Senha
                         React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-4" },
                             React.createElement('div', null,
                                 React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "E-mail *"),
@@ -3713,7 +3757,6 @@
                             )
                         ),
 
-                        // Confirmar Senha
                         React.createElement('div', { className: "mb-4" },
                             React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Confirmar Senha *"),
                             React.createElement('input', {
@@ -3727,7 +3770,6 @@
                             })
                         ),
 
-                        // Localização
                         React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-4" },
                             React.createElement('div', null,
                                 React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Cidade *"),
@@ -3756,7 +3798,6 @@
                             )
                         ),
 
-                        // Contato
                         React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-4" },
                             React.createElement('div', null,
                                 React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "WhatsApp *"),
@@ -3783,7 +3824,6 @@
                             )
                         ),
 
-                        // Categoria
                         React.createElement('div', { className: "mb-4" },
                             React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Categoria Principal *"),
                             React.createElement('select', {
@@ -3801,7 +3841,6 @@
                             )
                         ),
 
-                        // Serviços
                         categoriaSelecionada && servicos.length > 0 && 
                         React.createElement('div', { className: "mb-4" },
                             React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-2" }, 
@@ -3843,7 +3882,6 @@
                             )
                         ),
 
-                        // Descrição
                         React.createElement('div', { className: "mb-4" },
                             React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Descrição"),
                             React.createElement('textarea', {
@@ -3856,7 +3894,6 @@
                             })
                         ),
 
-                        // Tags
                         React.createElement('div', { className: "mb-4" },
                             React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, 
                                 "Tags",
@@ -3874,7 +3911,6 @@
                             })
                         ),
 
-                        // Termos
                         React.createElement('div', { className: "mb-6 p-4 bg-[#f0f7f0] rounded-xl border border-[#c0dfc0]" },
                             React.createElement('label', { className: "flex items-start gap-3 cursor-pointer" },
                                 React.createElement('input', {
@@ -3906,7 +3942,6 @@
                             )
                         ),
 
-                        // Botão Submit
                         React.createElement('button', {
                             type: "submit",
                             disabled: loading || !aceitouTermos,
