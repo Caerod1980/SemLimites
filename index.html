@@ -7636,24 +7636,36 @@
         }
     }, []);
 
-    // ===== DETECTAR REDIRECIONAMENTO DE PAGAMENTO =====
+        // ===== DETECTAR REDIRECIONAMENTO DE PAGAMENTO =====
     useEffect(function() {
+        console.log('🔍 [App] Executando useEffect de redirecionamento');
+        console.log('🔍 [App] URL atual:', window.location.href);
+        
         // Verificar se veio de redirecionamento de pagamento
         const urlParams = new URLSearchParams(window.location.search);
         const pagamentoStatus = urlParams.get('pagamento');
         
+        console.log('🔍 [App] Status do pagamento na URL:', pagamentoStatus);
+        
         if (pagamentoStatus === 'sucesso') {
-            console.log('✅ Pagamento retornou com sucesso via URL!');
+            console.log('✅ [App] Pagamento retornou com sucesso via URL!');
             
             // Verificar se há dados pendentes no sessionStorage
             const dadosSalvos = sessionStorage.getItem('cadastroPendente');
+            console.log('🔍 [App] Dados pendentes no sessionStorage:', dadosSalvos ? 'SIM' : 'NÃO');
+            
             if (dadosSalvos && !localStorage.getItem('token')) {
-                console.log('📝 Dados encontrados, criando prestador...');
+                console.log('📝 [App] Dados encontrados, criando prestador...');
                 const dados = JSON.parse(dadosSalvos);
+                console.log('📦 [App] Dados do cadastro:', { 
+                    nome: dados.nome, 
+                    email: dados.email, 
+                    preferenceId: dados.preferenceId 
+                });
                 
                 // Criar uma função temporária para criar o prestador
                 async function criarPrestador() {
-                    console.log('📝 Criando prestador após redirecionamento...');
+                    console.log('📝 [App] Criando prestador após redirecionamento...');
                     
                     var dadosEnvio = {
                         nome: dados.nome,
@@ -7687,6 +7699,8 @@
                         }
                     }
                     
+                    console.log('📤 [App] Enviando requisição para /auth/register');
+                    
                     try {
                         const response = await fetch(API_URL + '/auth/register', {
                             method: 'POST',
@@ -7700,22 +7714,33 @@
                             throw new Error(registerData.error);
                         }
                         
-                        console.log('✅ Prestador cadastrado com sucesso!');
+                        console.log('✅ [App] Prestador cadastrado com sucesso!');
+                        console.log('📋 [App] Dados do prestador:', registerData.user);
+                        
                         localStorage.setItem('token', registerData.token);
                         localStorage.setItem('user', JSON.stringify(registerData.user));
                         sessionStorage.removeItem('cadastroPendente');
                         
-                        // Redirecionar para dashboard
+                        console.log('🚀 [App] Redirecionando para dashboard...');
                         window.location.href = BASE_PATH + '/dashboard';
                         
                     } catch (error) {
-                        console.error('❌ Erro:', error);
+                        console.error('❌ [App] Erro no cadastro pós-pagamento:', error);
                         alert('Erro ao finalizar cadastro. Entre em contato com o suporte.');
                     }
                 }
                 
                 criarPrestador();
+            } else {
+                if (localStorage.getItem('token')) {
+                    console.log('⚠️ [App] Usuário já possui token, redirecionando para dashboard');
+                    window.location.href = BASE_PATH + '/dashboard';
+                } else {
+                    console.log('⚠️ [App] Nenhum dado pendente encontrado no sessionStorage');
+                }
             }
+        } else {
+            console.log('🔍 [App] Nenhum redirecionamento de pagamento detectado');
         }
     }, []);
 
