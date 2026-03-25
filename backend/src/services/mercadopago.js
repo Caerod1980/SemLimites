@@ -53,9 +53,9 @@ export async function criarPreferenciaPublica({ email, nome, plano = 'mensal', v
         name: nome
       },
       back_urls: {
-        success: `${process.env.FRONTEND_URL || 'https://caerod1980.github.io'}/SemLimites/cadastro/sucesso`,
-        failure: `${process.env.FRONTEND_URL || 'https://caerod1980.github.io'}/SemLimites/cadastro/erro`,
-        pending: `${process.env.FRONTEND_URL || 'https://caerod1980.github.io'}/SemLimites/cadastro/pendente`
+         success: `${process.env.FRONTEND_URL}/dashboard?pagamento=sucesso`,
+         failure: `${process.env.FRONTEND_URL}/dashboard?pagamento=erro`,
+         pending: `${process.env.FRONTEND_URL}/dashboard?pagamento=pending`
       },
       auto_return: 'approved',
       payment_methods: {
