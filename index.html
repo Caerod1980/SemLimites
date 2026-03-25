@@ -3120,7 +3120,7 @@
             await bricksBuilder.create('wallet', 'paymentBrick_container', {
                 initialization: {
                     preferenceId: prefId,
-                    redirectMode: 'self'
+                    redirectMode: 'self'  // Redirecionar na mesma aba
                 },
                 customization: {
                     texts: {
@@ -3130,6 +3130,12 @@
                     visual: {
                         buttonBackground: 'default',
                         borderRadius: '8px'
+                    },
+                    // IMPORTANTE: backUrls deve estar aqui, não no onComplete
+                    backUrls: {
+                        success: "https://www.semlimitesprestadores.com.br/dashboard?pagamento=sucesso",
+                        failure: "https://www.semlimitesprestadores.com.br/dashboard?pagamento=erro",
+                        pending: "https://www.semlimitesprestadores.com.br/dashboard?pagamento=pending"
                     }
                 },
                 callbacks: {
@@ -3139,11 +3145,6 @@
                     onError: function(error) {
                         console.error('❌ Erro no brick:', error);
                         setErro('Erro ao carregar pagamento. Use o link alternativo abaixo.');
-                    },
-                    onComplete: function(data) {
-                        console.log('✅ Pagamento concluído!', data);
-                        // ===== URL CORRETA - SEM /SemLimites/ =====
-                        window.location.href = 'https://www.semlimitesprestadores.com.br/dashboard?pagamento=sucesso';
                     }
                 }
             });
