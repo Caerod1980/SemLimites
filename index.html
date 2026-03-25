@@ -3110,51 +3110,52 @@
             }, [etapa, preferenceId, mp, carregandoMP]);
 
                         function renderBrickPagamento(mpInstance, prefId) {
-                const bricksBuilder = mpInstance.bricks();
-                
-                const renderComponent = async () => {
-                    const container = document.getElementById('paymentBrick_container');
-                    if (container) container.innerHTML = '';
-                    
-                    try {
-                        await bricksBuilder.create('wallet', 'paymentBrick_container', {
-                            initialization: {
-                                preferenceId: prefId,
-                                redirectMode: 'blank'
-                            },
-                            customization: {
-                                texts: {
-                                    action: 'Pagar agora',
-                                    valueProp: 'Segurança Mercado Pago'
-                                },
-                                visual: {
-                                    buttonBackground: 'default',
-                                    borderRadius: '8px'
-                                },
-                                backUrls: {
-                                    success: "https://www.semlimitesprestadores.com.br/dashboard?pagamento=sucesso",
-                                    failure: "https://www.semlimitesprestadores.com.br/dashboard?pagamento=erro",
-                                    pending: "https://www.semlimitesprestadores.com.br/dashboard?pagamento=pending"
-                                }
-                            },
-                            callbacks: {
-                                onReady: function() {
-                                    console.log('✅ Brick de pagamento pronto');
-                                },
-                                onError: function(error) {
-                                    console.error('❌ Erro no brick:', error);
-                                    setErro('Erro ao carregar pagamento. Use o link alternativo abaixo.');
-                                }
-                            }
-                        });
-                        console.log('✅ Brick renderizado com sucesso');
-                    } catch (error) {
-                        console.error('❌ Erro ao renderizar brick:', error);
+    const bricksBuilder = mpInstance.bricks();
+    
+    const renderComponent = async () => {
+        const container = document.getElementById('paymentBrick_container');
+        if (container) container.innerHTML = '';
+        
+        try {
+            await bricksBuilder.create('wallet', 'paymentBrick_container', {
+                initialization: {
+                    preferenceId: prefId,
+                    redirectMode: 'self'  // Mudei de 'blank' para 'self' para redirecionar na mesma aba
+                },
+                customization: {
+                    texts: {
+                        action: 'Pagar agora',
+                        valueProp: 'Segurança Mercado Pago'
+                    },
+                    visual: {
+                        buttonBackground: 'default',
+                        borderRadius: '8px'
                     }
-                };
-                
-                renderComponent();
-            }
+                },
+                callbacks: {
+                    onReady: function() {
+                        console.log('✅ Brick de pagamento pronto');
+                    },
+                    onError: function(error) {
+                        console.error('❌ Erro no brick:', error);
+                        setErro('Erro ao carregar pagamento. Use o link alternativo abaixo.');
+                    },
+                    // ===== CORREÇÃO: onComplete é onde deve ficar o redirecionamento =====
+                    onComplete: function(data) {
+                        console.log('✅ Pagamento concluído!', data);
+                        // Redirecionar após pagamento bem-sucedido
+                        window.location.href = 'https://www.semlimitesprestadores.com.br/dashboard?pagamento=sucesso';
+                    }
+                }
+            });
+            console.log('✅ Brick renderizado com sucesso');
+        } catch (error) {
+            console.error('❌ Erro ao renderizar brick:', error);
+        }
+    };
+    
+    renderComponent();
+}
 
                                    // ===== FUNÇÃO PARA VERIFICAR STATUS DO PAGAMENTO =====
             function iniciarMonitoramentoPagamento() {
