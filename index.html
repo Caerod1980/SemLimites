@@ -3156,7 +3156,7 @@
                 renderComponent();
             }
 
-            // ===== FUNÇÃO PARA VERIFICAR STATUS DO PAGAMENTO =====
+                        // ===== FUNÇÃO PARA VERIFICAR STATUS DO PAGAMENTO =====
             function iniciarMonitoramentoPagamento() {
                 if (!preferenceId) return;
                 
@@ -3175,7 +3175,7 @@
                         .then(function(data) {
                             console.log('📊 Status do pagamento:', data);
                             
-                            if (data.status === 'approved' || data.pagamentoConfirmado) {
+                            if (data.status === 'approved' || data.pagamentoConfirmado === true) {
                                 console.log('✅ Pagamento confirmado!');
                                 clearInterval(interval);
                                 setIntervalId(null);
@@ -3199,10 +3199,21 @@
                     }
                 }, 600000);
             }
-
-            // ===== FUNÇÃO PARA CRIAR PRESTADOR APÓS PAGAMENTO =====
+                       // ===== FUNÇÃO PARA CRIAR PRESTADOR APÓS PAGAMENTO =====
             function criarPrestadorAposPagamento() {
+                console.log('🚀 FUNÇÃO criarPrestadorAposPagamento FOI CHAMADA!');
+                
                 var dados = dadosPendentes;
+                
+                // Tentar recuperar do sessionStorage se dadosPendentes estiver vazio
+                if (!dados) {
+                    console.log('⚠️ dadosPendentes vazio, tentando sessionStorage...');
+                    var dadosSalvos = sessionStorage.getItem('cadastroPendente');
+                    if (dadosSalvos) {
+                        dados = JSON.parse(dadosSalvos);
+                        console.log('✅ Dados recuperados do sessionStorage');
+                    }
+                }
                 
                 if (!dados) {
                     console.error('❌ Dados de cadastro não encontrados');
@@ -3247,6 +3258,8 @@
                     }
                 }
                 
+                console.log('📤 Enviando requisição para /auth/register');
+                
                 fetch(API_URL + '/auth/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -3266,6 +3279,7 @@
                         }
                         
                         console.log('✅ Prestador cadastrado com sucesso após pagamento!');
+                        console.log('📋 Dados do prestador:', registerData.user);
                         
                         // Salvar token e usuário
                         localStorage.setItem('token', registerData.token);
@@ -3288,7 +3302,7 @@
                         setErro('Erro ao finalizar cadastro. Entre em contato com o suporte.');
                         setEtapa('form');
                     });
-            }
+            } 
 
             // ===== FUNÇÕES DE FORMATAÇÃO =====
             function formatarCPF(valor) {
@@ -3379,7 +3393,7 @@
                 });
             }
 
-            // ===== FUNÇÃO handleSubmit - FLUXO CORRETO =====
+                        // ===== FUNÇÃO handleSubmit - FLUXO CORRETO =====
             function handleSubmit(e) {
                 e.preventDefault();
                 
@@ -3491,7 +3505,10 @@
                         if (pagamentoData.success) {
                             console.log('✅ Preferência de pagamento criada:', pagamentoData);
                             
-                            setLinkPagamento(pagamentoData.initPoint);
+                            // Usar sandboxInitPoint para testes (mais seguro)
+                            var linkParaAbrir = pagamentoData.sandboxInitPoint || pagamentoData.initPoint;
+                            
+                            setLinkPagamento(linkParaAbrir);
                             setPreferenceId(pagamentoData.preferenceId);
                             
                             // Adicionar preferenceId aos dados pendentes
@@ -3510,7 +3527,7 @@
                             window.scrollTo({ top: 0, behavior: 'smooth' });
                             
                             setTimeout(function() {
-                                window.open(pagamentoData.initPoint, '_blank');
+                                window.open(linkParaAbrir, '_blank');
                             }, 1000);
                         } else {
                             throw new Error(pagamentoData.error || 'Erro ao criar pagamento');
