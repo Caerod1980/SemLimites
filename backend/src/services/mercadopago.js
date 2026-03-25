@@ -5,7 +5,7 @@ import crypto from 'crypto';
 
 dotenv.config();
 
-// Verificar se as variáveis de ambiente estão configuradas
+// Verificar se as variáveis de ambiente estão configuradas corretamente
 if (!process.env.MERCADO_PAGO_ACCESS_TOKEN) {
   console.error('❌ MERCADO_PAGO_ACCESS_TOKEN não configurado!');
 }
