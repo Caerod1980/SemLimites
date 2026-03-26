@@ -3568,7 +3568,8 @@
                             // Salvar preferenceId no sessionStorage
                             sessionStorage.setItem('preferenceId', pagamentoData.preferenceId);
                             
-                            var linkParaAbrir = pagamentoData.sandboxInitPoint || pagamentoData.initPoint;
+                            var linkParaAbrir = pagamentoData.initPoint;
+                            console.log('🔗 Link de pagamento (PRODUÇÃO):', linkParaAbrir)
                             
                             setLinkPagamento(linkParaAbrir);
                             setPreferenceId(pagamentoData.preferenceId);
