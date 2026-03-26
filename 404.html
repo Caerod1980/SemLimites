@@ -3,52 +3,128 @@
 <head>
   <meta charset="utf-8">
   <title>SemLimites</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(145deg, #fcf8f3 0%, #ffffff 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .loader {
+      text-align: center;
+      padding: 20px;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #e0efe0;
+      border-top-color: #3d7a3d;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    h2 {
+      color: #3d7a3d;
+      margin: 0 0 10px 0;
+      font-size: 1.5rem;
+    }
+    p {
+      color: #4a8a4a;
+      margin: 0;
+      font-size: 0.875rem;
+    }
+  </style>
   <script>
     (function() {
-        var currentUrl = window.location.href;
-        var pathname = window.location.pathname;
-        var search = window.location.search;
+      var currentUrl = window.location.href;
+      var pathname = window.location.pathname;
+      var search = window.location.search;
+      
+      console.log('📍 404 - URL atual:', currentUrl);
+      console.log('📍 Pathname:', pathname);
+      console.log('📍 Search:', search);
+      
+      // Verificar se é um retorno de pagamento
+      var params = new URLSearchParams(search);
+      var retorno = params.get('retorno');
+      var collectionStatus = params.get('collection_status');
+      var preferenceId = params.get('preference_id');
+      var paymentId = params.get('payment_id');
+      
+      console.log('📦 Parâmetros detectados:', {
+        retorno: retorno,
+        collection_status: collectionStatus,
+        preference_id: preferenceId,
+        payment_id: paymentId
+      });
+      
+      // Se tem retorno de pagamento ou status de aprovação, salvar no sessionStorage
+      if (retorno === 'sucesso' || retorno === 'erro' || retorno === 'pending' || collectionStatus === 'approved') {
+        console.log('✅ Retorno de pagamento detectado no 404!');
         
-        console.log('📍 404 - URL atual:', currentUrl);
-        
-        // Verificar se é um retorno de pagamento
-        var params = new URLSearchParams(search);
-        var retorno = params.get('retorno');
-        
-        if (retorno === 'sucesso' || retorno === 'erro' || retorno === 'pending') {
-            console.log('✅ Retorno de pagamento detectado no 404!');
-            
-            // Salvar no sessionStorage para o app processar
-            sessionStorage.setItem('pagamentoRetorno', retorno);
-            sessionStorage.setItem('preferenceId', params.get('preference_id'));
-            sessionStorage.setItem('paymentId', params.get('payment_id'));
-            sessionStorage.setItem('collectionStatus', params.get('collection_status'));
-            
-            // Salvar todos os parâmetros para debug
-            sessionStorage.setItem('pagamentoParams', JSON.stringify(Object.fromEntries(params)));
+        // Salvar status do pagamento
+        if (retorno === 'sucesso' || collectionStatus === 'approved') {
+          sessionStorage.setItem('pagamentoRetorno', 'sucesso');
+        } else if (retorno === 'erro') {
+          sessionStorage.setItem('pagamentoRetorno', 'erro');
+        } else if (retorno === 'pending') {
+          sessionStorage.setItem('pagamentoRetorno', 'pending');
         }
         
-        // SEMPRE redirecionar para o index.html (que processará a rota)
-        // O index.html vai ler o pathname e decidir qual componente renderizar
-        var redirectUrl = '/SemLimites/' + (search || '');
-        
-        // Se já está tentando acessar o index, não redirecionar em loop
-        if (pathname === '/SemLimites/' || pathname === '/SemLimites/index.html') {
-            return;
+        // Salvar dados do pagamento
+        if (preferenceId) {
+          sessionStorage.setItem('preferenceId', preferenceId);
+        }
+        if (paymentId) {
+          sessionStorage.setItem('paymentId', paymentId);
+        }
+        if (collectionStatus) {
+          sessionStorage.setItem('collectionStatus', collectionStatus);
         }
         
-        console.log('🔄 Redirecionando para:', redirectUrl);
+        // Salvar todos os parâmetros para debug
+        var allParams = {};
+        for (var pair of params.entries()) {
+          allParams[pair[0]] = pair[1];
+        }
+        sessionStorage.setItem('pagamentoParams', JSON.stringify(allParams));
         
-        // Salvar a URL original para o app
-        sessionStorage.redirect = currentUrl;
-        
-        // Redirecionar
-        window.location.href = redirectUrl;
+        console.log('💾 Dados salvos no sessionStorage:', {
+          pagamentoRetorno: sessionStorage.getItem('pagamentoRetorno'),
+          preferenceId: sessionStorage.getItem('preferenceId'),
+          paymentId: sessionStorage.getItem('paymentId')
+        });
+      }
+      
+      // Verificar se já está tentando carregar o index.html
+      if (pathname === '/SemLimites/index.html' || pathname === '/SemLimites/') {
+        console.log('✅ Já está no index.html, carregando normalmente');
+        return;
+      }
+      
+      // Construir a URL para o index.html mantendo os parâmetros
+      var redirectUrl = '/SemLimites/index.html' + (search || '');
+      
+      console.log('🔄 Redirecionando para:', redirectUrl);
+      
+      // Salvar a URL original para referência
+      sessionStorage.setItem('redirectOriginal', currentUrl);
+      
+      // Redirecionar para o index.html
+      window.location.replace(redirectUrl);
     })();
   </script>
 </head>
 <body>
-  <div style="text-align: center; padding: 50px; font-family: sans-serif;">
+  <div class="loader">
+    <div class="spinner"></div>
     <h2>SemLimites</h2>
     <p>Carregando...</p>
   </div>
