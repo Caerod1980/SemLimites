@@ -3148,52 +3148,56 @@
                 }
             }, [etapa, preferenceId, mp, carregandoMP]);
 
-            function renderBrickPagamento(mpInstance, prefId) {
-                const bricksBuilder = mpInstance.bricks();
-                
-                const renderComponent = async () => {
-                    const container = document.getElementById('paymentBrick_container');
-                    if (container) container.innerHTML = '';
-                    
-                    try {
-                        await bricksBuilder.create('wallet', 'paymentBrick_container', {
-                            initialization: {
-                                preferenceId: prefId,
-                                redirectMode: 'self'
-                            },
-                            customization: {
-                                texts: {
-                                    action: 'Pagar agora',
-                                    valueProp: 'Segurança Mercado Pago'
-                                },
-                                visual: {
-                                    buttonBackground: 'default',
-                                    borderRadius: '8px'
-                                },
-                                backUrls: {
-                                    success: "https://www.semlimitesprestadores.com.br/cadastro?retorno=sucesso",
-                                    failure: "https://www.semlimitesprestadores.com.br/cadastro?retorno=erro",
-                                    pending: "https://www.semlimitesprestadores.com.br/cadastro?retorno=pending"
-                                }
-                            },
-                            callbacks: {
-                                onReady: function() {
-                                    console.log('✅ Brick de pagamento pronto');
-                                },
-                                onError: function(error) {
-                                    console.error('❌ Erro no brick:', error);
-                                    setErro('Erro ao carregar pagamento. Use o link alternativo abaixo.');
-                                }
-                            }
-                        });
-                        console.log('✅ Brick renderizado com sucesso');
-                    } catch (error) {
-                        console.error('❌ Erro ao renderizar brick:', error);
+           function renderBrickPagamento(mpInstance, prefId) {
+    const bricksBuilder = mpInstance.bricks();
+    
+    // URL base correta incluindo o subpath
+    const baseUrl = window.location.origin + BASE_PATH;
+    console.log('🔗 URL base para retorno:', baseUrl);
+    
+    const renderComponent = async () => {
+        const container = document.getElementById('paymentBrick_container');
+        if (container) container.innerHTML = '';
+        
+        try {
+            await bricksBuilder.create('wallet', 'paymentBrick_container', {
+                initialization: {
+                    preferenceId: prefId,
+                    redirectMode: 'self'
+                },
+                customization: {
+                    texts: {
+                        action: 'Pagar agora',
+                        valueProp: 'Segurança Mercado Pago'
+                    },
+                    visual: {
+                        buttonBackground: 'default',
+                        borderRadius: '8px'
+                    },
+                    backUrls: {
+                        success: baseUrl + "/cadastro?retorno=sucesso",
+                        failure: baseUrl + "/cadastro?retorno=erro",
+                        pending: baseUrl + "/cadastro?retorno=pending"
                     }
-                };
-                
-                renderComponent();
-            }
+                },
+                callbacks: {
+                    onReady: function() {
+                        console.log('✅ Brick de pagamento pronto');
+                    },
+                    onError: function(error) {
+                        console.error('❌ Erro no brick:', error);
+                        setErro('Erro ao carregar pagamento. Use o link alternativo abaixo.');
+                    }
+                }
+            });
+            console.log('✅ Brick renderizado com sucesso');
+        } catch (error) {
+            console.error('❌ Erro ao renderizar brick:', error);
+        }
+    };
+    
+    renderComponent();
+}
 
             // ===== FUNÇÃO PARA VERIFICAR STATUS DO PAGAMENTO (SÓ APÓS RETORNO) =====
             function iniciarMonitoramentoPagamento() {
