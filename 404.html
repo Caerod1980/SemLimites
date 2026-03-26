@@ -8,58 +8,49 @@
         var currentUrl = window.location.href;
         var pathname = window.location.pathname;
         var search = window.location.search;
-        var params = new URLSearchParams(search);
         
         console.log('📍 404 - URL atual:', currentUrl);
-        console.log('📍 Parâmetros:', params.toString());
         
         // Verificar se é um retorno de pagamento
+        var params = new URLSearchParams(search);
         var retorno = params.get('retorno');
-        var preferenceId = params.get('preference_id');
         
         if (retorno === 'sucesso' || retorno === 'erro' || retorno === 'pending') {
             console.log('✅ Retorno de pagamento detectado no 404!');
             
-            // IMPORTANTE: Salvar no sessionStorage para o app processar
-            if (retorno === 'sucesso') {
-                sessionStorage.setItem('pagamentoRetorno', 'sucesso');
-                sessionStorage.setItem('preferenceId', preferenceId);
-            }
+            // Salvar no sessionStorage para o app processar
+            sessionStorage.setItem('pagamentoRetorno', retorno);
+            sessionStorage.setItem('preferenceId', params.get('preference_id'));
+            sessionStorage.setItem('paymentId', params.get('payment_id'));
+            sessionStorage.setItem('collectionStatus', params.get('collection_status'));
             
-            // Redirecionar para a página de cadastro com os parâmetros
-            var redirectUrl = '/SemLimites/cadastro' + search;
-            console.log('🔄 Redirecionando para:', redirectUrl);
-            window.location.href = redirectUrl;
-        } 
-        // Se já está em /SemLimites/, não redirecionar
-        else if (pathname.startsWith('/SemLimites/')) {
-            console.log('✅ Já está no caminho correto');
-            // Carregar o app normalmente
-            if (typeof sessionStorage !== 'undefined') {
-                sessionStorage.redirect = currentUrl;
-            }
-            window.location.href = currentUrl;
+            // Salvar todos os parâmetros para debug
+            sessionStorage.setItem('pagamentoParams', JSON.stringify(Object.fromEntries(params)));
         }
-        // Outros casos: redirecionar preservando o path
-        else {
-            var newPath = '/SemLimites' + pathname;
-            if (search) {
-                newPath = newPath + search;
-            }
-            console.log('🔄 Redirecionando para:', newPath);
-            if (typeof sessionStorage !== 'undefined') {
-                sessionStorage.redirect = currentUrl;
-            }
-            window.location.href = newPath;
+        
+        // SEMPRE redirecionar para o index.html (que processará a rota)
+        // O index.html vai ler o pathname e decidir qual componente renderizar
+        var redirectUrl = '/SemLimites/' + (search || '');
+        
+        // Se já está tentando acessar o index, não redirecionar em loop
+        if (pathname === '/SemLimites/' || pathname === '/SemLimites/index.html') {
+            return;
         }
+        
+        console.log('🔄 Redirecionando para:', redirectUrl);
+        
+        // Salvar a URL original para o app
+        sessionStorage.redirect = currentUrl;
+        
+        // Redirecionar
+        window.location.href = redirectUrl;
     })();
   </script>
 </head>
 <body>
   <div style="text-align: center; padding: 50px; font-family: sans-serif;">
     <h2>SemLimites</h2>
-    <p>Redirecionando...</p>
-    <p style="font-size: 12px; color: #666;">Aguarde um momento</p>
+    <p>Carregando...</p>
   </div>
 </body>
 </html>
