@@ -156,7 +156,8 @@
         ];
 
         var API_URL = 'https://semlimites-api-rodrigo-b5ckghhkbxdqd7a8.canadacentral-01.azurewebsites.net/api';
-        var BASE_PATH = '/SemLimites';
+        // CORREÇÃO CRÍTICA: BASE_PATH vazio para evitar redirecionamentos incorretos
+        var BASE_PATH = '';
         
         // CORREÇÃO: Usar a origem atual do site para construir o link de compartilhamento
         var SITE_URL = window.location.origin;
@@ -181,6 +182,13 @@
                 }
             }
             return result.join(" ");
+        }
+
+        // ========== FUNÇÃO DE NAVEGAÇÃO CORRIGIDA ==========
+        function navigate(path) {
+            console.log('🧭 Navegando para:', path);
+            window.history.pushState({}, '', path);
+            window.dispatchEvent(new Event('popstate'));
         }
 
         // ========== COMPONENTES DE UI REFINADOS ==========
@@ -296,23 +304,19 @@
 
             // Efeito para processar a URL quando ela mudar
             useEffect(function() {
-                // Resetar estados
                 setImgSrc(null);
                 setLoading(false);
                 setErro(false);
 
                 if (!src) return;
 
-                // Se for URL do Azure, solicita token SAS de leitura
                 if (src.includes('blob.core.windows.net')) {
                     obterTokenLeitura(src);
                 } else {
-                    // Se não for Azure, usa a URL diretamente (para imagens locais ou de outros domínios)
                     setImgSrc(src);
                 }
             }, [src]);
 
-            // Estado de carregamento
             if (loading) {
                 return React.createElement('div', {
                     className: cls(
@@ -322,7 +326,6 @@
                 });
             }
 
-            // Se houve erro ou não tem imagem, mostra placeholder
             if (erro || !imgSrc) {
                 return React.createElement('div', {
                     className: cls(
@@ -332,7 +335,6 @@
                 });
             }
 
-            // Renderiza a imagem com o token SAS
             return React.createElement('img', {
                 src: imgSrc,
                 className: cls("rounded-2xl object-cover border-2 border-white shadow-md", sizeClasses[size]),
@@ -344,7 +346,7 @@
             });
         }
 
-               // ========== COMPONENTE DO CABEÇALHO COMPLETO ==========
+        // ========== COMPONENTE DO CABEÇALHO COMPLETO ==========
         function Header(props) {
             var onVoltar = props.onVoltar;
             var usuario = props.usuario;
@@ -480,9 +482,8 @@
             );
         }
 
-                                   // ========== COMPONENTE DE BANNERS DE APOIO E PATROCÍNIO ==========
+        // ========== COMPONENTE DE BANNERS DE APOIO E PATROCÍNIO ==========
         function BannersPatrocinio() {
-            // Lista de banners configurada com seus links
             var [banners, setBanners] = useState([
                 {
                     id: 1,
@@ -519,7 +520,6 @@
                     link: 'https://caerod1980.github.io/SemLimites/sobre',
                     alt: 'Promocional - Sem Limites'
                 }
-                
             ]);
             
             var [bannerAtual, setBannerAtual] = useState(0);
@@ -527,7 +527,6 @@
             var [progresso, setProgresso] = useState(0);
             var [isMobile, setIsMobile] = useState(false);
             
-            // Detectar se é mobile
             useEffect(function() {
                 function verificarMobile() {
                     setIsMobile(window.innerWidth < 768);
@@ -537,10 +536,8 @@
                 return function() { window.removeEventListener('resize', verificarMobile); };
             }, []);
             
-            // Tempo de exibição de cada banner (5 segundos)
             var tempoExibicao = 5000;
             
-            // Intervalo para troca automática
             useEffect(function() {
                 if (pausado) return;
                 
@@ -578,18 +575,12 @@
             if (!banners || banners.length === 0) return null;
             
             var banner = banners[bannerAtual];
-            
-            // Escolhe a imagem correta baseado no dispositivo
             var imagemSrc = (isMobile && banner.imagemMobile) ? banner.imagemMobile : banner.imagem;
-            
-            // Classes de altura responsiva
             var imgClasses = "w-full transition-transform duration-500 group-hover:scale-105";
             
             if (isMobile) {
-                // Mobile: usa imagem específica com altura automática
                 imgClasses += " h-auto object-contain bg-gray-900";
             } else {
-                // Desktop: mantém altura fixa de 130px (igual à sua imagem original)
                 imgClasses += " h-[130px] object-contain bg-gray-900";
             }
             
@@ -598,18 +589,15 @@
                 onMouseEnter: function() { setPausado(true); },
                 onMouseLeave: function() { setPausado(false); }
             },
-                // Container do banner
                 React.createElement('div', { 
                     className: "relative cursor-pointer bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden",
                     onClick: function() { abrirLinkPatrocinador(banner.link); }
                 },
-                    // Imagem do banner
                     React.createElement('img', {
                         src: imagemSrc,
                         alt: banner.alt,
                         className: imgClasses,
                         onError: function(e) {
-                            // Fallback caso a imagem não carregue
                             e.target.style.display = 'none';
                             var fallbackDiv = document.createElement('div');
                             fallbackDiv.className = "bg-gradient-to-r from-[#3d7a3d] to-[#FFB347] text-white text-center flex items-center justify-center min-h-[130px]";
@@ -617,8 +605,6 @@
                             e.target.parentElement.appendChild(fallbackDiv);
                         }
                     }),
-                    
-                    // Overlay de pausa (aparece ao passar o mouse)
                     React.createElement('div', { 
                         className: "absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100"
                     },
@@ -626,15 +612,11 @@
                             "Clique para saber mais"
                         )
                     ),
-                    
-                    // Barra de progresso animada
                     React.createElement('div', { 
                         className: "absolute bottom-0 left-0 h-1 bg-gradient-to-r from-[#FFB347] to-[#FFD966] transition-all duration-100",
                         style: { width: progresso + '%' }
                     })
                 ),
-                
-                // Indicadores de navegação (dots)
                 banners.length > 1 && React.createElement('div', { 
                     className: "flex justify-center gap-2 mt-3"
                 },
@@ -652,7 +634,8 @@
                     })
                 )
             );
-        }    
+        }
+
         // ========== TELA DE BUSCA COM LOGOTIPO CORRIGIDO ==========
         function TelaBusca(props) {
             var onVerPerfil = props.onVerPerfil;
@@ -787,10 +770,8 @@
                     )
                 ),
                 
-                // ===== BANNERS DE PATROCÍNIO =====
                 React.createElement(BannersPatrocinio, null),
                 
-                // ===== FORMULÁRIO DE BUSCA =====
                 React.createElement('div', { className: "bg-white/70 backdrop-blur-sm rounded-2xl md:rounded-3xl border border-neutral-200 p-4 md:p-6 mb-4 md:mb-8 shadow-sm" },
                     React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4" },
                         React.createElement('input', {
@@ -876,7 +857,6 @@
             var onSucesso = props.onSucesso;
             var onCancelar = props.onCancelar;
             
-            // CORREÇÃO: Ajustar a data para o fuso horário local
             var hoje = new Date();
             var dataLocal = new Date(hoje.getTime() - (hoje.getTimezoneOffset() * 60000));
             var dataFormatada = dataLocal.toISOString().split('T')[0];
@@ -887,7 +867,7 @@
                 clienteEmail: '',
                 titulo: '',
                 descricao: '',
-                dataRealizacao: dataFormatada // Usando a data corrigida
+                dataRealizacao: dataFormatada
             });
             
             var [loading, setLoading] = useState(false);
@@ -1586,18 +1566,15 @@
                 setFormData({ ...formData, servicos: novosServicos });
             }
 
-            // ===== NOVAS FUNÇÕES DE UPLOAD PARA AZURE BLOB STORAGE =====
             function handleFotoChange(e) {
                 var file = e.target.files[0];
                 if (!file) return;
 
-                // Validar tipo do arquivo (apenas imagens)
                 if (!file.type.startsWith('image/')) {
                     setErro('Por favor, selecione apenas arquivos de imagem (JPEG, PNG, GIF)');
                     return;
                 }
 
-                // Validar tamanho (máximo 5MB)
                 if (file.size > 5 * 1024 * 1024) {
                     setErro('A imagem deve ter no máximo 5MB');
                     return;
@@ -1606,7 +1583,6 @@
                 setFotoPerfil(file);
                 setErro('');
 
-                // Criar preview local para visualização imediata
                 var reader = new FileReader();
                 reader.onloadend = function() {
                     setFotoPreview(reader.result);
@@ -1620,7 +1596,6 @@
                 setUploading(true);
                 setErro('');
 
-                // 1. Solicitar SAS token da API
                 return fetch(API_URL + '/upload/sas-token', {
                     method: 'POST',
                     headers: {
@@ -1645,7 +1620,6 @@
                     var sasUrl = data.sasUrl;
                     var blobName = data.blobName;
 
-                    // 2. Upload direto para Azure Blob Storage usando o SAS token
                     return fetch(sasUrl, {
                         method: 'PUT',
                         body: fotoPerfil,
@@ -1659,10 +1633,8 @@
                             throw new Error('Erro no upload da foto para o Azure');
                         }
 
-                        // 3. Extrair URL base (sem o SAS token) para salvar no MongoDB
                         var fotoUrl = sasUrl.split('?')[0];
 
-                        // 4. Salvar URL no MongoDB através da API
                         return fetch(API_URL + '/prestadores/foto', {
                             method: 'POST',
                             headers: {
@@ -1686,12 +1658,12 @@
                 })
                 .then(function(data) {
                     console.log('✅ Foto atualizada com sucesso:', data);
-                    setFotoPerfil(null); // Limpar arquivo após upload bem-sucedido
+                    setFotoPerfil(null);
                 })
                 .catch(function(error) {
                     console.error('❌ Erro no upload:', error);
                     setErro(error.message);
-                    throw error; // Re-lançar para o handleSubmit capturar
+                    throw error;
                 })
                 .finally(function() {
                     setUploading(false);
@@ -1763,7 +1735,6 @@
 
                 console.log('📤 Enviando dados do perfil:', dadosEnvio);
 
-                // Primeiro atualiza os dados do perfil
                 fetch(API_URL + '/prestadores/perfil', {
                     method: 'PUT',
                     headers: {
@@ -1778,14 +1749,12 @@
                             throw new Error(data.error);
                         }
                         
-                        // Se tiver uma nova foto para upload, faz o upload
                         if (fotoPerfil) {
                             return handleUploadFoto().then(function() {
                                 alert('✅ Perfil atualizado com sucesso!');
                                 onSalvo();
                             });
                         } else {
-                            // Se não tiver nova foto, apenas conclui
                             alert('✅ Perfil atualizado com sucesso!');
                             onSalvo();
                         }
@@ -2954,7 +2923,7 @@
             );
         }
 
-                             // ========== TELA DE CADASTRO COM PAGAMENTO (FLUXO CORRETO) ==========
+        // ========== TELA DE CADASTRO COM PAGAMENTO (FLUXO CORRETO) ==========
         function CadastroPrestador(props) {
             var onCadastroSucesso = props.onCadastroSucesso;
             var onVoltar = props.onVoltar;
@@ -2986,7 +2955,6 @@
             var [loading, setLoading] = useState(false);
             var [erro, setErro] = useState('');
             
-            // ===== ESTADOS PARA PAGAMENTO =====
             var [aceitouTermos, setAceitouTermos] = useState(false);
             var [linkPagamento, setLinkPagamento] = useState(null);
             var [preferenceId, setPreferenceId] = useState(null);
@@ -3004,7 +2972,6 @@
                 );
             }
 
-            // ===== VERIFICAÇÕES =====
             function verificarEmail() {
                 if (!formData.email || formData.email.length < 5) return;
                 
@@ -3045,7 +3012,6 @@
                     });
             }
 
-            // ===== CARREGAR CATEGORIAS =====
             useEffect(function() {
                 fetch(API_URL + '/categorias/principais')
                     .then(function(response) { return response.json(); })
@@ -3074,7 +3040,7 @@
                 }
             }, [categoriaSelecionada]);
 
-            // ===== DETECTAR RETORNO DO MERCADO PAGO =====
+            // Detectar retorno do Mercado Pago
             useEffect(function() {
                 console.log('🔍 [Cadastro] Verificando retorno do Mercado Pago...');
                 
@@ -3094,7 +3060,6 @@
                     
                     if (preferenceIdSalvo && dadosSalvos) {
                         console.log('📦 [Cadastro] Dados encontrados, iniciando verificação do pagamento...');
-                        // SÓ AQUI INICIA O MONITORAMENTO - APENAS UMA VEZ
                         iniciarMonitoramentoPagamento();
                     } else {
                         console.error('❌ [Cadastro] Nenhum dado encontrado no sessionStorage');
@@ -3102,7 +3067,6 @@
                         setEtapa('form');
                     }
                     
-                    // Limpar parâmetros da URL para não executar novamente
                     window.history.replaceState({}, document.title, window.location.pathname);
                 } else if (retorno === 'erro') {
                     setErro('Ocorreu um erro no pagamento. Tente novamente.');
@@ -3113,164 +3077,69 @@
                 }
             }, []);
 
-            // ===== INICIALIZAR MERCADO PAGO =====
-            useEffect(function() {
-                if (etapa === 'pagamento' && window.MercadoPago && !mp && !carregandoMP && preferenceId) {
-                    setCarregandoMP(true);
-                    
-                    fetch(API_URL + '/mercadopago/public-key')
-                        .then(function(response) { 
-                            if (!response.ok) {
-                                throw new Error('Erro ao buscar chave pública');
-                            }
-                            return response.json(); 
-                        })
-                        .then(function(data) {
-                            if (data.publicKey) {
-                                console.log('✅ Chave pública obtida, inicializando Mercado Pago');
-                                const mpInstance = new window.MercadoPago(data.publicKey);
-                                setMp(mpInstance);
-                                
-                                setTimeout(function() {
-                                    renderBrickPagamento(mpInstance, preferenceId);
-                                }, 500);
-                            } else {
-                                console.error('❌ Chave pública não encontrada');
-                                setErro('Erro ao configurar pagamento. Use o link alternativo abaixo.');
-                            }
-                            setCarregandoMP(false);
-                        })
-                        .catch(function(error) {
-                            console.error('❌ Erro ao buscar chave pública:', error);
-                            setErro('Erro ao configurar pagamento. Use o link alternativo abaixo.');
-                            setCarregandoMP(false);
-                        });
-                }
-            }, [etapa, preferenceId, mp, carregandoMP]);
-
-            function renderBrickPagamento(mpInstance, prefId) {
-                const bricksBuilder = mpInstance.bricks();
-                
-                const renderComponent = async () => {
-                    const container = document.getElementById('paymentBrick_container');
-                    if (container) container.innerHTML = '';
-                    
-                    try {
-                        await bricksBuilder.create('wallet', 'paymentBrick_container', {
-                            initialization: {
-                                preferenceId: prefId,
-                                redirectMode: 'self'
-                            },
-                            customization: {
-                                texts: {
-                                    action: 'Pagar agora',
-                                    valueProp: 'Segurança Mercado Pago'
-                                },
-                                visual: {
-                                    buttonBackground: 'default',
-                                    borderRadius: '8px'
-                                },
-                                backUrls: {
-                                    success: "https://www.semlimitesprestadores.com.br/cadastro?retorno=sucesso",
-                                    failure: "https://www.semlimitesprestadores.com.br/cadastro?retorno=erro",
-                                    pending: "https://www.semlimitesprestadores.com.br/cadastro?retorno=pending"
-                                }
-                            },
-                            callbacks: {
-                                onReady: function() {
-                                    console.log('✅ Brick de pagamento pronto');
-                                },
-                                onError: function(error) {
-                                    console.error('❌ Erro no brick:', error);
-                                    setErro('Erro ao carregar pagamento. Use o link alternativo abaixo.');
-                                }
-                            }
-                        });
-                        console.log('✅ Brick renderizado com sucesso');
-                    } catch (error) {
-                        console.error('❌ Erro ao renderizar brick:', error);
-                    }
-                };
-                
-                renderComponent();
-            }
-
-            // ===== FUNÇÃO PARA VERIFICAR STATUS DO PAGAMENTO (SÓ APÓS RETORNO) =====
             function iniciarMonitoramentoPagamento() {
-                // IMPEDIR MÚLTIPLOS MONITORAMENTOS
+                const preferenceId = sessionStorage.getItem('preferenceId');
+
+                if (!preferenceId) {
+                    console.error('❌ PreferenceId não encontrado');
+                    return;
+                }
+
                 if (monitoramentoAtivo) {
                     console.log('⚠️ Monitoramento já ativo, ignorando nova tentativa');
                     return;
                 }
-                
-                const preferenceIdSalvo = sessionStorage.getItem('preferenceId');
-                const dadosSalvos = sessionStorage.getItem('cadastroPendente');
-                
-                if (!preferenceIdSalvo) {
-                    console.error('❌ PreferenceId não encontrado no sessionStorage');
-                    return;
-                }
-                
-                if (!dadosSalvos) {
-                    console.error('❌ Dados de cadastro não encontrados no sessionStorage');
-                    return;
-                }
-                
-                console.log('🔥 MONITORAMENTO ATIVO - INICIADO');
-                setMonitoramentoAtivo(true);
-                
-                // Limpar intervalo anterior se existir
+
+                console.log('🔍 Monitorando pagamento:', preferenceId);
+
                 if (window.monitoramentoInterval) {
                     clearInterval(window.monitoramentoInterval);
-                    window.monitoramentoInterval = null;
                 }
-                
+
+                setMonitoramentoAtivo(true);
+
                 let tentativas = 0;
                 const maxTentativas = 20;
-                
-                window.monitoramentoInterval = setInterval(function() {
+
+                window.monitoramentoInterval = setInterval(async () => {
                     tentativas++;
-                    console.log(`🔄 Verificando status do pagamento (tentativa ${tentativas}/${maxTentativas})...`);
-                    
-                    fetch(API_URL + '/assinatura/status-preferencia/' + preferenceIdSalvo)
-                        .then(function(response) { 
-                            if (!response.ok) {
-                                throw new Error('Erro na requisição: ' + response.status);
-                            }
-                            return response.json(); 
-                        })
-                        .then(function(data) {
-                            console.log('📊 Status do pagamento:', data);
-                            
-                            if (data.status === 'approved' || data.pagamentoConfirmado === true) {
-                                console.log('✅ Pagamento confirmado!');
-                                clearInterval(window.monitoramentoInterval);
-                                window.monitoramentoInterval = null;
-                                setMonitoramentoAtivo(false);
-                                criarPrestadorAposPagamento();
-                            } else if (tentativas >= maxTentativas) {
-                                console.log('⏰ Tempo limite excedido. Pagamento não confirmado.');
-                                clearInterval(window.monitoramentoInterval);
-                                window.monitoramentoInterval = null;
-                                setMonitoramentoAtivo(false);
-                                setErro('Tempo limite excedido. Entre em contato com o suporte.');
-                                setEtapa('form');
-                            }
-                        })
-                        .catch(function(error) {
-                            console.error('❌ Erro ao verificar status:', error);
-                            if (tentativas >= maxTentativas) {
-                                clearInterval(window.monitoramentoInterval);
-                                window.monitoramentoInterval = null;
-                                setMonitoramentoAtivo(false);
-                                setErro('Erro ao verificar pagamento. Entre em contato com o suporte.');
-                                setEtapa('form');
-                            }
-                        });
+
+                    console.log(`🔄 Tentativa ${tentativas}/${maxTentativas}`);
+
+                    try {
+                        const res = await fetch(API_URL + '/assinatura/status-preferencia/' + preferenceId);
+                        const data = await res.json();
+
+                        console.log('📊 Status:', data);
+
+                        if (data.status === 'approved' || data.pagamentoConfirmado === true) {
+                            console.log('✅ PAGAMENTO CONFIRMADO');
+
+                            clearInterval(window.monitoramentoInterval);
+                            window.monitoramentoInterval = null;
+                            setMonitoramentoAtivo(false);
+
+                            criarPrestadorAposPagamento();
+                        }
+
+                        if (tentativas >= maxTentativas) {
+                            clearInterval(window.monitoramentoInterval);
+                            window.monitoramentoInterval = null;
+                            setMonitoramentoAtivo(false);
+
+                            console.error('⏰ Timeout pagamento');
+
+                            setErro('Pagamento não confirmado. Contate suporte.');
+                            setEtapa('form');
+                        }
+
+                    } catch (err) {
+                        console.error('❌ Erro monitoramento:', err);
+                    }
+
                 }, 3000);
             }
 
-            // ===== FUNÇÃO PARA CRIAR PRESTADOR APÓS PAGAMENTO =====
             function criarPrestadorAposPagamento() {
                 console.log('🚀 FUNÇÃO criarPrestadorAposPagamento FOI CHAMADA!');
                 
@@ -3352,7 +3221,7 @@
                         setLoading(false);
                         
                         setTimeout(function() {
-                            window.location.href = BASE_PATH + '/dashboard';
+                            navigate('/dashboard');
                         }, 2000);
                     })
                     .catch(function(error) {
@@ -3362,7 +3231,6 @@
                     });
             }
 
-            // ===== FUNÇÕES DE FORMATAÇÃO =====
             function formatarCPF(valor) {
                 var numeros = valor.replace(/\D/g, '');
                 if (numeros.length <= 11) {
@@ -3451,7 +3319,6 @@
                 });
             }
 
-            // ===== FUNÇÃO handleSubmit (SEM MONITORAMENTO, SEM NOVA ABA) =====
             function handleSubmit(e) {
                 e.preventDefault();
                 
@@ -3561,7 +3428,6 @@
                         if (pagamentoData.success) {
                             console.log('✅ Preferência de pagamento criada:', pagamentoData);
                             
-                            // Salvar preferenceId no sessionStorage
                             sessionStorage.setItem('preferenceId', pagamentoData.preferenceId);
                             
                             var linkParaAbrir = pagamentoData.sandboxInitPoint || pagamentoData.initPoint;
@@ -3579,8 +3445,6 @@
                             
                             window.scrollTo({ top: 0, behavior: 'smooth' });
                             
-                            // ===== CORREÇÃO CRÍTICA: REDIRECIONAR NA MESMA ABA =====
-                            // NÃO usar window.open com nova aba!
                             setTimeout(function() {
                                 window.location.href = linkParaAbrir;
                             }, 500);
@@ -3596,7 +3460,6 @@
                     });
             }
 
-            // ===== TELA DE SUCESSO =====
             if (etapa === 'sucesso') {
                 return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-8" },
                     React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-8 shadow-sm text-center" },
@@ -3614,7 +3477,6 @@
                 );
             }
 
-            // ===== TELA DE PAGAMENTO =====
             if (etapa === 'pagamento') {
                 return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-8" },
                     React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-8 shadow-sm" },
@@ -3677,7 +3539,6 @@
                 );
             }
 
-            // ===== TELA DE PROCESSAMENTO =====
             if (etapa === 'processando') {
                 return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-8" },
                     React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-8 shadow-sm text-center" },
@@ -3688,7 +3549,6 @@
                 );
             }
 
-            // ===== FORMULÁRIO DE CADASTRO =====
             return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-8" },
                 React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-4 md:p-8 shadow-sm" },
                     React.createElement('div', { className: "flex items-center justify-between mb-6" },
@@ -3702,7 +3562,6 @@
                     erroElement,
 
                     React.createElement('form', { onSubmit: handleSubmit, className: "space-y-4" },
-                        // Tipo de Pessoa
                         React.createElement('div', { className: "mb-4" },
                             React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-2" }, "Tipo de Cadastro *"),
                             React.createElement('div', { className: "flex gap-4" },
@@ -4110,7 +3969,6 @@
                 totalCurtidas: prestador?.totalCurtidas || 0
             };
 
-            // ===== FUNÇÃO handleExcluirPerfil CORRIGIDA COM CANCELAMENTO DE ASSINATURA =====
             function handleExcluirPerfil() {
                 var confirmacao1 = window.confirm(
                     '⚠️ ATENÇÃO! Esta ação é PERMANENTE e IRREVERSÍVEL!\n\n' +
@@ -4457,7 +4315,6 @@
                                     }
                                 }) :
                                 React.createElement('div', { className: "space-y-4" },
-                                    // ===== FOTO DE PERFIL CORRIGIDA - USANDO COMPONENTE AVATAR =====
                                     React.createElement('div', { className: "flex justify-center mb-4" },
                                         React.createElement(Avatar, { 
                                             src: prestador.foto || null,
@@ -5296,7 +5153,6 @@
             return React.createElement('div', { className: "max-w-5xl mx-auto px-4 py-8 md:py-12" },
                 React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-6 md:p-8 shadow-sm" },
                     
-                    // Cabeçalho
                     React.createElement('div', { className: "flex items-center justify-between mb-8" },
                         React.createElement('h1', { className: "text-2xl md:text-3xl font-bold text-[#3d7a3d]" }, 
                             React.createElement('span', { className: "mr-2" }, "❤️"),
@@ -5313,12 +5169,10 @@
                         )
                     ),
 
-                    // Subtítulo
                     React.createElement('p', { className: "text-lg md:text-xl text-slate-600 mb-8 text-center" },
                         "Sua coleção pessoal de profissionais de confiança"
                     ),
 
-                    // ===== SEÇÃO PARA CLIENTES =====
                     React.createElement('div', { className: "mb-12 border-b border-[#c0dfc0] pb-8" },
                         React.createElement('h2', { className: "text-xl md:text-2xl font-bold text-[#3d7a3d] mb-6 flex items-center gap-2" },
                             React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -5327,7 +5181,6 @@
                             "Para Quem Contrata Serviços"
                         ),
 
-                        // Por que usar os favoritos
                         React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 mb-6 border border-[#c0dfc0]" },
                             React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-3" }, "Por que usar os Favoritos?"),
                             React.createElement('p', { className: "text-sm md:text-base text-slate-600 mb-2" },
@@ -5338,7 +5191,6 @@
                             )
                         ),
 
-                        // Benefícios
                         React.createElement('h3', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-4" }, "Benefícios de Usar os Favoritos"),
                         
                         React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" },
@@ -5379,7 +5231,6 @@
                             )
                         ),
 
-                        // Passo a Passo
                         React.createElement('h3', { className: "text-lg md:text-xl font-semibold text-[#3d7a3d] mb-4" }, "Passo a Passo - Como Usar os Favoritos"),
                         
                         React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" },
@@ -5400,7 +5251,6 @@
                             )
                         ),
 
-                        // Gerenciamento
                         React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0] mb-6" },
                             React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-3" }, "No Dashboard do Cliente, você pode:"),
                             React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-2" },
@@ -5423,7 +5273,6 @@
                             )
                         ),
 
-                        // Jornada do Cliente
                         React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0] mb-6" },
                             React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "📌 Exemplo Prático - Jornada do Cliente com Favoritos"),
                             React.createElement('div', { className: "text-xs text-slate-600 space-y-1" },
@@ -5438,7 +5287,6 @@
                             )
                         ),
 
-                        // Tabela Resumo
                         React.createElement('div', { className: "overflow-x-auto mb-6" },
                             React.createElement('h4', { className: "font-semibold text-[#3d7a3d] mb-2" }, "Tabela Resumo - Funcionalidades dos Favoritos"),
                             React.createElement('table', { className: "min-w-full bg-white rounded-xl border border-[#c0dfc0]" },
@@ -5477,7 +5325,6 @@
                             )
                         ),
 
-                        // Dúvidas Frequentes
                         React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0] mb-6" },
                             React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-3" }, "❓ Dúvidas Frequentes"),
                             React.createElement('div', { className: "space-y-3" },
@@ -5504,7 +5351,6 @@
                             )
                         ),
 
-                        // Botão de ação
                         React.createElement('div', { className: "mt-6 text-center" },
                             React.createElement('button', {
                                 onClick: function() { 
@@ -5520,7 +5366,6 @@
                         )
                     ),
 
-                    // ===== SEÇÃO PARA PRESTADORES =====
                     React.createElement('div', { className: "mb-8" },
                         React.createElement('h2', { className: "text-xl md:text-2xl font-bold text-[#3d7a3d] mb-6 flex items-center gap-2" },
                             React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -5532,7 +5377,6 @@
                             "Por que as Curtidas são Importantes para Você?"
                         ),
 
-                        // Importância das curtidas
                         React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" },
                             React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
                                 React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "🌟 Reconhecimento Público"),
@@ -5556,7 +5400,6 @@
                             )
                         ),
 
-                        // Jornada do Prestador
                         React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0] mb-6" },
                             React.createElement('h4', { className: "font-semibold text-[#F09030] mb-2" }, "📌 Exemplo Prático - Impacto das Curtidas para o Prestador"),
                             React.createElement('div', { className: "text-xs text-slate-600 space-y-1" },
@@ -5570,7 +5413,6 @@
                             )
                         ),
 
-                        // Tabela comparativa
                         React.createElement('div', { className: "overflow-x-auto mb-6" },
                             React.createElement('h4', { className: "font-semibold text-[#3d7a3d] mb-2" }, "Vantagens Exclusivas dos Favoritos"),
                             React.createElement('table', { className: "min-w-full bg-white rounded-xl border border-[#c0dfc0]" },
@@ -5605,7 +5447,6 @@
                             )
                         ),
 
-                        // Resumo Rápido
                         React.createElement('div', { className: "overflow-x-auto mb-6" },
                             React.createElement('h4', { className: "font-semibold text-[#3d7a3d] mb-2" }, "Resumo Rápido"),
                             React.createElement('table', { className: "min-w-full bg-white rounded-xl border border-[#c0dfc0]" },
@@ -5644,7 +5485,6 @@
                             )
                         ),
 
-                        // Mensagem final
                         React.createElement('div', { className: "bg-gradient-to-r from-[#f0f7f0] to-[#fff8e7] rounded-xl p-6 border border-[#c0dfc0] text-center mb-6" },
                             React.createElement('p', { className: "text-sm md:text-base text-slate-700 font-medium mb-4" },
                                 "⭐ Lembre-se: Curtir não é apenas um clique. É um reconhecimento. É uma recomendação. É a construção de uma comunidade mais forte e confiável."
@@ -5654,7 +5494,6 @@
                             )
                         ),
 
-                        // Botões de ação
                         React.createElement('div', { className: "flex flex-col sm:flex-row gap-4 justify-center mt-6" },
                             React.createElement('button', {
                                 onClick: function() { navigate('/'); },
@@ -5981,7 +5820,6 @@
             return React.createElement('div', { className: "max-w-5xl mx-auto px-4 py-8 md:py-12" },
                 React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-6 md:p-8 shadow-sm" },
                     
-                    // Cabeçalho
                     React.createElement('div', { className: "flex items-center justify-between mb-8" },
                         React.createElement('h1', { className: "text-2xl md:text-3xl font-bold text-[#3d7a3d]" }, 
                             "Sobre Nós"
@@ -6001,7 +5839,6 @@
                         "Conectando pessoas a profissionais de confiança"
                     ),
 
-                    // Nossa História
                     React.createElement('div', { className: "mb-8" },
                         React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 flex items-center gap-2" },
                             React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -6033,7 +5870,6 @@
                         )
                     ),
 
-                    // O Problema
                     React.createElement('div', { className: "mb-8" },
                         React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 flex items-center gap-2" },
                             React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -6086,7 +5922,6 @@
                         )
                     ),
 
-                    // Nossa Solução
                     React.createElement('div', { className: "mb-8" },
                         React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 flex items-center gap-2" },
                             React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -6100,7 +5935,6 @@
                             React.createElement('span', { className: "font-medium" }, "simples, segura e transparente.")
                         ),
                         
-                        // Para quem contrata
                         React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 mb-4 border border-[#c0dfc0]" },
                             React.createElement('h3', { className: "font-semibold text-lg text-[#2d5a2d] mb-3" }, "✅ Para quem contrata:"),
                             React.createElement('ul', { className: "space-y-2" },
@@ -6127,7 +5961,6 @@
                             )
                         ),
                         
-                        // Para quem presta serviço
                         React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 mb-4 border border-[#FFE3A0]" },
                             React.createElement('h3', { className: "font-semibold text-lg text-[#F09030] mb-3" }, "✅ Para quem presta serviço:"),
                             React.createElement('ul', { className: "space-y-2" },
@@ -6155,7 +5988,6 @@
                         )
                     ),
 
-                    // Nossos Diferenciais
                     React.createElement('div', { className: "mb-8" },
                         React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 flex items-center gap-2" },
                             React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -6184,7 +6016,6 @@
                         )
                     ),
 
-                    // Missão, Visão e Valores
                     React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-4 mb-8" },
                         React.createElement('div', { className: "bg-gradient-to-br from-[#3d7a3d] to-[#60a060] text-white rounded-xl p-4 border border-[#c0dfc0]" },
                             React.createElement('h3', { className: "font-semibold text-lg mb-2" }, "Nossa Missão"),
@@ -6211,7 +6042,6 @@
                         )
                     ),
 
-                    // Por que "SemLimites"
                     React.createElement('div', { className: "mb-8" },
                         React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 flex items-center gap-2" },
                             React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -6234,7 +6064,6 @@
                         )
                     ),
 
-                    // Junte-se a Nós
                     React.createElement('div', { className: "bg-gradient-to-r from-[#f0f7f0] to-[#fff8e7] rounded-xl p-6 border border-[#c0dfc0] text-center" },
                         React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4" }, "Junte-se a Nós"),
                         React.createElement('p', { className: "text-sm md:text-base text-slate-700 mb-4" },
@@ -6266,7 +6095,6 @@
             return React.createElement('div', { className: "max-w-5xl mx-auto px-4 py-8 md:py-12" },
                 React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-6 md:p-8 shadow-sm" },
                     
-                    // Cabeçalho
                     React.createElement('div', { className: "flex items-center justify-between mb-8" },
                         React.createElement('h1', { className: "text-2xl md:text-3xl font-bold text-[#3d7a3d]" }, 
                             "🚀 Dashboard do Prestador"
@@ -6282,19 +6110,16 @@
                         )
                     ),
 
-                    // Subtítulo
                     React.createElement('p', { className: "text-lg md:text-xl text-slate-600 mb-8 text-center" },
                         "Central de Controle do seu Negócio"
                     ),
 
-                    // Cards de Visão Geral
                     React.createElement('div', { className: "bg-gradient-to-r from-[#f0f7f0] to-[#fff8e7] rounded-xl p-6 mb-8 border border-[#c0dfc0]" },
                         React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4" }, "📊 VISÃO GERAL - Resumo Executivo"),
                         React.createElement('p', { className: "text-sm md:text-base text-slate-600 mb-4" },
                             "Assim que você acessa o Dashboard, encontra um panorama completo do seu negócio:"
                         ),
                         
-                        // Tabela de cards
                         React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4" },
                             
                             React.createElement('div', { className: "bg-white rounded-xl p-4 border border-[#c0dfc0] shadow-sm" },
@@ -6349,7 +6174,6 @@
                         )
                     ),
 
-                    // Perfil Profissional
                     React.createElement('div', { className: "mb-8" },
                         React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 flex items-center gap-2" },
                             React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -6392,7 +6216,6 @@
                         )
                     ),
 
-                    // Categorias e Serviços
                     React.createElement('div', { className: "mb-8" },
                         React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 flex items-center gap-2" },
                             React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -6426,7 +6249,6 @@
                         )
                     ),
 
-                    // Gestão de Serviços
                     React.createElement('div', { className: "mb-8" },
                         React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 flex items-center gap-2" },
                             React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -6478,7 +6300,6 @@
                         )
                     ),
 
-                    // Avaliações
                     React.createElement('div', { className: "mb-8" },
                         React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 flex items-center gap-2" },
                             React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -6498,7 +6319,6 @@
                         )
                     ),
 
-                    // Estatísticas
                     React.createElement('div', { className: "mb-8" },
                         React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 flex items-center gap-2" },
                             React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -6526,7 +6346,6 @@
                         )
                     ),
 
-                    // Zona de Perigo
                     React.createElement('div', { className: "mb-8" },
                         React.createElement('h2', { className: "text-xl font-bold text-red-600 mb-4 flex items-center gap-2" },
                             React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -6544,7 +6363,6 @@
                         )
                     ),
 
-                    // Dicas
                     React.createElement('div', { className: "mb-8" },
                         React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4" }, "💡 DICAS PARA PRESTADORES"),
                         React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
@@ -6567,7 +6385,6 @@
                         )
                     ),
 
-                    // Acesso Mobile
                     React.createElement('div', { className: "mb-8" },
                         React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 flex items-center gap-2" },
                             React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -6582,7 +6399,6 @@
                         )
                     ),
 
-                    // Resumo das Vantagens
                     React.createElement('div', { className: "mb-8" },
                         React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4" }, "🎯 RESUMO DAS VANTAGENS"),
                         React.createElement('div', { className: "overflow-x-auto" },
@@ -6634,14 +6450,13 @@
             );
         }
 
-          // ========== PÁGINA COMO FUNCIONA ==========
+        // ========== PÁGINA COMO FUNCIONA ==========
         function ComoFunciona(props) {
             var onVoltar = props.onVoltar;
 
             return React.createElement('div', { className: "max-w-5xl mx-auto px-4 py-8 md:py-12" },
                 React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-6 md:p-8 shadow-sm" },
                     
-                    // Cabeçalho
                     React.createElement('div', { className: "flex items-center justify-between mb-8" },
                         React.createElement('h1', { className: "text-2xl md:text-3xl font-bold text-[#3d7a3d]" }, 
                             "📄 Como Funciona - Sem Limites"
@@ -6661,7 +6476,6 @@
                         "Sua jornada para encontrar o profissional ideal"
                     ),
 
-                    // ===== SEÇÃO PARA QUEM CONTRATA =====
                     React.createElement('div', { className: "mb-12 border-b border-[#c0dfc0] pb-8" },
                         React.createElement('h2', { className: "text-xl md:text-2xl font-bold text-[#3d7a3d] mb-4 flex items-center gap-2" },
                             React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -6735,7 +6549,6 @@
                         )
                     ),
 
-                    // ===== SEÇÃO PARA PRESTADORES =====
                     React.createElement('div', { className: "mb-8" },
                         React.createElement('h2', { className: "text-xl md:text-2xl font-bold text-[#3d7a3d] mb-4 flex items-center gap-2" },
                             React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
@@ -7122,8 +6935,9 @@
                     )
                 )
             );
-        } 
-                // ========== PAINEL ADMINISTRATIVO ==========
+        }
+
+        // ========== PAINEL ADMINISTRATIVO ==========
         function PainelAdmin(props) {
             var onSair = props.onSair;
             var [stats, setStats] = useState({ clientes: 0, prestadores: 0, avaliacoes: 0, servicos: 0 });
@@ -7427,7 +7241,8 @@
                 )
             );
         }
-                // ========== MODAL DE LOGIN ADMIN ==========
+
+        // ========== MODAL DE LOGIN ADMIN ==========
         function ModalLoginAdmin(props) {
             var isOpen = props.isOpen;
             var onClose = props.onClose;
@@ -7483,7 +7298,8 @@
                 )
             );
         }
-               // ========== RODAPÉ COM BOTÃO ADMIN ==========
+
+        // ========== RODAPÉ COM BOTÃO ADMIN ==========
         function Rodape(props) {
             var onNavigate = props.onNavigate;
             var onOpenAdminModal = props.onOpenAdminModal;
@@ -7554,372 +7370,230 @@
             );
         }
 
-        // ========== FUNÇÃO DE NAVEGAÇÃO ==========
-        function navigate(path) {
-            // Rola a página para o topo
-            window.scrollTo(0, 0);
-            
-            var fullPath = BASE_PATH + path;
-            window.history.pushState({}, '', fullPath);
-            
-            if (path.startsWith('/avaliar/')) {
-                window.appSetModo('avaliar');
-            } else if (path === '/login') {
-                window.appSetModo('login');
-            } else if (path === '/cadastro') {
-                window.appSetModo('cadastro');
-            } else if (path === '/dashboard') {
-                window.appSetModo('dashboard');
-            } else if (path === '/dashboard-cliente') {
-                window.appSetModo('dashboard-cliente');
-            } else if (path.startsWith('/perfil/')) {
-                window.appSetModo('perfil');
-            } else if (path === '/esqueci-senha') {
-                window.appSetModo('esqueci-senha');
-            } else if (path.startsWith('/resetar-senha/')) {
-                window.appSetModo('resetar-senha');
-            } 
-            else if (path === '/termos') {
-                window.appSetModo('termos');
-            } else if (path === '/privacidade') {
-                window.appSetModo('privacidade');
-            } else if (path === '/cookies') {
-                window.appSetModo('cookies');
-            } else if (path === '/contato') {
-                window.appSetModo('contato');
-            } else if (path === '/sobre') {
-                window.appSetModo('sobre');
-            } else if (path === '/como-funciona') {
-                window.appSetModo('como-funciona');
-            } else if (path === '/faq-prestador') {
-                window.appSetModo('faq-prestador');
-            } else if (path === '/faq-cliente') {
-                window.appSetModo('faq-cliente');
-            } else if (path === '/sobre-dashboard-prestador') {
-                window.appSetModo('sobre-dashboard-prestador');
-            } else if (path === '/meus-favoritos') {
-                window.appSetModo('meus-favoritos');
-            } else if (path === '/admin') {
-                window.appSetModo('admin');
-            } else {
-                window.appSetModo('busca');
-            }
-        }
+        // ========== APP PRINCIPAL ==========
+        function App() {
+            var [adminModalOpen, setAdminModalOpen] = useState(false);
+            var [modo, setModo] = useState('busca');
+            var [usuario, setUsuario] = useState(null);
+            var [prestadorSelecionado, setPrestadorSelecionado] = useState(null);
+            var [prestadorId, setPrestadorId] = useState(null);
 
-              // ========== APP PRINCIPAL ==========
-function App() {
-    var [adminModalOpen, setAdminModalOpen] = useState(false);
-    var [modo, setModo] = useState('busca');
-    var [usuario, setUsuario] = useState(null);
-    var [prestadorSelecionado, setPrestadorSelecionado] = useState(null);
-    var [prestadorId, setPrestadorId] = useState(null);
+            window.appSetModo = setModo;
 
-    window.appSetModo = setModo;
-
-    useEffect(function() {
-        var path = window.location.pathname.replace(BASE_PATH, '') || '/';
-        console.log('📍 Path atual:', path);
-        
-        if (path.startsWith('/avaliar/')) {
-            setModo('avaliar');
-        } else if (path === '/login') {
-            setModo('login');
-        } else if (path === '/cadastro') {
-            setModo('cadastro');
-        } else if (path === '/dashboard') {
-            setModo('dashboard');
-        } else if (path === '/dashboard-cliente') {
-            setModo('dashboard-cliente');
-        } else if (path.startsWith('/perfil/')) {
-            var id = path.split('/')[2];
-            console.log('📌 ID do perfil da URL:', id);
-            if (id) {
-                setPrestadorId(id);
-                setPrestadorSelecionado(null);
-                setModo('perfil');
-            } else {
-                setModo('busca');
-            }
-        } else if (path === '/esqueci-senha') {
-            setModo('esqueci-senha');
-        } else if (path.startsWith('/resetar-senha/')) {
-            setModo('resetar-senha');
-        } 
-        else if (path === '/termos') {
-            setModo('termos');
-        } else if (path === '/privacidade') {
-            setModo('privacidade');
-        } else if (path === '/cookies') {
-            setModo('cookies');
-        } else if (path === '/contato') {
-            setModo('contato');
-        } else if (path === '/sobre') {
-            setModo('sobre');
-        } else if (path === '/como-funciona') {
-            setModo('como-funciona');
-        } else if (path === '/faq-prestador') {
-            setModo('faq-prestador');
-        } else if (path === '/faq-cliente') {
-            setModo('faq-cliente');
-        } else if (path === '/sobre-dashboard-prestador') {
-            setModo('sobre-dashboard-prestador');
-        } else if (path === '/meus-favoritos') {
-            setModo('meus-favoritos');
-        } else if (path === '/admin') {
-            setModo('admin');
-        } else {
-            setModo('busca');
-        }
-        
-        var token = localStorage.getItem('token');
-        if (token) {
-            fetch(API_URL + '/auth/me', {
-                headers: { 'Authorization': 'Bearer ' + token }
-            })
-                .then(function(response) { return response.json(); })
-                .then(function(data) {
-                    if (!data.error) {
-                        setUsuario(data);
-                        localStorage.setItem('user', JSON.stringify(data));
-                    }
-                })
-                .catch(function(error) { console.error(error); });
-        }
-    }, []);
-
-   // ===== CAPTURAR QUALQUER REDIRECIONAMENTO =====
-useEffect(function() {
-    console.log('🔍 [App] Verificando URL para pagamento...');
-    
-    const url = window.location.href;
-    const urlParams = new URLSearchParams(window.location.search);
-    const pagamentoStatus = urlParams.get('pagamento');
-    
-    // Se já está processando, não repetir
-    if (window.pagamentoProcessando) return;
-    
-    // Verificar se tem dados pendentes no sessionStorage
-    const dadosSalvos = sessionStorage.getItem('cadastroPendente');
-    
-    if (dadosSalvos && !localStorage.getItem('token')) {
-        console.log('📦 [App] Dados pendentes encontrados!');
-        
-        // Se tem parâmetro de sucesso OU estamos em uma URL que indica pagamento
-        if (pagamentoStatus === 'sucesso' || url.includes('dashboard')) {
-            console.log('✅ [App] Pagamento detectado! Criando prestador...');
-            window.pagamentoProcessando = true;
-            
-            const dados = JSON.parse(dadosSalvos);
-            
-            async function criarPrestador() {
-                console.log('📝 [App] Criando prestador...');
+            useEffect(function() {
+                var path = window.location.pathname;
+                console.log('📍 Path atual:', path);
                 
-                var dadosEnvio = {
-                    nome: dados.nome,
-                    email: dados.email,
-                    senha: dados.senha,
-                    tipo: 'prestador',
-                    tipoPessoa: dados.tipoPessoa,
-                    cidade: dados.cidade,
-                    estado: dados.estado,
-                    whatsapp: dados.whatsapp,
-                    telefone: dados.telefone || '',
-                    descricao: dados.descricao || '',
-                    tags: dados.tags || [],
-                    categoriaPrincipal: dados.categoriaPrincipal,
-                    servicos: dados.servicos,
-                    aceitouTermos: true,
-                    preferenceId: dados.preferenceId,
-                    planoStatus: 'ativo',
-                    planoAtivo: true,
-                    assinaturaAtivadaEm: new Date().toISOString()
-                };
-                
-                if (dados.tipoPessoa === 'fisica') {
-                    dadosEnvio.cpf = dados.cpf;
-                } else {
-                    dadosEnvio.cnpj = dados.cnpj;
-                    dadosEnvio.responsavel = dados.responsavel;
-                    if (dados.cnpjVerificado) {
-                        dadosEnvio.cnpjVerificado = true;
-                        dadosEnvio.razaoSocialVerificada = dados.razaoSocialVerificada;
-                    }
-                }
-                
-                try {
-                    const response = await fetch(API_URL + '/auth/register', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(dadosEnvio)
-                    });
-                    
-                    const registerData = await response.json();
-                    
-                    if (registerData.token) {
-                        console.log('✅ Prestador criado com sucesso!');
-                        localStorage.setItem('token', registerData.token);
-                        localStorage.setItem('user', JSON.stringify(registerData.user));
-                        sessionStorage.removeItem('cadastroPendente');
-                        
-                        console.log('🚀 Redirecionando para dashboard...');
-                        window.location.href = BASE_PATH + '/dashboard';
+                if (path.startsWith('/avaliar/')) {
+                    setModo('avaliar');
+                } else if (path === '/login') {
+                    setModo('login');
+                } else if (path === '/cadastro') {
+                    setModo('cadastro');
+                } else if (path === '/dashboard') {
+                    setModo('dashboard');
+                } else if (path === '/dashboard-cliente') {
+                    setModo('dashboard-cliente');
+                } else if (path.startsWith('/perfil/')) {
+                    var id = path.split('/')[2];
+                    console.log('📌 ID do perfil da URL:', id);
+                    if (id) {
+                        setPrestadorId(id);
+                        setPrestadorSelecionado(null);
+                        setModo('perfil');
                     } else {
-                        console.error('Erro ao criar prestador:', registerData);
+                        setModo('busca');
                     }
-                } catch (error) {
-                    console.error('Erro:', error);
+                } else if (path === '/esqueci-senha') {
+                    setModo('esqueci-senha');
+                } else if (path.startsWith('/resetar-senha/')) {
+                    setModo('resetar-senha');
+                } else if (path === '/termos') {
+                    setModo('termos');
+                } else if (path === '/privacidade') {
+                    setModo('privacidade');
+                } else if (path === '/cookies') {
+                    setModo('cookies');
+                } else if (path === '/contato') {
+                    setModo('contato');
+                } else if (path === '/sobre') {
+                    setModo('sobre');
+                } else if (path === '/como-funciona') {
+                    setModo('como-funciona');
+                } else if (path === '/faq-prestador') {
+                    setModo('faq-prestador');
+                } else if (path === '/faq-cliente') {
+                    setModo('faq-cliente');
+                } else if (path === '/sobre-dashboard-prestador') {
+                    setModo('sobre-dashboard-prestador');
+                } else if (path === '/meus-favoritos') {
+                    setModo('meus-favoritos');
+                } else if (path === '/admin') {
+                    setModo('admin');
+                } else {
+                    setModo('busca');
+                }
+                
+                var token = localStorage.getItem('token');
+                if (token) {
+                    fetch(API_URL + '/auth/me', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+                        .then(function(response) { return response.json(); })
+                        .then(function(data) {
+                            if (!data.error) {
+                                setUsuario(data);
+                                localStorage.setItem('user', JSON.stringify(data));
+                            }
+                        })
+                        .catch(function(error) { console.error(error); });
+                }
+            }, []);
+
+            // CORREÇÃO: Removido o useEffect duplicado que estava causando conflito
+
+            function voltarParaBusca() {
+                window.scrollTo(0, 0);
+                navigate('/');
+                setPrestadorId(null);
+                setPrestadorSelecionado(null);
+            }
+
+            function handleVerPerfil(prestador) {
+                console.log('👤 App recebeu prestador para ver perfil:', prestador.nome);
+                setPrestadorSelecionado(prestador);
+                setPrestadorId(null);
+                navigate('/perfil/' + prestador._id);
+            }
+
+            function handleLoginSuccess(userData, prestadorParaCurtir) {
+                setUsuario(userData);
+                
+                if (userData.tipo === 'admin') {
+                    navigate('/admin');
+                    return;
+                }
+                
+                if (prestadorParaCurtir) {
+                    navigate('/perfil/' + prestadorParaCurtir);
+                } else if (userData.tipo === 'cliente') {
+                    navigate('/dashboard-cliente');
+                } else if (userData.tipo === 'prestador') {
+                    navigate('/dashboard');
+                } else {
+                    navigate('/');
                 }
             }
+
+            function handleCadastroSucesso() {
+                navigate('/');
+            }
+
+            function handleSair() {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                setUsuario(null);
+                navigate('/');
+            }
             
-            criarPrestador();
+            function handleAdminLogout() {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                setUsuario(null);
+                navigate('/');
+            }
+            
+            var header = modo !== 'avaliar' ? React.createElement(Header, {
+                usuario: usuario,
+                onVoltar: voltarParaBusca,
+                onNavigate: navigate
+            }) : null;
+
+            var content = null;
+            if (modo === 'busca') {
+                content = React.createElement(TelaBusca, { onVerPerfil: handleVerPerfil });
+            } else if (modo === 'admin') {
+                content = React.createElement(PainelAdmin, { onSair: function() { handleAdminLogout(); } });
+            } else if (modo === 'perfil') {
+                content = React.createElement(TelaPerfil, { 
+                    prestador: prestadorSelecionado, 
+                    prestadorId: prestadorId,
+                    onVoltar: voltarParaBusca 
+                });
+            } else if (modo === 'login') {
+                content = React.createElement(Login, { onLoginSuccess: handleLoginSuccess, onVoltar: voltarParaBusca });
+            } else if (modo === 'cadastro') {
+                content = React.createElement(CadastroPrestador, { onCadastroSucesso: handleCadastroSucesso, onVoltar: voltarParaBusca });
+            } else if (modo === 'dashboard') {
+                content = React.createElement(DashboardPrestador, { usuario: usuario, onSair: handleSair });
+            } else if (modo === 'dashboard-cliente') {
+                content = React.createElement(DashboardCliente, { 
+                    usuario: usuario, 
+                    onSair: handleSair,
+                    onVerPerfil: handleVerPerfil 
+                });
+            } else if (modo === 'avaliar') {
+                content = React.createElement(AvaliarServico);
+            } else if (modo === 'esqueci-senha') {
+                content = React.createElement(EsqueciSenha, { 
+                    onVoltar: voltarParaBusca 
+                });
+            } else if (modo === 'resetar-senha') {
+                content = React.createElement(ResetarSenha, { 
+                    onVoltar: voltarParaBusca,
+                    onSucesso: function() { navigate('/login'); }
+                });
+            } else if (modo === 'termos') {
+                content = React.createElement(TermosDeUso, { onVoltar: voltarParaBusca });
+            } else if (modo === 'privacidade') {
+                content = React.createElement(PoliticaPrivacidade, { onVoltar: voltarParaBusca });
+            } else if (modo === 'cookies') {
+                content = React.createElement(PoliticaCookies, { onVoltar: voltarParaBusca });
+            } else if (modo === 'sobre') {
+                content = React.createElement(SobreNos, { onVoltar: voltarParaBusca });
+            } else if (modo === 'sobre-dashboard-prestador') {
+                content = React.createElement(SobreDashboardPrestador, { onVoltar: voltarParaBusca });
+            } else if (modo === 'como-funciona') {
+                content = React.createElement(ComoFunciona, { onVoltar: voltarParaBusca });
+            } else if (modo === 'meus-favoritos') {
+                content = React.createElement(MeusFavoritos, { onVoltar: voltarParaBusca });
+            } else if (modo === 'contato') {
+                content = React.createElement(ContatoSuporte, { onVoltar: voltarParaBusca });
+            } else if (modo === 'faq-prestador') {
+                content = React.createElement(FaqPrestadores, { onVoltar: voltarParaBusca });
+            } else if (modo === 'faq-cliente') {
+                content = React.createElement(FaqClientes, { onVoltar: voltarParaBusca });
+            } else {
+                content = React.createElement('div', { className: "text-center py-12" },
+                    React.createElement('div', { className: "w-10 h-10 border-4 border-[#FFD966] border-t-[#FFB347] rounded-full animate-spin mx-auto mb-4" }),
+                    React.createElement('p', { className: "text-[#4a8a4a]" }, "Redirecionando...")
+                );
+            }
+
+            var rodape = modo !== 'avaliar' ? React.createElement(Rodape, { 
+                onNavigate: navigate, 
+                onOpenAdminModal: function() { setAdminModalOpen(true); },
+                isAdminLoggedIn: usuario?.tipo === 'admin',
+                onAdminLogout: handleAdminLogout
+            }) : null;
+
+            return React.createElement('div', { className: "min-h-screen bg-gradient-to-b from-[#fcf8f3] to-white overflow-guard" },
+                header,
+                React.createElement('main', null, content),
+                rodape,
+                React.createElement(ModalLoginAdmin, { 
+                    isOpen: adminModalOpen, 
+                    onClose: function() { setAdminModalOpen(false); }, 
+                    onLoginSuccess: handleLoginSuccess 
+                })
+            );
         }
-    }
-}, []);
 
-    function voltarParaBusca() {
-        window.scrollTo(0, 0);
-        navigate('/');
-        setPrestadorId(null);
-        setPrestadorSelecionado(null);
-    }
-
-    function handleVerPerfil(prestador) {
-        console.log('👤 App recebeu prestador para ver perfil:', prestador.nome);
-        setPrestadorSelecionado(prestador);
-        setPrestadorId(null);
-        navigate('/perfil/' + prestador._id);
-    }
-
-    function handleLoginSuccess(userData, prestadorParaCurtir) {
-        setUsuario(userData);
-        
-        if (userData.tipo === 'admin') {
-            navigate('/admin');
-            return;
-        }
-        
-        if (prestadorParaCurtir) {
-            navigate('/perfil/' + prestadorParaCurtir);
-        } else if (userData.tipo === 'cliente') {
-            navigate('/dashboard-cliente');
-        } else if (userData.tipo === 'prestador') {
-            navigate('/dashboard');
-        } else {
-            navigate('/');
-        }
-    }
-
-    function handleCadastroSucesso() {
-        navigate('/');
-    }
-
-    function handleSair() {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setUsuario(null);
-        navigate('/');
-    }
-    
-    function handleAdminLogout() {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setUsuario(null);
-        navigate('/');
-    }
-    
-    var header = modo !== 'avaliar' ? React.createElement(Header, {
-        usuario: usuario,
-        onVoltar: voltarParaBusca,
-        onNavigate: navigate
-    }) : null;
-
-    var content = null;
-    if (modo === 'busca') {
-        content = React.createElement(TelaBusca, { onVerPerfil: handleVerPerfil });
-    } else if (modo === 'admin') {
-        content = React.createElement(PainelAdmin, { onSair: function() { handleAdminLogout(); } });
-    } else if (modo === 'perfil') {
-        content = React.createElement(TelaPerfil, { 
-            prestador: prestadorSelecionado, 
-            prestadorId: prestadorId,
-            onVoltar: voltarParaBusca 
-        });
-    } else if (modo === 'login') {
-        content = React.createElement(Login, { onLoginSuccess: handleLoginSuccess, onVoltar: voltarParaBusca });
-    } else if (modo === 'cadastro') {
-        content = React.createElement(CadastroPrestador, { onCadastroSucesso: handleCadastroSucesso, onVoltar: voltarParaBusca });
-    } else if (modo === 'dashboard') {
-        content = React.createElement(DashboardPrestador, { usuario: usuario, onSair: handleSair });
-    } else if (modo === 'dashboard-cliente') {
-        content = React.createElement(DashboardCliente, { 
-            usuario: usuario, 
-            onSair: handleSair,
-            onVerPerfil: handleVerPerfil 
-        });
-    } else if (modo === 'avaliar') {
-        content = React.createElement(AvaliarServico);
-    } else if (modo === 'esqueci-senha') {
-        content = React.createElement(EsqueciSenha, { 
-            onVoltar: voltarParaBusca 
-        });
-    } else if (modo === 'resetar-senha') {
-        content = React.createElement(ResetarSenha, { 
-            onVoltar: voltarParaBusca,
-            onSucesso: function() { navigate('/login'); }
-        });
-    } 
-    else if (modo === 'termos') {
-        content = React.createElement(TermosDeUso, { onVoltar: voltarParaBusca });
-    } else if (modo === 'privacidade') {
-        content = React.createElement(PoliticaPrivacidade, { onVoltar: voltarParaBusca });
-    } else if (modo === 'cookies') {
-        content = React.createElement(PoliticaCookies, { onVoltar: voltarParaBusca });
-    } else if (modo === 'sobre') {
-        content = React.createElement(SobreNos, { onVoltar: voltarParaBusca });
-    } else if (modo === 'sobre-dashboard-prestador') {
-        content = React.createElement(SobreDashboardPrestador, { onVoltar: voltarParaBusca });
-    } else if (modo === 'como-funciona') {
-        content = React.createElement(ComoFunciona, { onVoltar: voltarParaBusca });
-    } else if (modo === 'meus-favoritos') {
-        content = React.createElement(MeusFavoritos, { onVoltar: voltarParaBusca });
-    } else if (modo === 'contato') {
-        content = React.createElement(ContatoSuporte, { onVoltar: voltarParaBusca });
-    } else if (modo === 'faq-prestador') {
-        content = React.createElement(FaqPrestadores, { onVoltar: voltarParaBusca });
-    } else if (modo === 'faq-cliente') {
-        content = React.createElement(FaqClientes, { onVoltar: voltarParaBusca });
-    } else {
-        content = React.createElement('div', { className: "text-center py-12" },
-            React.createElement('div', { className: "w-10 h-10 border-4 border-[#FFD966] border-t-[#FFB347] rounded-full animate-spin mx-auto mb-4" }),
-            React.createElement('p', { className: "text-[#4a8a4a]" }, "Redirecionando...")
-        );
-    }
-
-    var rodape = modo !== 'avaliar' ? React.createElement(Rodape, { 
-        onNavigate: navigate, 
-        onOpenAdminModal: function() { setAdminModalOpen(true); },
-        isAdminLoggedIn: usuario?.tipo === 'admin',
-        onAdminLogout: handleAdminLogout
-    }) : null;
-
-    return React.createElement('div', { className: "min-h-screen bg-gradient-to-b from-[#fcf8f3] to-white overflow-guard" },
-        header,
-        React.createElement('main', null, content),
-        rodape,
-        React.createElement(ModalLoginAdmin, { 
-            isOpen: adminModalOpen, 
-            onClose: function() { setAdminModalOpen(false); }, 
-            onLoginSuccess: handleLoginSuccess 
-        })
-    );
-}
-
-               ReactDOM.render(React.createElement(App), document.getElementById('root'));
+        ReactDOM.render(React.createElement(App), document.getElementById('root'));
     </script>
 
-      <!-- ===== REGISTRO DO SERVICE WORKER (PWA) ===== -->
+    <!-- ===== REGISTRO DO SERVICE WORKER (PWA) ===== -->
     <script>
-        // Registrar Service Worker para PWA (caminho corrigido)
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/SemLimites/sw.js')
                 .then(registration => {
@@ -7930,14 +7604,12 @@ useEffect(function() {
                 });
         }
 
-        // Detectar se o app pode ser instalado (botão flutuante)
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             console.log('📱 App pode ser instalado!');
             
-            // Criar botão de instalação flutuante
             const installBtn = document.createElement('button');
             installBtn.textContent = '📱 Instalar App';
             installBtn.className = 'fixed bottom-20 right-4 z-50 bg-[#3d7a3d] text-white px-4 py-2 rounded-full shadow-lg text-sm font-medium animate-pulse';
@@ -7956,7 +7628,6 @@ useEffect(function() {
             };
             document.body.appendChild(installBtn);
             
-            // Esconder após 10 segundos se não clicar
             setTimeout(() => {
                 if (installBtn.parentElement) installBtn.remove();
             }, 10000);
