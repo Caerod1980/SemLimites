@@ -65,28 +65,28 @@
         payment_id: paymentId
       });
       
-      // Se tem retorno de pagamento ou status de aprovação, salvar no sessionStorage
+      // Se tem retorno de pagamento ou status de aprovação, salvar no localStorage
       if (retorno === 'sucesso' || retorno === 'erro' || retorno === 'pending' || collectionStatus === 'approved') {
         console.log('✅ Retorno de pagamento detectado no 404!');
         
-        // Salvar status do pagamento
+        // Salvar status do pagamento no localStorage
         if (retorno === 'sucesso' || collectionStatus === 'approved') {
-          sessionStorage.setItem('pagamentoRetorno', 'sucesso');
+          localStorage.setItem('pagamentoRetorno', 'sucesso');
         } else if (retorno === 'erro') {
-          sessionStorage.setItem('pagamentoRetorno', 'erro');
+          localStorage.setItem('pagamentoRetorno', 'erro');
         } else if (retorno === 'pending') {
-          sessionStorage.setItem('pagamentoRetorno', 'pending');
+          localStorage.setItem('pagamentoRetorno', 'pending');
         }
         
-        // Salvar dados do pagamento
+        // Salvar dados do pagamento no localStorage
         if (preferenceId) {
-          sessionStorage.setItem('preferenceId', preferenceId);
+          localStorage.setItem('preferenceId', preferenceId);
         }
         if (paymentId) {
-          sessionStorage.setItem('paymentId', paymentId);
+          localStorage.setItem('paymentId', paymentId);
         }
         if (collectionStatus) {
-          sessionStorage.setItem('collectionStatus', collectionStatus);
+          localStorage.setItem('collectionStatus', collectionStatus);
         }
         
         // Salvar todos os parâmetros para debug
@@ -94,12 +94,12 @@
         for (var pair of params.entries()) {
           allParams[pair[0]] = pair[1];
         }
-        sessionStorage.setItem('pagamentoParams', JSON.stringify(allParams));
+        localStorage.setItem('pagamentoParams', JSON.stringify(allParams));
         
-        console.log('💾 Dados salvos no sessionStorage:', {
-          pagamentoRetorno: sessionStorage.getItem('pagamentoRetorno'),
-          preferenceId: sessionStorage.getItem('preferenceId'),
-          paymentId: sessionStorage.getItem('paymentId')
+        console.log('💾 Dados salvos no localStorage:', {
+          pagamentoRetorno: localStorage.getItem('pagamentoRetorno'),
+          preferenceId: localStorage.getItem('preferenceId'),
+          paymentId: localStorage.getItem('paymentId')
         });
       }
       
