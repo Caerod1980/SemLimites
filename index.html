@@ -7691,92 +7691,145 @@ function App() {
         }
     }, []);
 
-   // ===== CAPTURAR QUALQUER REDIRECIONAMENTO =====
+  // ===== CAPTURAR RETORNO DO MERCADO PAGO =====
 useEffect(function() {
-    console.log('🔍 [App] Verificando URL para pagamento...');
+    console.log('🔍 [App] Verificando retorno de pagamento...');
     
-    const url = window.location.href;
     const urlParams = new URLSearchParams(window.location.search);
-    const pagamentoStatus = urlParams.get('pagamento');
+    const retorno = urlParams.get('retorno');
     
-    // Se já está processando, não repetir
-    if (window.pagamentoProcessando) return;
+    console.log('🔍 [App] Parâmetro retorno:', retorno);
+    console.log('🔍 [App] URL atual:', window.location.href);
+    
+    // Prevenir processamento duplicado
+    if (window.pagamentoProcessando) {
+        console.log('⚠️ [App] Pagamento já está sendo processado, ignorando...');
+        return;
+    }
     
     // Verificar se tem dados pendentes no sessionStorage
     const dadosSalvos = sessionStorage.getItem('cadastroPendente');
+    const preferenceIdSalvo = sessionStorage.getItem('preferenceId');
     
-    if (dadosSalvos && !localStorage.getItem('token')) {
-        console.log('📦 [App] Dados pendentes encontrados!');
+    if (!dadosSalvos) {
+        console.log('📭 [App] Nenhum dado pendente encontrado');
+        return;
+    }
+    
+    // Só processa se for retorno de SUCESSO do Mercado Pago
+    if (retorno === 'sucesso') {
+        console.log('✅ [App] Retorno de SUCESSO detectado!');
         
-        // Se tem parâmetro de sucesso OU estamos em uma URL que indica pagamento
-        if (pagamentoStatus === 'sucesso' || url.includes('dashboard')) {
-            console.log('✅ [App] Pagamento detectado! Criando prestador...');
-            window.pagamentoProcessando = true;
+        if (localStorage.getItem('token')) {
+            console.log('⚠️ [App] Usuário já está logado, ignorando...');
+            sessionStorage.removeItem('cadastroPendente');
+            sessionStorage.removeItem('preferenceId');
+            return;
+        }
+        
+        console.log('📦 [App] Dados pendentes encontrados, criando prestador...');
+        window.pagamentoProcessando = true;
+        
+        const dados = JSON.parse(dadosSalvos);
+        
+        async function criarPrestador() {
+            console.log('📝 [App] Criando prestador com dados:', {
+                nome: dados.nome,
+                email: dados.email,
+                preferenceId: dados.preferenceId
+            });
             
-            const dados = JSON.parse(dadosSalvos);
+            var dadosEnvio = {
+                nome: dados.nome,
+                email: dados.email,
+                senha: dados.senha,
+                tipo: 'prestador',
+                tipoPessoa: dados.tipoPessoa,
+                cidade: dados.cidade,
+                estado: dados.estado,
+                whatsapp: dados.whatsapp,
+                telefone: dados.telefone || '',
+                descricao: dados.descricao || '',
+                tags: dados.tags || [],
+                categoriaPrincipal: dados.categoriaPrincipal,
+                servicos: dados.servicos,
+                aceitouTermos: true,
+                preferenceId: dados.preferenceId,
+                planoStatus: 'ativo',
+                planoAtivo: true,
+                assinaturaAtivadaEm: new Date().toISOString()
+            };
             
-            async function criarPrestador() {
-                console.log('📝 [App] Criando prestador...');
-                
-                var dadosEnvio = {
-                    nome: dados.nome,
-                    email: dados.email,
-                    senha: dados.senha,
-                    tipo: 'prestador',
-                    tipoPessoa: dados.tipoPessoa,
-                    cidade: dados.cidade,
-                    estado: dados.estado,
-                    whatsapp: dados.whatsapp,
-                    telefone: dados.telefone || '',
-                    descricao: dados.descricao || '',
-                    tags: dados.tags || [],
-                    categoriaPrincipal: dados.categoriaPrincipal,
-                    servicos: dados.servicos,
-                    aceitouTermos: true,
-                    preferenceId: dados.preferenceId,
-                    planoStatus: 'ativo',
-                    planoAtivo: true,
-                    assinaturaAtivadaEm: new Date().toISOString()
-                };
-                
-                if (dados.tipoPessoa === 'fisica') {
-                    dadosEnvio.cpf = dados.cpf;
-                } else {
-                    dadosEnvio.cnpj = dados.cnpj;
-                    dadosEnvio.responsavel = dados.responsavel;
-                    if (dados.cnpjVerificado) {
-                        dadosEnvio.cnpjVerificado = true;
-                        dadosEnvio.razaoSocialVerificada = dados.razaoSocialVerificada;
-                    }
-                }
-                
-                try {
-                    const response = await fetch(API_URL + '/auth/register', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(dadosEnvio)
-                    });
-                    
-                    const registerData = await response.json();
-                    
-                    if (registerData.token) {
-                        console.log('✅ Prestador criado com sucesso!');
-                        localStorage.setItem('token', registerData.token);
-                        localStorage.setItem('user', JSON.stringify(registerData.user));
-                        sessionStorage.removeItem('cadastroPendente');
-                        
-                        console.log('🚀 Redirecionando para dashboard...');
-                        window.location.href = BASE_PATH + '/dashboard';
-                    } else {
-                        console.error('Erro ao criar prestador:', registerData);
-                    }
-                } catch (error) {
-                    console.error('Erro:', error);
+            if (dados.tipoPessoa === 'fisica') {
+                dadosEnvio.cpf = dados.cpf;
+            } else {
+                dadosEnvio.cnpj = dados.cnpj;
+                dadosEnvio.responsavel = dados.responsavel;
+                if (dados.cnpjVerificado) {
+                    dadosEnvio.cnpjVerificado = true;
+                    dadosEnvio.razaoSocialVerificada = dados.razaoSocialVerificada;
                 }
             }
             
-            criarPrestador();
+            try {
+                console.log('📤 Enviando requisição para /auth/register...');
+                const response = await fetch(API_URL + '/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dadosEnvio)
+                });
+                
+                const registerData = await response.json();
+                console.log('📥 Resposta do registro:', registerData);
+                
+                if (registerData.token) {
+                    console.log('✅ Prestador criado com sucesso!');
+                    localStorage.setItem('token', registerData.token);
+                    localStorage.setItem('user', JSON.stringify(registerData.user));
+                    
+                    // Limpar dados pendentes
+                    sessionStorage.removeItem('cadastroPendente');
+                    sessionStorage.removeItem('preferenceId');
+                    
+                    // Remover parâmetro da URL para não reprocessar
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    
+                    console.log('🚀 Redirecionando para dashboard em 2 segundos...');
+                    setTimeout(function() {
+                        window.location.href = BASE_PATH + '/dashboard';
+                    }, 2000);
+                } else {
+                    console.error('❌ Erro ao criar prestador:', registerData);
+                    alert('Erro ao finalizar cadastro: ' + (registerData.error || 'Tente novamente'));
+                    window.pagamentoProcessando = false;
+                }
+            } catch (error) {
+                console.error('❌ Erro na requisição:', error);
+                alert('Erro ao finalizar cadastro. Entre em contato com o suporte.');
+                window.pagamentoProcessando = false;
+            }
         }
+        
+        criarPrestador();
+        
+    } else if (retorno === 'erro') {
+        console.log('❌ [App] Pagamento com erro detectado');
+        alert('Ocorreu um erro no pagamento. Tente novamente.');
+        sessionStorage.removeItem('cadastroPendente');
+        sessionStorage.removeItem('preferenceId');
+        // Redirecionar para a página de cadastro
+        setTimeout(function() {
+            window.location.href = BASE_PATH + '/cadastro';
+        }, 1500);
+        
+    } else if (retorno === 'pending') {
+        console.log('⏳ [App] Pagamento pendente detectado');
+        alert('Seu pagamento está pendente. Aguarde a confirmação e tente novamente.');
+        sessionStorage.removeItem('cadastroPendente');
+        sessionStorage.removeItem('preferenceId');
+        setTimeout(function() {
+            window.location.href = BASE_PATH + '/cadastro';
+        }, 1500);
     }
 }, []);
 
