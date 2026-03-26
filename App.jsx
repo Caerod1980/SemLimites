@@ -315,13 +315,9 @@ async function processarCadastroAposPagamento(dados, paymentId, setUsuario, setM
       localStorage.setItem('user', JSON.stringify(registerData.user));
       setUsuario(registerData.user);
       
-      // Limpar dados pendentes
+      // Limpar dados pendentes (usando localStorage e sessionStorage)
+      limparDadosPagamento();
       sessionStorage.removeItem('cadastroPendente');
-      sessionStorage.removeItem('preferenceId');
-      sessionStorage.removeItem('paymentId');
-      sessionStorage.removeItem('pagamentoRetorno');
-      sessionStorage.removeItem('collectionStatus');
-      sessionStorage.removeItem('pagamentoParams');
       
       // Limpar parâmetros da URL
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -345,12 +341,20 @@ async function processarCadastroAposPagamento(dados, paymentId, setUsuario, setM
 
 // ========== FUNÇÃO PARA LIMPAR DADOS DE PAGAMENTO ==========
 function limparDadosPagamento() {
-  sessionStorage.removeItem('pagamentoRetorno');
+  console.log('🧹 [App] Limpando dados de pagamento');
+  // Limpar localStorage (dados persistentes do pagamento)
+  localStorage.removeItem('pagamentoRetorno');
+  localStorage.removeItem('preferenceId');
+  localStorage.removeItem('paymentId');
+  localStorage.removeItem('collectionStatus');
+  localStorage.removeItem('pagamentoParams');
+  // Limpar sessionStorage (dados temporários)
+  sessionStorage.removeItem('cadastroPendente');
   sessionStorage.removeItem('preferenceId');
   sessionStorage.removeItem('paymentId');
+  sessionStorage.removeItem('pagamentoRetorno');
   sessionStorage.removeItem('collectionStatus');
   sessionStorage.removeItem('pagamentoParams');
-  sessionStorage.removeItem('cadastroPendente');
 }
 
 // ========== TELA DE BUSCA ==========
@@ -488,14 +492,14 @@ export default function App() {
       return;
     }
     
-    // Verificar sessionStorage (salvo pelo 404.html)
-    const pagamentoRetorno = sessionStorage.getItem('pagamentoRetorno');
-    const preferenceIdSalvo = sessionStorage.getItem('preferenceId');
-    const paymentIdSalvo = sessionStorage.getItem('paymentId');
-    const collectionStatusSalvo = sessionStorage.getItem('collectionStatus');
+    // ===== 1. VERIFICAR LOCALSTORAGE (SALVO PELO 404.HTML) =====
+    const pagamentoRetorno = localStorage.getItem('pagamentoRetorno');
+    const preferenceIdSalvo = localStorage.getItem('preferenceId');
+    const paymentIdSalvo = localStorage.getItem('paymentId');
+    const collectionStatusSalvo = localStorage.getItem('collectionStatus');
     const dadosSalvos = sessionStorage.getItem('cadastroPendente');
     
-    console.log('🔍 [App] SessionStorage:', {
+    console.log('🔍 [App] localStorage:', {
       pagamentoRetorno,
       preferenceIdSalvo,
       paymentIdSalvo,
@@ -503,7 +507,7 @@ export default function App() {
       temDadosCadastro: !!dadosSalvos
     });
     
-    // Verificar parâmetros da URL
+    // ===== 2. VERIFICAR PARÂMETROS DA URL =====
     const urlParams = new URLSearchParams(window.location.search);
     const retornoUrl = urlParams.get('retorno');
     const collectionStatusUrl = urlParams.get('collection_status');
@@ -517,7 +521,7 @@ export default function App() {
       payment_id: paymentIdUrl
     });
     
-    // Determinar status do pagamento (priorizar sessionStorage)
+    // ===== 3. DETERMINAR STATUS DO PAGAMENTO (priorizar localStorage) =====
     let statusPagamento = null;
     let preferenceId = null;
     let paymentId = null;
@@ -526,7 +530,7 @@ export default function App() {
       statusPagamento = pagamentoRetorno;
       preferenceId = preferenceIdSalvo;
       paymentId = paymentIdSalvo;
-      console.log('📦 [App] Usando dados do sessionStorage');
+      console.log('📦 [App] Usando dados do localStorage');
     } 
     else if (retornoUrl === 'sucesso' || collectionStatusUrl === 'approved') {
       statusPagamento = 'sucesso';
@@ -546,7 +550,7 @@ export default function App() {
     // Se não tem dados de cadastro, não processar
     if (!dadosSalvos) {
       if (statusPagamento) {
-        console.log('🧹 [App] Limpando sessionStorage sem dados de cadastro');
+        console.log('🧹 [App] Limpando localStorage sem dados de cadastro');
         limparDadosPagamento();
       }
       return;
