@@ -103,21 +103,25 @@
         });
       }
       
-      // Verificar se já está tentando carregar o index.html
-      if (pathname === '/SemLimites/index.html' || pathname === '/SemLimites/') {
-        console.log('✅ Já está no index.html, carregando normalmente');
+      // Verificar se já está tentando carregar a página correta
+      // Se a URL já é a raiz ou já tem index.html, carregar normalmente
+      if (pathname === '/' || pathname === '/index.html' || pathname === '') {
+        console.log('✅ Já está na raiz, carregando normalmente');
         return;
       }
       
-      // Construir a URL para o index.html mantendo os parâmetros
-      var redirectUrl = '/SemLimites/index.html' + (search || '');
+      // Se está tentando acessar /SemLimites/ ou /SemLimites/index.html, redirecionar para raiz
+      if (pathname.startsWith('/SemLimites/')) {
+        // Redirecionar para a raiz mantendo os parâmetros
+        var redirectUrl = '/' + (search || '');
+        console.log('🔄 Redirecionando de /SemLimites para raiz:', redirectUrl);
+        window.location.replace(redirectUrl);
+        return;
+      }
       
-      console.log('🔄 Redirecionando para:', redirectUrl);
-      
-      // Salvar a URL original para referência
-      sessionStorage.setItem('redirectOriginal', currentUrl);
-      
-      // Redirecionar para o index.html
+      // Para qualquer outro caminho, redirecionar para a raiz
+      var redirectUrl = '/' + (search || '');
+      console.log('🔄 Redirecionando para raiz:', redirectUrl);
       window.location.replace(redirectUrl);
     })();
   </script>
