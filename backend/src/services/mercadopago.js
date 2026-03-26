@@ -9,8 +9,16 @@ if (!process.env.MERCADO_PAGO_ACCESS_TOKEN) {
   console.error('❌ MERCADO_PAGO_ACCESS_TOKEN não configurado!');
 }
 
+// Determinar ambiente baseado no token
+const ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+const IS_PRODUCTION = ACCESS_TOKEN && ACCESS_TOKEN.startsWith('APP_USR-');
+const AMBIENTE = IS_PRODUCTION ? 'PRODUÇÃO' : 'SANDBOX';
+
+console.log(`🌍 Mercado Pago configurado em: ${AMBIENTE}`);
+console.log(`🔑 Token prefixo: ${ACCESS_TOKEN?.substring(0, 8)}...`);
+
 const client = new MercadoPagoConfig({
-  accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN,
+  accessToken: ACCESS_TOKEN,
   options: { 
     timeout: 10000,
     idempotencyKey: crypto.randomUUID()
@@ -22,9 +30,16 @@ const payment = new Payment(client);
 const customer = new Customer(client);
 const merchantOrder = new MerchantOrder(client);
 
+// URL base para retornos (produção)
+const BASE_URL = 'https://www.semlimitesprestadores.com.br';
+const BACKEND_URL = process.env.BACKEND_URL || 'https://semlimites-api-rodrigo-b5ckghhkbxdqd7a8.canadacentral-01.azurewebsites.net';
+
+/**
+ * Cria preferência de pagamento para cadastro de prestador
+ */
 export async function criarPreferenciaPublica({ email, nome, plano = 'mensal', valor = 9.90 }) {
   try {
-    console.log(`📝 Criando preferência pública para: ${email}`);
+    console.log(`📝 [${AMBIENTE}] Criando preferência para: ${email}`);
     
     const body = {
       items: [
@@ -36,7 +51,7 @@ export async function criarPreferenciaPublica({ email, nome, plano = 'mensal', v
           currency_id: 'BRL',
           unit_price: valor,
           category_id: 'services',
-          picture_url: 'https://semlimites.com.br/logo.png'
+          picture_url: 'https://www.semlimitesprestadores.com.br/logo.png'
         }
       ],
       payer: {
@@ -44,9 +59,9 @@ export async function criarPreferenciaPublica({ email, nome, plano = 'mensal', v
         name: nome
       },
       back_urls: {
-        success: `https://www.semlimitesprestadores.com.br/cadastro?retorno=sucesso`,
-        failure: `https://www.semlimitesprestadores.com.br/cadastro?retorno=erro`,
-        pending: `https://www.semlimitesprestadores.com.br/cadastro?retorno=pending`
+        success: `${BASE_URL}/cadastro?retorno=sucesso`,
+        failure: `${BASE_URL}/cadastro?retorno=erro`,
+        pending: `${BASE_URL}/cadastro?retorno=pending`
       },
       auto_return: 'approved',
       payment_methods: {
@@ -60,24 +75,29 @@ export async function criarPreferenciaPublica({ email, nome, plano = 'mensal', v
         tipo: 'assinatura_mensal',
         email: email,
         nome: nome,
-        ambiente: process.env.NODE_ENV || 'production'
+        ambiente: AMBIENTE
       },
-      notification_url: `${process.env.BACKEND_URL || 'https://semlimites-api-rodrigo-b5ckghhkbxdqd7a8.canadacentral-01.azurewebsites.net'}/api/assinatura/webhooks/mercadopago`
+      notification_url: `${BACKEND_URL}/api/assinatura/webhooks/mercadopago`
     };
     
     const response = await preference.create({ body });
     
     console.log(`✅ Preferência criada com ID: ${response.id}`);
     
+    // Para produção, usar init_point. Para sandbox, sandbox_init_point.
+    const linkPagamento = IS_PRODUCTION ? response.init_point : response.sandbox_init_point;
+    console.log(`🔗 Link de pagamento (${AMBIENTE}): ${linkPagamento}`);
+    
     return {
       success: true,
       preferenceId: response.id,
-      initPoint: response.init_point || response.sandbox_init_point,
-      sandboxInitPoint: response.sandbox_init_point
+      initPoint: response.init_point,
+      sandboxInitPoint: response.sandbox_init_point,
+      ambiente: AMBIENTE
     };
     
   } catch (error) {
-    console.error('❌ Erro ao criar preferência pública:', error);
+    console.error('❌ Erro ao criar preferência:', error);
     return {
       success: false,
       error: error.message,
@@ -86,18 +106,21 @@ export async function criarPreferenciaPublica({ email, nome, plano = 'mensal', v
   }
 }
 
+/**
+ * Cria assinatura para prestador existente
+ */
 export async function criarAssinatura(dados) {
   try {
     const { prestadorId, email, nome, cpf, plano = 'mensal', valor = 9.90 } = dados;
     
-    console.log(`📝 Criando assinatura para prestador: ${prestadorId}`);
+    console.log(`📝 [${AMBIENTE}] Criando assinatura para prestador: ${prestadorId}`);
     
     let customerId = null;
     try {
       const customerResponse = await customer.search({ email });
       if (customerResponse.results && customerResponse.results.length > 0) {
         customerId = customerResponse.results[0].id;
-        console.log(`👤 Cliente existente encontrado: ${customerId}`);
+        console.log(`👤 Cliente existente: ${customerId}`);
       }
     } catch (error) {
       console.log('Cliente não encontrado, criando novo...');
@@ -120,9 +143,9 @@ export async function criarAssinatura(dados) {
         name: nome
       },
       back_urls: {
-        success: `https://www.semlimitesprestadores.com.br/cadastro?retorno=sucesso`,
-        failure: `https://www.semlimitesprestadores.com.br/cadastro?retorno=erro`,
-        pending: `https://www.semlimitesprestadores.com.br/cadastro?retorno=pending`
+        success: `${BASE_URL}/cadastro?retorno=sucesso`,
+        failure: `${BASE_URL}/cadastro?retorno=erro`,
+        pending: `${BASE_URL}/cadastro?retorno=pending`
       },
       auto_return: 'approved',
       payment_methods: {
@@ -135,9 +158,9 @@ export async function criarAssinatura(dados) {
       metadata: {
         prestador_id: prestadorId,
         tipo: 'assinatura_mensal',
-        ambiente: process.env.NODE_ENV || 'production'
+        ambiente: AMBIENTE
       },
-      notification_url: `${process.env.BACKEND_URL || 'https://semlimites-api-rodrigo-b5ckghhkbxdqd7a8.canadacentral-01.azurewebsites.net'}/api/assinatura/webhooks/mercadopago`
+      notification_url: `${BACKEND_URL}/api/assinatura/webhooks/mercadopago`
     };
     
     if (customerId) {
@@ -158,9 +181,10 @@ export async function criarAssinatura(dados) {
     return {
       success: true,
       preferenceId: response.id,
-      initPoint: response.init_point || response.sandbox_init_point,
+      initPoint: response.init_point,
       sandboxInitPoint: response.sandbox_init_point,
-      customerId: customerId
+      customerId: customerId,
+      ambiente: AMBIENTE
     };
     
   } catch (error) {
@@ -174,14 +198,13 @@ export async function criarAssinatura(dados) {
 }
 
 /**
- * Processa notificação de pagamento recebida via webhook - CORRIGIDO
+ * Processa notificação de pagamento recebida via webhook
  */
 export async function processarNotificacao(notificacao) {
   try {
-    console.log('📩 Processando notificação:', JSON.stringify(notificacao, null, 2));
+    console.log(`📩 [${AMBIENTE}] Processando notificação`);
     
     const { action, data, type, topic, resource } = notificacao;
-    
     const tipoNotificacao = type || topic;
     
     if (tipoNotificacao !== 'payment') {
@@ -194,12 +217,11 @@ export async function processarNotificacao(notificacao) {
     let emailPagador = null;
     let nomePagador = null;
     
-    // Tentar extrair preferenceId da notificação
+    // Extrair dados da URL resource
     if (resource && typeof resource === 'string') {
       const prefMatch = resource.match(/pref_id=([^&]+)/);
       if (prefMatch) {
         preferenceId = prefMatch[1];
-        console.log(`📌 PreferenceId extraído da URL: ${preferenceId}`);
       }
       
       if (!paymentId) {
@@ -211,11 +233,11 @@ export async function processarNotificacao(notificacao) {
     }
     
     if (!paymentId) {
-      console.error('❌ Não foi possível extrair paymentId da notificação');
+      console.error('❌ paymentId não encontrado');
       return { success: false, error: 'paymentId não encontrado' };
     }
     
-    console.log(`💰 Buscando detalhes do pagamento: ${paymentId}`);
+    console.log(`💰 Buscando pagamento: ${paymentId}`);
     
     let paymentData;
     let pagamentoAprovado = false;
@@ -227,28 +249,25 @@ export async function processarNotificacao(notificacao) {
       nomePagador = paymentData.metadata?.nome || paymentData.payer?.name;
       preferenceId = paymentData.metadata?.preference_id || paymentData.order?.id || preferenceId;
       
-      console.log('📊 Dados do pagamento:', {
-        id: paymentData.id,
-        status: paymentData.status,
-        email: emailPagador,
-        metadata: paymentData.metadata
-      });
+      console.log(`📊 Status: ${paymentData.status} | Email: ${emailPagador}`);
     } catch (error) {
       console.error(`⚠️ Pagamento ${paymentId} não encontrado via API:`, error.message);
-      console.log(`ℹ️ Considerando pagamento ${paymentId} como aprovado (modo sandbox)`);
-      pagamentoAprovado = true;
       
-      if (notificacao.data?.id) {
-        paymentId = notificacao.data.id;
+      // Em produção, NÃO assumir pagamento como aprovado se não encontrar
+      if (!IS_PRODUCTION) {
+        console.log(`ℹ️ Modo sandbox: considerando pagamento ${paymentId} como aprovado`);
+        pagamentoAprovado = true;
+      } else {
+        console.log(`❌ Pagamento não encontrado em produção - rejeitando`);
+        return { success: false, error: 'Pagamento não encontrado' };
       }
       
-      if (notificacao.originalBody?.payer?.email) {
-        emailPagador = notificacao.originalBody.payer.email;
-      }
+      if (notificacao.data?.id) paymentId = notificacao.data.id;
+      if (notificacao.originalBody?.payer?.email) emailPagador = notificacao.originalBody.payer.email;
     }
     
     if (!pagamentoAprovado) {
-      console.log(`⏸️ Pagamento ${paymentId} não aprovado`);
+      console.log(`⏸️ Pagamento não aprovado: ${paymentId}`);
       return { success: true, message: 'Pagamento pendente', pagamentoConfirmado: false };
     }
     
@@ -260,26 +279,23 @@ export async function processarNotificacao(notificacao) {
     
     if (preferenceId) {
       prestadorExistente = await Prestador.findOne({ preferenceId });
-      console.log(`🔍 Buscando por preferenceId ${preferenceId}: ${prestadorExistente ? 'ENCONTRADO' : 'NÃO ENCONTRADO'}`);
     }
     
     if (!prestadorExistente && emailPagador) {
       prestadorExistente = await Prestador.findOne({ email: emailPagador });
-      console.log(`🔍 Buscando por email ${emailPagador}: ${prestadorExistente ? 'ENCONTRADO' : 'NÃO ENCONTRADO'}`);
     }
     
     if (prestadorExistente) {
-      console.log(`✅ Prestador existente encontrado: ${prestadorExistente._id}`);
+      console.log(`✅ Prestador encontrado: ${prestadorExistente._id}`);
       
       prestadorExistente.planoStatus = 'ativo';
       prestadorExistente.planoAtivo = true;
       prestadorExistente.assinaturaAtivadaEm = new Date();
-      if (preferenceId) {
-        prestadorExistente.preferenceId = preferenceId;
-      }
+      prestadorExistente.pagamentoConfirmado = true;
+      if (preferenceId) prestadorExistente.preferenceId = preferenceId;
       await prestadorExistente.save();
       
-      console.log(`🎉 Prestador ${prestadorExistente.nome} ativado com sucesso!`);
+      console.log(`🎉 Prestador ${prestadorExistente.nome} ativado!`);
       
       return {
         success: true,
@@ -290,7 +306,7 @@ export async function processarNotificacao(notificacao) {
       };
     }
     
-    console.log('ℹ️ Pagamento confirmado mas prestador não existe - frontend deve criar');
+    console.log('ℹ️ Pagamento confirmado - aguardando criação do prestador');
     
     return {
       success: true,
@@ -300,21 +316,23 @@ export async function processarNotificacao(notificacao) {
       email: emailPagador,
       nome: nomePagador,
       preferenceId: preferenceId,
-      message: 'Pagamento confirmado, aguardando criação do prestador pelo frontend'
+      message: 'Pagamento confirmado, aguardando criação do prestador'
     };
     
   } catch (error) {
     console.error('❌ Erro ao processar notificação:', error);
-    return {
-      success: false,
-      error: error.message
-    };
+    return { success: false, error: error.message };
   }
 }
 
+/**
+ * Busca status de um pagamento
+ */
 export async function buscarStatusAssinatura(paymentId) {
   try {
     const paymentData = await payment.get({ id: paymentId });
+    
+    console.log(`📊 Status do pagamento ${paymentId}: ${paymentData.status}`);
     
     return {
       success: true,
@@ -325,49 +343,47 @@ export async function buscarStatusAssinatura(paymentId) {
     
   } catch (error) {
     console.error('❌ Erro ao buscar status:', error);
-    return {
-      success: false,
-      error: error.message
-    };
+    return { success: false, error: error.message };
   }
 }
 
+/**
+ * Cancela assinatura/pagamento
+ */
 export async function cancelarAssinatura(paymentId) {
   try {
-    console.log(`🔄 Tentando cancelar assinatura: ${paymentId}`);
+    console.log(`🔄 [${AMBIENTE}] Cancelando: ${paymentId}`);
     
+    // IDs de preferência contêm hífen, IDs de pagamento são apenas números
     if (paymentId.includes('-')) {
-      console.log(`ℹ️ É uma preferência. Não é possível cancelar diretamente.`);
+      console.log(`ℹ️ É uma preferência. Cancelamento apenas no sistema.`);
       return {
         success: true,
-        message: 'Preferência marcada como cancelada no sistema',
+        message: 'Preferência cancelada no sistema',
         tipo: 'preferencia'
       };
-    } else {
-      try {
-        const response = await payment.cancel({ id: paymentId });
-        console.log(`✅ Assinatura ${paymentId} cancelada no Mercado Pago`);
-        return {
-          success: true,
-          data: response,
-          tipo: 'payment'
-        };
-      } catch (cancelError) {
-        console.error('❌ Erro ao cancelar payment:', cancelError);
-        return {
-          success: true,
-          message: 'Não foi possível cancelar no Mercado Pago, mas removido do sistema',
-          tipo: 'erro_cancelamento'
-        };
-      }
+    }
+    
+    try {
+      const response = await payment.cancel({ id: paymentId });
+      console.log(`✅ Pagamento ${paymentId} cancelado com sucesso`);
+      return {
+        success: true,
+        data: response,
+        tipo: 'payment'
+      };
+    } catch (cancelError) {
+      console.error(`❌ Erro ao cancelar: ${cancelError.message}`);
+      return {
+        success: false,
+        message: 'Não foi possível cancelar no Mercado Pago',
+        error: cancelError.message
+      };
     }
     
   } catch (error) {
     console.error('❌ Erro ao cancelar assinatura:', error);
-    return {
-      success: false,
-      error: error.message
-    };
+    return { success: false, error: error.message };
   }
 }
 
