@@ -4,6 +4,10 @@ import CadastroPrestador from "./CadastroPrestador";
 import Login from "./Login";
 import DashboardPrestador from "./DashboardPrestador";
 
+// ========== CONSTANTES ==========
+const BASE_PATH = ''; // Removido o /SemLimites pois o domínio já está configurado
+const API_URL = 'https://semlimites-api-rodrigo-b5ckghhkbxdqd7a8.canadacentral-01.azurewebsites.net/api';
+
 // ========== UTILITÁRIOS ==========
 function cls(...a) {
   return a.filter(Boolean).join(" ");
@@ -259,6 +263,96 @@ function CardPrestador({ prestador }) {
   );
 }
 
+// ========== FUNÇÃO PARA PROCESSAR CADASTRO PÓS-PAGAMENTO ==========
+async function processarCadastroAposPagamento(dados, paymentId, setUsuario, setModo) {
+  console.log('📝 Processando cadastro para:', dados.email);
+  
+  var dadosEnvio = {
+    nome: dados.nome,
+    email: dados.email,
+    senha: dados.senha,
+    tipo: 'prestador',
+    tipoPessoa: dados.tipoPessoa,
+    cidade: dados.cidade,
+    estado: dados.estado,
+    whatsapp: dados.whatsapp,
+    telefone: dados.telefone || '',
+    descricao: dados.descricao || '',
+    tags: dados.tags || [],
+    categoriaPrincipal: dados.categoriaPrincipal,
+    servicos: dados.servicos,
+    aceitouTermos: true,
+    preferenceId: dados.preferenceId,
+    paymentId: paymentId,
+    planoStatus: 'ativo',
+    planoAtivo: true,
+    assinaturaAtivadaEm: new Date().toISOString()
+  };
+  
+  if (dados.tipoPessoa === 'fisica') {
+    dadosEnvio.cpf = dados.cpf;
+  } else {
+    dadosEnvio.cnpj = dados.cnpj;
+    dadosEnvio.responsavel = dados.responsavel;
+    if (dados.cnpjVerificado) {
+      dadosEnvio.cnpjVerificado = true;
+      dadosEnvio.razaoSocialVerificada = dados.razaoSocialVerificada;
+    }
+  }
+  
+  try {
+    const response = await fetch(API_URL + '/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dadosEnvio)
+    });
+    
+    const registerData = await response.json();
+    
+    if (registerData.token) {
+      console.log('✅ Cadastro realizado com sucesso!');
+      localStorage.setItem('token', registerData.token);
+      localStorage.setItem('user', JSON.stringify(registerData.user));
+      setUsuario(registerData.user);
+      
+      // Limpar dados pendentes
+      sessionStorage.removeItem('cadastroPendente');
+      sessionStorage.removeItem('preferenceId');
+      sessionStorage.removeItem('paymentId');
+      sessionStorage.removeItem('pagamentoRetorno');
+      sessionStorage.removeItem('collectionStatus');
+      sessionStorage.removeItem('pagamentoParams');
+      
+      // Limpar parâmetros da URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      alert('✅ Pagamento confirmado! Seu cadastro foi ativado com sucesso!');
+      
+      setTimeout(() => {
+        setModo('dashboard');
+      }, 2000);
+      
+      return true;
+    } else {
+      throw new Error(registerData.error || 'Erro no cadastro');
+    }
+  } catch (error) {
+    console.error('❌ Erro no cadastro:', error);
+    alert('Erro ao finalizar cadastro: ' + error.message + '\n\nEntre em contato com o suporte.');
+    return false;
+  }
+}
+
+// ========== FUNÇÃO PARA LIMPAR DADOS DE PAGAMENTO ==========
+function limparDadosPagamento() {
+  sessionStorage.removeItem('pagamentoRetorno');
+  sessionStorage.removeItem('preferenceId');
+  sessionStorage.removeItem('paymentId');
+  sessionStorage.removeItem('collectionStatus');
+  sessionStorage.removeItem('pagamentoParams');
+  sessionStorage.removeItem('cadastroPendente');
+}
+
 // ========== TELA DE BUSCA ==========
 function Busca() {
   const [cidade, setCidade] = useState("Bauru");
@@ -301,7 +395,6 @@ function Busca() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Cabeçalho */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
         <h1 className="text-2xl font-bold text-slate-900 mb-4">
           Encontre o profissional ideal
@@ -342,9 +435,7 @@ function Busca() {
         </button>
       </div>
 
-      {/* Resultados */}
       {loading && <div className="text-center py-8">Carregando...</div>}
-      
       {erro && <div className="text-red-600 text-center py-8">{erro}</div>}
       
       {!loading && !erro && (
@@ -367,12 +458,137 @@ function Busca() {
 // ========== COMPONENTE PRINCIPAL ==========
 export default function App() {
   const [conectado, setConectado] = useState(false);
-  const [modo, setModo] = useState('busca'); // 'busca', 'cadastro', 'login', 'dashboard'
+  const [modo, setModo] = useState('busca');
   const [usuario, setUsuario] = useState(null);
+  const [processandoPagamento, setProcessandoPagamento] = useState(false);
 
+  // Verificar conexão com API
   useEffect(() => {
     testarConexao().then(setConectado);
   }, []);
+
+  // Verificar autenticação existente
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    if (token && user) {
+      setUsuario(JSON.parse(user));
+      setModo('dashboard');
+    }
+  }, []);
+
+  // ===== CAPTURAR RETORNO DO MERCADO PAGO =====
+  useEffect(() => {
+    console.log('🔍 [App] Verificando retorno de pagamento...');
+    console.log('🔍 [App] URL atual:', window.location.href);
+    
+    // Prevenir processamento duplicado
+    if (processandoPagamento) {
+      console.log('⚠️ [App] Pagamento já está sendo processado');
+      return;
+    }
+    
+    // Verificar sessionStorage (salvo pelo 404.html)
+    const pagamentoRetorno = sessionStorage.getItem('pagamentoRetorno');
+    const preferenceIdSalvo = sessionStorage.getItem('preferenceId');
+    const paymentIdSalvo = sessionStorage.getItem('paymentId');
+    const collectionStatusSalvo = sessionStorage.getItem('collectionStatus');
+    const dadosSalvos = sessionStorage.getItem('cadastroPendente');
+    
+    console.log('🔍 [App] SessionStorage:', {
+      pagamentoRetorno,
+      preferenceIdSalvo,
+      paymentIdSalvo,
+      collectionStatusSalvo,
+      temDadosCadastro: !!dadosSalvos
+    });
+    
+    // Verificar parâmetros da URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const retornoUrl = urlParams.get('retorno');
+    const collectionStatusUrl = urlParams.get('collection_status');
+    const preferenceIdUrl = urlParams.get('preference_id');
+    const paymentIdUrl = urlParams.get('payment_id');
+    
+    console.log('🔍 [App] URL Params:', {
+      retorno: retornoUrl,
+      collection_status: collectionStatusUrl,
+      preference_id: preferenceIdUrl,
+      payment_id: paymentIdUrl
+    });
+    
+    // Determinar status do pagamento (priorizar sessionStorage)
+    let statusPagamento = null;
+    let preferenceId = null;
+    let paymentId = null;
+    
+    if (pagamentoRetorno) {
+      statusPagamento = pagamentoRetorno;
+      preferenceId = preferenceIdSalvo;
+      paymentId = paymentIdSalvo;
+      console.log('📦 [App] Usando dados do sessionStorage');
+    } 
+    else if (retornoUrl === 'sucesso' || collectionStatusUrl === 'approved') {
+      statusPagamento = 'sucesso';
+      preferenceId = preferenceIdUrl;
+      paymentId = paymentIdUrl;
+      console.log('📦 [App] Usando dados da URL');
+    }
+    else if (retornoUrl === 'erro') {
+      statusPagamento = 'erro';
+    }
+    else if (retornoUrl === 'pending') {
+      statusPagamento = 'pending';
+    }
+    
+    console.log('🔍 [App] Status final:', statusPagamento);
+    
+    // Se não tem dados de cadastro, não processar
+    if (!dadosSalvos) {
+      if (statusPagamento) {
+        console.log('🧹 [App] Limpando sessionStorage sem dados de cadastro');
+        limparDadosPagamento();
+      }
+      return;
+    }
+    
+    // Se já está logado, limpar e ignorar
+    if (localStorage.getItem('token')) {
+      console.log('⚠️ [App] Usuário já logado, limpando dados pendentes');
+      limparDadosPagamento();
+      return;
+    }
+    
+    // Processar apenas se for sucesso
+    if (statusPagamento === 'sucesso') {
+      console.log('✅ [App] Processando pagamento aprovado!');
+      setProcessandoPagamento(true);
+      
+      const dados = JSON.parse(dadosSalvos);
+      
+      // Atualizar preferenceId se veio do pagamento
+      if (preferenceId && !dados.preferenceId) {
+        dados.preferenceId = preferenceId;
+      }
+      
+      processarCadastroAposPagamento(dados, paymentId, setUsuario, setModo)
+        .finally(() => {
+          setProcessandoPagamento(false);
+        });
+    } 
+    else if (statusPagamento === 'erro') {
+      console.log('❌ Pagamento com erro');
+      alert('Ocorreu um erro no pagamento. Tente novamente.');
+      limparDadosPagamento();
+      setTimeout(() => setModo('cadastro'), 1500);
+    }
+    else if (statusPagamento === 'pending') {
+      console.log('⏳ Pagamento pendente');
+      alert('Seu pagamento está pendente. Aguarde a confirmação e tente novamente.');
+      limparDadosPagamento();
+      setTimeout(() => setModo('cadastro'), 1500);
+    }
+  }, [processandoPagamento, setUsuario, setModo]);
 
   const handleLoginSuccess = (userData) => {
     setUsuario(userData);
@@ -380,13 +596,14 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUsuario(null);
     setModo('busca');
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      {/* Header - ALTERAÇÃO SIMPLES: adicionei um ponto no título */}
       <header className="bg-white/90 backdrop-blur-lg border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
           <div 
@@ -397,7 +614,7 @@ export default function App() {
               SL
             </div>
             <div>
-              <h1 className="font-bold text-lg">SemLimites.</h1> {/* ← ÚNICA ALTERAÇÃO: ponto final */}
+              <h1 className="font-bold text-lg">SemLimites</h1>
               <p className="text-xs text-slate-500">
                 {conectado ? '✅ Online' : '🔄 Conectando...'}
               </p>
@@ -421,18 +638,25 @@ export default function App() {
                 </button>
               </>
             ) : (
-              <button
-                onClick={() => setModo('dashboard')}
-                className="px-4 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition"
-              >
-                Dashboard
-              </button>
+              <>
+                <button
+                  onClick={() => setModo('dashboard')}
+                  className="px-4 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition"
+                >
+                  Dashboard
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition"
+                >
+                  Sair
+                </button>
+              </>
             )}
           </div>
         </div>
       </header>
 
-      {/* Conteúdo Principal */}
       {modo === 'busca' && <Busca />}
       
       {modo === 'cadastro' && (
