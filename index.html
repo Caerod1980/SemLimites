@@ -4373,9 +4373,9 @@
                                         ),
                                         React.createElement('div', { className: "flex justify-between items-center border-b border-[#c0dfc0] pb-2" },
                                             React.createElement('span', { className: "text-xs md:text-sm text-[#4a8a4a]" }, "Verificação"),
-                                            React.createElement('span', { className: "text-xs md:text-sm font-medium " + (prestador.verificado ? 'text-emerald-600' : 'text-amber-600') }, 
-                                                prestador.verificado ? '✓ Verificado' : '⚡ Não verificado'
-                                            )
+                                            React.createElement('span', { className: "text-xs md:text-sm font-medium " + (prestador.verificado === true ? 'text-emerald-600' : 'text-amber-600') }, 
+                                                prestador.verificado === true ? '✓ Verificado' : '⚡ Não verificado'
+                                             )
                                         ),
                                         React.createElement('div', { className: "flex justify-between items-center border-b border-[#c0dfc0] pb-2" },
                                             React.createElement('span', { className: "text-xs md:text-sm text-[#4a8a4a]" }, "WhatsApp"),
