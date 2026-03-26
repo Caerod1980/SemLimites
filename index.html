@@ -3274,99 +3274,98 @@
                 }, 3000);
             }
 
-           // ===== FUNÇÃO PARA CRIAR PRESTADOR APÓS PAGAMENTO =====
-function criarPrestadorAposPagamento() {
-    console.log('🚀 FUNÇÃO criarPrestadorAposPagamento FOI CHAMADA!');
-    
-    var dadosSalvos = sessionStorage.getItem('cadastroPendente');
-    
-    if (!dadosSalvos) {
-        console.error('❌ Dados de cadastro não encontrados no sessionStorage');
-        setErro('Erro ao finalizar cadastro. Entre em contato com o suporte.');
-        setEtapa('form');
-        return;
-    }
-    
-    var dados = JSON.parse(dadosSalvos);
-    console.log('📦 Dados recuperados:', { nome: dados.nome, email: dados.email, preferenceId: dados.preferenceId });
-    
-    var dadosEnvio = {
-        nome: dados.nome,
-        email: dados.email,
-        senha: dados.senha,
-        tipo: 'prestador',
-        tipoPessoa: dados.tipoPessoa,
-        cidade: dados.cidade,
-        estado: dados.estado,
-        whatsapp: dados.whatsapp,
-        telefone: dados.telefone || '',
-        descricao: dados.descricao || '',
-        tags: dados.tags || [],
-        categoriaPrincipal: dados.categoriaPrincipal,
-        servicos: dados.servicos,
-        aceitouTermos: true,
-        preferenceId: dados.preferenceId,
-        planoStatus: 'ativo',
-        planoAtivo: true,
-        assinaturaAtivadaEm: new Date().toISOString(),
-        verificado: false  // Padrão false, será alterado se CNPJ verificado
-    };
-    
-    if (dados.tipoPessoa === 'fisica') {
-        dadosEnvio.cpf = dados.cpf;
-    } else {
-        dadosEnvio.cnpj = dados.cnpj;
-        dadosEnvio.responsavel = dados.responsavel;
-        if (dados.cnpjVerificado) {
-            dadosEnvio.cnpjVerificado = true;
-            dadosEnvio.razaoSocialVerificada = dados.razaoSocialVerificada;
-            dadosEnvio.verificado = true;  // ← ADICIONADO: marca como verificado quando CNPJ for validado
-        }
-    }
-    
-    console.log('📤 Enviando requisição para /auth/register');
-    
-    fetch(API_URL + '/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dadosEnvio)
-    })
-        .then(function(response) { 
-            if (!response.ok) {
-                return response.json().then(function(err) { 
-                    throw new Error(err.error || 'Erro no cadastro'); 
-                });
+            // ===== FUNÇÃO PARA CRIAR PRESTADOR APÓS PAGAMENTO =====
+            function criarPrestadorAposPagamento() {
+                console.log('🚀 FUNÇÃO criarPrestadorAposPagamento FOI CHAMADA!');
+                
+                var dadosSalvos = sessionStorage.getItem('cadastroPendente');
+                
+                if (!dadosSalvos) {
+                    console.error('❌ Dados de cadastro não encontrados no sessionStorage');
+                    setErro('Erro ao finalizar cadastro. Entre em contato com o suporte.');
+                    setEtapa('form');
+                    return;
+                }
+                
+                var dados = JSON.parse(dadosSalvos);
+                console.log('📦 Dados recuperados:', { nome: dados.nome, email: dados.email, preferenceId: dados.preferenceId });
+                
+                var dadosEnvio = {
+                    nome: dados.nome,
+                    email: dados.email,
+                    senha: dados.senha,
+                    tipo: 'prestador',
+                    tipoPessoa: dados.tipoPessoa,
+                    cidade: dados.cidade,
+                    estado: dados.estado,
+                    whatsapp: dados.whatsapp,
+                    telefone: dados.telefone || '',
+                    descricao: dados.descricao || '',
+                    tags: dados.tags || [],
+                    categoriaPrincipal: dados.categoriaPrincipal,
+                    servicos: dados.servicos,
+                    aceitouTermos: true,
+                    preferenceId: dados.preferenceId,
+                    planoStatus: 'ativo',
+                    planoAtivo: true,
+                    assinaturaAtivadaEm: new Date().toISOString()
+                };
+                
+                if (dados.tipoPessoa === 'fisica') {
+                    dadosEnvio.cpf = dados.cpf;
+                } else {
+                    dadosEnvio.cnpj = dados.cnpj;
+                    dadosEnvio.responsavel = dados.responsavel;
+                    if (dados.cnpjVerificado) {
+                        dadosEnvio.cnpjVerificado = true;
+                        dadosEnvio.razaoSocialVerificada = dados.razaoSocialVerificada;
+                    }
+                }
+                
+                console.log('📤 Enviando requisição para /auth/register');
+                
+                fetch(API_URL + '/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dadosEnvio)
+                })
+                    .then(function(response) { 
+                        if (!response.ok) {
+                            return response.json().then(function(err) { 
+                                throw new Error(err.error || 'Erro no cadastro'); 
+                            });
+                        }
+                        return response.json(); 
+                    })
+                    .then(function(registerData) {
+                        if (registerData.error) {
+                            throw new Error(registerData.error);
+                        }
+                        
+                        console.log('✅ Prestador cadastrado com sucesso após pagamento!');
+                        console.log('📋 Dados do prestador:', registerData.user);
+                        
+                        localStorage.setItem('token', registerData.token);
+                        localStorage.setItem('user', JSON.stringify(registerData.user));
+                        
+                        sessionStorage.removeItem('cadastroPendente');
+                        sessionStorage.removeItem('preferenceId');
+                        setDadosPendentes(null);
+                        
+                        setEtapa('sucesso');
+                        setLoading(false);
+                        
+                        setTimeout(function() {
+                            window.location.href = BASE_PATH + '/dashboard';
+                        }, 2000);
+                    })
+                    .catch(function(error) {
+                        console.error('❌ Erro no cadastro pós-pagamento:', error);
+                        setErro('Erro ao finalizar cadastro. Entre em contato com o suporte.');
+                        setEtapa('form');
+                    });
             }
-            return response.json(); 
-        })
-        .then(function(registerData) {
-            if (registerData.error) {
-                throw new Error(registerData.error);
-            }
-            
-            console.log('✅ Prestador cadastrado com sucesso após pagamento!');
-            console.log('📋 Dados do prestador:', registerData.user);
-            
-            localStorage.setItem('token', registerData.token);
-            localStorage.setItem('user', JSON.stringify(registerData.user));
-            
-            sessionStorage.removeItem('cadastroPendente');
-            sessionStorage.removeItem('preferenceId');
-            setDadosPendentes(null);
-            
-            setEtapa('sucesso');
-            setLoading(false);
-            
-            setTimeout(function() {
-                window.location.href = BASE_PATH + '/dashboard';
-            }, 2000);
-        })
-        .catch(function(error) {
-            console.error('❌ Erro no cadastro pós-pagamento:', error);
-            setErro('Erro ao finalizar cadastro. Entre em contato com o suporte.');
-            setEtapa('form');
-        });
-}
+
             // ===== FUNÇÕES DE FORMATAÇÃO =====
             function formatarCPF(valor) {
                 var numeros = valor.replace(/\D/g, '');
@@ -4374,9 +4373,9 @@ function criarPrestadorAposPagamento() {
                                         ),
                                         React.createElement('div', { className: "flex justify-between items-center border-b border-[#c0dfc0] pb-2" },
                                             React.createElement('span', { className: "text-xs md:text-sm text-[#4a8a4a]" }, "Verificação"),
-                                            React.createElement('span', { className: "text-xs md:text-sm font-medium " + (prestador.verificado === true ? 'text-emerald-600' : 'text-amber-600') }, 
-                                                prestador.verificado === true ? '✓ Verificado' : '⚡ Não verificado'
-                                             )
+                                            React.createElement('span', { className: "text-xs md:text-sm font-medium " + (prestador.verificado ? 'text-emerald-600' : 'text-amber-600') }, 
+                                                prestador.verificado ? '✓ Verificado' : '⚡ Não verificado'
+                                            )
                                         ),
                                         React.createElement('div', { className: "flex justify-between items-center border-b border-[#c0dfc0] pb-2" },
                                             React.createElement('span', { className: "text-xs md:text-sm text-[#4a8a4a]" }, "WhatsApp"),
