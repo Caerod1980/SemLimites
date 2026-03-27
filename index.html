@@ -7689,24 +7689,11 @@ function App() {
 
     window.appSetModo = setModo;
 
-    useEffect(function() {
-    var fullPath = window.location.pathname;
-    var path = fullPath;
+   useEffect(function() {
+    var path = window.location.pathname.replace(BASE_PATH, '') || '/';
+    console.log('📍 Path atual:', path);
     
-    // Se começar com BASE_PATH, remove apenas a primeira parte
-    if (fullPath.startsWith(BASE_PATH)) {
-        path = fullPath.substring(BASE_PATH.length);
-    }
-    
-    // Se ficar vazio, define como '/'
-    if (path === '') {
-        path = '/';
-    }
-    
-    console.log('📍 Path completo:', fullPath);
-    console.log('📍 Path após remover BASE_PATH:', path);
-    
-    // CORREÇÃO: Verificar rotas dinâmicas primeiro
+    // CORREÇÃO: Verificar resetar-senha PRIMEIRO
     if (path.startsWith('/resetar-senha/')) {
         console.log('🔐 Rota de resetar senha detectada:', path);
         setModo('resetar-senha');
