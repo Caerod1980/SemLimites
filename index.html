@@ -29,17 +29,37 @@
     <meta name="apple-mobile-web-app-title" content="SemLimites">
     <meta name="mobile-web-app-capable" content="yes">
     
-    <!-- Script para lidar com rotas no GitHub Pages -->
+       <!-- Script para lidar com rotas no GitHub Pages -->
     <script>
         (function() {
+            // Verificar se a URL atual é uma rota que deve ser preservada
+            var pathname = window.location.pathname;
+            var rotasPreservadas = ['/resetar-senha/', '/avaliar/', '/perfil/'];
+            var devePreservar = false;
+            
+            for (var i = 0; i < rotasPreservadas.length; i++) {
+                if (pathname.includes(rotasPreservadas[i])) {
+                    devePreservar = true;
+                    break;
+                }
+            }
+            
+            // Se for rota preservada e não tem o BASE_PATH, adiciona
+            if (devePreservar && !pathname.startsWith('/SemLimites')) {
+                var newPath = '/SemLimites' + pathname;
+                console.log('🔄 Adicionando BASE_PATH:', newPath);
+                history.replaceState(null, '', newPath);
+            }
+            
+            // Restaurar redirect salvo
             var redirect = sessionStorage.redirect;
-            delete sessionStorage.redirect;
             if (redirect && redirect !== location.href) {
+                console.log('🔄 Restaurando redirect:', redirect);
+                sessionStorage.removeItem('redirect');
                 history.replaceState(null, '', redirect);
             }
         })();
     </script>
-
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
