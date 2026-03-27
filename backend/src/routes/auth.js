@@ -551,7 +551,8 @@ router.post('/esqueci-senha', async (req, res) => {
 
     console.log('🔑 Solicitação de recuperação para:', email);
 
-    const user = await User.findOne({ email, tipo: 'prestador' });
+    // CORREÇÃO: Buscar em TODOS os tipos de usuário (não apenas prestador)
+    const user = await User.findOne({ email });
     
     if (!user) {
       console.log('❌ Usuário não encontrado (mas não informamos)');
@@ -560,27 +561,37 @@ router.post('/esqueci-senha', async (req, res) => {
       });
     }
 
-    let nome = 'Prestador';
-    if (user.prestadorId) {
+    console.log(`✅ Usuário encontrado: ${user.email}, tipo: ${user.tipo}`);
+
+    // Buscar nome do usuário (para clientes ou prestadores)
+    let nome = user.tipo === 'cliente' ? 'Cliente' : 'Prestador';
+    
+    if (user.tipo === 'prestador' && user.prestadorId) {
       const prestador = await Prestador.findById(user.prestadorId);
       if (prestador) {
         nome = prestador.nome;
       }
+    } else if (user.tipo === 'cliente') {
+      // Se tiver um campo nome no cliente, use-o
+      nome = user.nome || 'Cliente';
     }
 
+    // Gerar token de recuperação
     const token = crypto.randomBytes(32).toString('hex');
     
     user.resetPasswordToken = token;
-    user.resetPasswordExpires = Date.now() + 3600000;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hora
     await user.save();
 
     console.log(`🔑 Token gerado para ${email}: ${token.substring(0, 10)}...`);
 
+    // Enviar e-mail
     try {
       await enviarEmailResetSenha(user.email, nome, token);
       console.log(`✅ Email de recuperação enviado para: ${email}`);
     } catch (emailError) {
       console.error('❌ Erro ao enviar email:', emailError);
+      // Não retorna erro para o usuário por segurança
     }
 
     res.json({ 
@@ -590,81 +601,6 @@ router.post('/esqueci-senha', async (req, res) => {
   } catch (error) {
     console.error('❌ Erro ao solicitar reset:', error);
     res.status(500).json({ error: 'Erro ao processar solicitação' });
-  }
-});
-
-/**
- * @route   GET /api/auth/resetar-senha/:token
- * @desc    Verificar se o token é válido
- * @access  Public
- */
-router.get('/resetar-senha/:token', async (req, res) => {
-  try {
-    const { token } = req.params;
-    
-    console.log('🔍 Verificando token:', token.substring(0, 10) + '...');
-    
-    const user = await User.findOne({
-      resetPasswordToken: token,
-      resetPasswordExpires: { $gt: Date.now() }
-    });
-
-    if (!user) {
-      console.log('❌ Token inválido ou expirado');
-      return res.status(400).json({ error: 'Link inválido ou expirado' });
-    }
-
-    console.log('✅ Token válido para:', user.email);
-    res.json({ valid: true, email: user.email });
-
-  } catch (error) {
-    console.error('❌ Erro ao verificar token:', error);
-    res.status(500).json({ error: 'Erro ao verificar token' });
-  }
-});
-
-/**
- * @route   POST /api/auth/resetar-senha
- * @desc    Resetar a senha com o token
- * @access  Public
- */
-router.post('/resetar-senha', async (req, res) => {
-  try {
-    const { token, novaSenha } = req.body;
-    
-    if (!token || !novaSenha) {
-      return res.status(400).json({ error: 'Token e nova senha são obrigatórios' });
-    }
-
-    if (novaSenha.length < 6) {
-      return res.status(400).json({ error: 'A senha deve ter pelo menos 6 caracteres' });
-    }
-
-    console.log('🔄 Resetando senha com token:', token.substring(0, 10) + '...');
-
-    const user = await User.findOne({
-      resetPasswordToken: token,
-      resetPasswordExpires: { $gt: Date.now() }
-    });
-
-    if (!user) {
-      console.log('❌ Token inválido ou expirado');
-      return res.status(400).json({ error: 'Link inválido ou expirado' });
-    }
-
-    const senhaHash = await bcrypt.hash(novaSenha, 10);
-    user.senha = senhaHash;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpires = undefined;
-    await user.save();
-
-    console.log(`✅ Senha alterada com sucesso para: ${user.email}`);
-
-    res.json({ message: 'Senha alterada com sucesso!' });
-
-  } catch (error) {
-    console.error('❌ Erro ao resetar senha:', error);
-    res.status(500).json({ error: 'Erro ao resetar senha' });
   }
 });
 
