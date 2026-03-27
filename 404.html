@@ -77,11 +77,10 @@
         payment_id: paymentId
       });
       
-      // Se tem retorno de pagamento, salvar no localStorage (mantido original)
+      // Se tem retorno de pagamento, salvar no localStorage
       if (retorno === 'sucesso' || retorno === 'erro' || retorno === 'pending' || collectionStatus === 'approved') {
         console.log('✅ Retorno de pagamento detectado no 404!');
         
-        // Salvar status do pagamento no localStorage
         if (retorno === 'sucesso' || collectionStatus === 'approved') {
           localStorage.setItem('pagamentoRetorno', 'sucesso');
         } else if (retorno === 'erro') {
@@ -90,7 +89,6 @@
           localStorage.setItem('pagamentoRetorno', 'pending');
         }
         
-        // Salvar dados do pagamento
         if (preferenceId) {
           localStorage.setItem('preferenceId', preferenceId);
         }
@@ -101,7 +99,6 @@
           localStorage.setItem('collectionStatus', collectionStatus);
         }
         
-        // Salvar todos os parâmetros para debug
         var allParams = {};
         for (var pair of params.entries()) {
           allParams[pair[0]] = pair[1];
@@ -110,17 +107,18 @@
         
         console.log('💾 Dados salvos no localStorage');
         
-        // Para retorno de pagamento, redirecionar para a página de cadastro
         var redirectUrl = '/SemLimites/cadastro' + (search || '');
         console.log('🔄 Redirecionando para cadastro:', redirectUrl);
         window.location.replace(redirectUrl);
         return;
       }
       
-      // CORREÇÃO: Se for rota preservada (resetar-senha, avaliar, perfil), NÃO redirecionar
+      // CORREÇÃO CRÍTICA: Se for rota preservada, CARREGAR O index.html
       if (devePreservar) {
-        console.log('🔐 Rota preservada, carregando normalmente para:', pathname);
-        return; // Não redireciona, deixa o SPA processar
+        console.log('🔐 Rota preservada, carregando index.html para:', pathname);
+        // Carrega o index.html que contém o React
+        window.location.replace('/SemLimites/index.html' + window.location.search);
+        return;
       }
       
       // Verificar se já está na raiz
