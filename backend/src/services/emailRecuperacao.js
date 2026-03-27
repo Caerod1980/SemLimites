@@ -5,13 +5,31 @@ import nodemailer from 'nodemailer';
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.GMAIL_USER, // Seu email do Gmail
-    pass: process.env.GMAIL_APP_PASSWORD // Senha de aplicativo (NÃO é a senha normal)
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD
   }
 });
 
 export async function enviarEmailResetSenha(email, nome, token) {
-  const resetLink = `${process.env.FRONTEND_URL}/resetar-senha/${token}`;
+  // CORREÇÃO SEGURA: Mantém FRONTEND_URL original e adiciona apenas para recuperação de senha
+  const baseUrl = process.env.FRONTEND_URL;
+  
+  // Constrói o link CORRETO para recuperação de senha
+  // Se o FRONTEND_URL já contém /SemLimites, usa direto
+  // Se não contém, adiciona
+  let resetLink;
+  if (baseUrl.includes('/SemLimites')) {
+    resetLink = `${baseUrl}/resetar-senha/${token}`;
+  } else {
+    resetLink = `${baseUrl}/SemLimites/resetar-senha/${token}`;
+  }
+  
+  // Também disponibiliza a URL base para outras funções que possam precisar
+  const frontendBaseUrl = baseUrl;
+  
+  console.log('🔗 Link de recuperação gerado:', resetLink);
+  console.log('🌐 FRONTEND_URL original:', frontendBaseUrl);
+  console.log('📧 Enviando para:', email);
   
   const mailOptions = {
     from: '"SemLimites" <' + process.env.GMAIL_USER + '>',
@@ -70,6 +88,10 @@ export async function enviarEmailResetSenha(email, nome, token) {
             font-weight: 600;
             font-size: 16px;
             margin: 20px 0;
+            transition: transform 0.2s;
+          }
+          .button:hover {
+            transform: scale(1.05);
           }
           .info-box {
             background: #f0f7f0;
@@ -93,6 +115,24 @@ export async function enviarEmailResetSenha(email, nome, token) {
             color: #4a8a4a;
             font-size: 12px;
           }
+          .link-fallback {
+            font-size: 12px;
+            color: #666;
+            word-break: break-all;
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 16px;
+          }
+          .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 11px;
+            margin-top: 16px;
+          }
         </style>
       </head>
       <body>
@@ -102,7 +142,7 @@ export async function enviarEmailResetSenha(email, nome, token) {
             <p style="color: #4a8a4a;">Conectando você a profissionais de confiança</p>
           </div>
           
-          <h2>Olá, ${nome}!</h2>
+          <h2>Olá, ${nome || 'usuário'}!</h2>
           
           <p>Recebemos uma solicitação de recuperação de senha para sua conta no SemLimites.</p>
           
@@ -131,6 +171,11 @@ export async function enviarEmailResetSenha(email, nome, token) {
             Se você não solicitou esta recuperação, pode ignorar este email com segurança.
           </p>
           
+          <div class="link-fallback">
+            <strong>Se o botão não funcionar, copie e cole o link abaixo no seu navegador:</strong><br>
+            ${resetLink}
+          </div>
+          
           <div class="footer">
             <p>© ${new Date().getFullYear()} SemLimites. Todos os direitos reservados.</p>
             <p>Feito com ❤️ em Bauru, SP</p>
@@ -145,9 +190,11 @@ export async function enviarEmailResetSenha(email, nome, token) {
     const info = await transporter.sendMail(mailOptions);
     console.log(`✅ Email enviado com sucesso para: ${email}`);
     console.log(`📧 ID da mensagem: ${info.messageId}`);
+    console.log(`🔗 Link enviado: ${resetLink}`);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('❌ Erro ao enviar email:', error);
+    console.error('Detalhes:', error.message);
     throw new Error('Falha ao enviar email de recuperação');
   }
 }
