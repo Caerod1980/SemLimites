@@ -51,7 +51,7 @@
       console.log('📍 Pathname:', pathname);
       console.log('📍 Search:', search);
       
-      // CORREÇÃO: Verificar se é uma rota que deve ser preservada (resetar-senha, avaliar, perfil)
+      // ===== CORREÇÃO: Rotas que devem ser preservadas =====
       var rotasPreservadas = ['/resetar-senha/', '/avaliar/', '/perfil/'];
       var devePreservar = false;
       
@@ -77,7 +77,7 @@
         payment_id: paymentId
       });
       
-      // Se tem retorno de pagamento, salvar no localStorage
+      // Se tem retorno de pagamento ou status de aprovação, salvar no localStorage
       if (retorno === 'sucesso' || retorno === 'erro' || retorno === 'pending' || collectionStatus === 'approved') {
         console.log('✅ Retorno de pagamento detectado no 404!');
         
@@ -113,29 +113,16 @@
         return;
       }
       
-      // CORREÇÃO DEFINITIVA: Se for rota preservada, carregar index.html com o caminho completo
+      // ===== CORREÇÃO PONTUAL: Se for rota preservada, NÃO REDIRECIONAR =====
       if (devePreservar) {
-        // A URL já contém /SemLimites? Se não, adiciona
-        var finalUrl = pathname;
-        if (!finalUrl.startsWith('/SemLimites')) {
-          finalUrl = '/SemLimites' + finalUrl;
-        }
-        finalUrl = finalUrl + (search || '');
-        console.log('🔐 Rota preservada, redirecionando para index.html com:', finalUrl);
-        window.location.replace(finalUrl);
+        console.log('🔐 Rota preservada, mantendo a URL para o SPA:', pathname);
+        // Não redireciona, deixa o SPA processar a rota
         return;
       }
       
       // Verificar se já está na raiz
       if (pathname === '/' || pathname === '/index.html' || pathname === '') {
         console.log('✅ Já está na raiz, carregando normalmente');
-        return;
-      }
-      
-      // Se está tentando acessar /SemLimites/ ou /SemLimites/index.html
-      if (pathname === '/SemLimites' || pathname === '/SemLimites/') {
-        console.log('🔄 Redirecionando para raiz');
-        window.location.replace('/');
         return;
       }
       
