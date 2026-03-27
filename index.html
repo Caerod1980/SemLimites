@@ -2690,75 +2690,59 @@
             );
         }
 
-      // ========== TELA ESQUECI SENHA COM DEBUG COMPLETO ==========
+      // ========== TELA ESQUECI SENHA CORRIGIDA (ENVIA URL COMPLETA) ==========
 function EsqueciSenha(props) {
     var onVoltar = props.onVoltar;
     var [email, setEmail] = useState('');
     var [enviado, setEnviado] = useState(false);
     var [loading, setLoading] = useState(false);
     var [erro, setErro] = useState('');
-    var [debugInfo, setDebugInfo] = useState('');
 
     function handleSubmit(e) {
         e.preventDefault();
         setLoading(true);
         setErro('');
-        setDebugInfo('');
 
-        var siteUrl = window.location.origin;
-        var basePath = BASE_PATH;
+        // CORREÇÃO CRÍTICA: Montar a URL completa no frontend e enviar para o backend
+        var siteUrl = window.location.origin; // https://www.semlimitesprestadores.com.br
+        var basePath = BASE_PATH; // /SemLimites
         
-        var dadosEnvio = { 
-            email: email,
-            siteUrl: siteUrl,
-            basePath: basePath
-        };
+        // A URL COMPLETA que será usada no e-mail
+        // O backend só precisa armazenar o token, não precisa montar a URL
+        var urlCompletaBase = siteUrl + basePath;
         
-        console.log('📧 [DEBUG] Enviando solicitação para:', API_URL + '/auth/esqueci-senha');
-        console.log('📧 [DEBUG] Dados enviados:', dadosEnvio);
-        console.log('📧 [DEBUG] URL completa:', API_URL + '/auth/esqueci-senha');
-        
-        setDebugInfo('🔄 Enviando requisição para o servidor...');
+        console.log('📧 Enviando solicitação de recuperação para:', email);
+        console.log('🌐 URL base do site:', siteUrl);
+        console.log('📁 BASE_PATH:', basePath);
+        console.log('🔗 URL completa base:', urlCompletaBase);
+        console.log('📝 O backend deve usar esta URL para montar o link: ' + urlCompletaBase + '/resetar-senha/[TOKEN]');
 
         fetch(API_URL + '/auth/esqueci-senha', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dadosEnvio)
+            body: JSON.stringify({ 
+                email: email,
+                urlCompletaBase: urlCompletaBase, // Envia a URL completa já montada
+                siteUrl: siteUrl,
+                basePath: basePath
+            })
         })
             .then(function(response) { 
-                console.log('📧 [DEBUG] Status da resposta:', response.status);
-                console.log('📧 [DEBUG] Headers:', response.headers);
-                setDebugInfo('📥 Resposta recebida: ' + response.status);
-                
                 if (!response.ok) {
-                    return response.text().then(function(text) {
-                        console.error('📧 [DEBUG] Erro resposta:', text);
-                        throw new Error('Servidor retornou erro ' + response.status + ': ' + text);
+                    return response.json().then(function(err) {
+                        throw new Error(err.error || 'Erro ao enviar e-mail');
                     });
                 }
-                return response.json();
+                return response.json(); 
             })
             .then(function(data) {
-                console.log('📧 [DEBUG] Dados da resposta:', data);
-                setDebugInfo('✅ Resposta do servidor: ' + JSON.stringify(data));
-                
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-                
-                // Verificar se o servidor realmente enviou o e-mail
-                if (data.message) {
-                    console.log('📧 [DEBUG] Mensagem do servidor:', data.message);
-                    setDebugInfo('📨 ' + data.message);
-                }
-                
+                console.log('✅ Resposta do servidor:', data);
                 setEnviado(true);
                 setLoading(false);
             })
             .catch(function(error) {
-                console.error('❌ [DEBUG] Erro completo:', error);
-                setErro('Erro: ' + error.message);
-                setDebugInfo('❌ ' + error.message);
+                console.error('❌ Erro ao enviar e-mail:', error);
+                setErro(error.message);
                 setLoading(false);
             });
     }
@@ -2777,13 +2761,9 @@ function EsqueciSenha(props) {
                     React.createElement('span', { className: "font-semibold" }, email),
                     ". Verifique sua caixa de entrada e pasta de spam."
                 ),
-                debugInfo && React.createElement('div', { className: "mt-4 p-3 bg-gray-100 rounded-lg text-xs text-left font-mono break-all" },
-                    React.createElement('p', { className: "font-semibold mb-1" }, "🔍 Informações técnicas:"),
-                    React.createElement('p', null, debugInfo)
-                ),
                 React.createElement('button', {
                     onClick: onVoltar,
-                    className: "mt-4 px-4 py-2 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white rounded-lg"
+                    className: "px-4 py-2 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white rounded-lg"
                 }, "Voltar ao login")
             )
         );
@@ -2801,11 +2781,6 @@ function EsqueciSenha(props) {
 
             erro && React.createElement('div', { className: "mb-4 p-3 rounded-lg bg-red-50 border border-red-200" },
                 React.createElement('p', { className: "text-sm text-red-600" }, erro)
-            ),
-
-            debugInfo && React.createElement('div', { className: "mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-xs text-yellow-800" },
-                React.createElement('p', { className: "font-semibold" }, "🔍 Status:"),
-                React.createElement('p', null, debugInfo)
             ),
 
             React.createElement('form', { onSubmit: handleSubmit, className: "space-y-4" },
