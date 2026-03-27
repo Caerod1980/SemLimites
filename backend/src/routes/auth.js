@@ -8,7 +8,7 @@ import Prestador from '../models/Prestador.js';
 
 const router = express.Router();
 
-// Configuração do transporte de email (Gmail - GRATUITO)
+// Configuração do transporte de email (Gmail)
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
