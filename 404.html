@@ -51,6 +51,18 @@
       console.log('📍 Pathname:', pathname);
       console.log('📍 Search:', search);
       
+      // CORREÇÃO: Verificar se é uma rota que deve ser preservada (resetar-senha, avaliar, perfil)
+      var rotasPreservadas = ['/resetar-senha/', '/avaliar/', '/perfil/'];
+      var devePreservar = false;
+      
+      for (var i = 0; i < rotasPreservadas.length; i++) {
+        if (pathname.includes(rotasPreservadas[i])) {
+          devePreservar = true;
+          console.log('🔐 Rota preservada detectada:', rotasPreservadas[i]);
+          break;
+        }
+      }
+      
       // Verificar se é um retorno de pagamento
       var params = new URLSearchParams(search);
       var retorno = params.get('retorno');
@@ -65,7 +77,7 @@
         payment_id: paymentId
       });
       
-      // Se tem retorno de pagamento ou status de aprovação, salvar no localStorage
+      // Se tem retorno de pagamento, salvar no localStorage (mantido original)
       if (retorno === 'sucesso' || retorno === 'erro' || retorno === 'pending' || collectionStatus === 'approved') {
         console.log('✅ Retorno de pagamento detectado no 404!');
         
@@ -78,7 +90,7 @@
           localStorage.setItem('pagamentoRetorno', 'pending');
         }
         
-        // Salvar dados do pagamento no localStorage
+        // Salvar dados do pagamento
         if (preferenceId) {
           localStorage.setItem('preferenceId', preferenceId);
         }
@@ -96,26 +108,31 @@
         }
         localStorage.setItem('pagamentoParams', JSON.stringify(allParams));
         
-        console.log('💾 Dados salvos no localStorage:', {
-          pagamentoRetorno: localStorage.getItem('pagamentoRetorno'),
-          preferenceId: localStorage.getItem('preferenceId'),
-          paymentId: localStorage.getItem('paymentId')
-        });
+        console.log('💾 Dados salvos no localStorage');
+        
+        // Para retorno de pagamento, redirecionar para a página de cadastro
+        var redirectUrl = '/SemLimites/cadastro' + (search || '');
+        console.log('🔄 Redirecionando para cadastro:', redirectUrl);
+        window.location.replace(redirectUrl);
+        return;
       }
       
-      // Verificar se já está tentando carregar a página correta
-      // Se a URL já é a raiz ou já tem index.html, carregar normalmente
+      // CORREÇÃO: Se for rota preservada (resetar-senha, avaliar, perfil), NÃO redirecionar
+      if (devePreservar) {
+        console.log('🔐 Rota preservada, carregando normalmente para:', pathname);
+        return; // Não redireciona, deixa o SPA processar
+      }
+      
+      // Verificar se já está na raiz
       if (pathname === '/' || pathname === '/index.html' || pathname === '') {
         console.log('✅ Já está na raiz, carregando normalmente');
         return;
       }
       
-      // Se está tentando acessar /SemLimites/ ou /SemLimites/index.html, redirecionar para raiz
-      if (pathname.startsWith('/SemLimites/')) {
-        // Redirecionar para a raiz mantendo os parâmetros
-        var redirectUrl = '/' + (search || '');
-        console.log('🔄 Redirecionando de /SemLimites para raiz:', redirectUrl);
-        window.location.replace(redirectUrl);
+      // Se está tentando acessar /SemLimites/ ou /SemLimites/index.html
+      if (pathname === '/SemLimites' || pathname === '/SemLimites/') {
+        console.log('🔄 Redirecionando para raiz');
+        window.location.replace('/');
         return;
       }
       
