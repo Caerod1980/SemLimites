@@ -29,37 +29,49 @@
     <meta name="apple-mobile-web-app-title" content="SemLimites">
     <meta name="mobile-web-app-capable" content="yes">
     
-       <!-- Script para lidar com rotas no GitHub Pages -->
-    <script>
-        (function() {
-            // Verificar se a URL atual é uma rota que deve ser preservada
-            var pathname = window.location.pathname;
-            var rotasPreservadas = ['/resetar-senha/', '/avaliar/', '/perfil/'];
-            var devePreservar = false;
-            
-            for (var i = 0; i < rotasPreservadas.length; i++) {
-                if (pathname.includes(rotasPreservadas[i])) {
-                    devePreservar = true;
-                    break;
-                }
+      <!-- Script para lidar com rotas no GitHub Pages -->
+<script>
+    (function() {
+        console.log('🚀 [HEAD] Script iniciado');
+        console.log('🚀 [HEAD] URL atual:', window.location.href);
+        
+        var pathname = window.location.pathname;
+        
+        // Verificar se é uma rota dinâmica
+        var rotasDinamicas = ['/resetar-senha/', '/avaliar/', '/perfil/'];
+        var isDynamicRoute = false;
+        
+        for (var i = 0; i < rotasDinamicas.length; i++) {
+            if (pathname.includes(rotasDinamicas[i])) {
+                isDynamicRoute = true;
+                console.log('🚀 [HEAD] Rota dinâmica detectada:', rotasDinamicas[i]);
+                break;
             }
-            
-            // Se for rota preservada e não tem o BASE_PATH, adiciona
-            if (devePreservar && !pathname.startsWith('/SemLimites')) {
-                var newPath = '/SemLimites' + pathname;
-                console.log('🔄 Adicionando BASE_PATH:', newPath);
-                history.replaceState(null, '', newPath);
-            }
-            
-            // Restaurar redirect salvo
-            var redirect = sessionStorage.redirect;
-            if (redirect && redirect !== location.href) {
-                console.log('🔄 Restaurando redirect:', redirect);
-                sessionStorage.removeItem('redirect');
-                history.replaceState(null, '', redirect);
-            }
-        })();
-    </script>
+        }
+        
+        // Se for rota dinâmica e não tem /SemLimites, redireciona
+        if (isDynamicRoute && !pathname.startsWith('/SemLimites')) {
+            var newPath = '/SemLimites' + pathname;
+            console.log('🚀 [HEAD] Redirecionando para:', newPath);
+            window.location.replace(newPath);
+            return;
+        }
+        
+        // Se for rota dinâmica e JÁ TEM /SemLimites, NÃO FAZ NADA - deixa o React processar
+        if (isDynamicRoute && pathname.startsWith('/SemLimites')) {
+            console.log('🚀 [HEAD] Rota dinâmica OK, deixando React processar:', pathname);
+            // IMPORTANTE: Não fazer nada aqui, deixar a URL como está
+        }
+        
+        // Restaurar redirect salvo (para casos de 404)
+        var redirect = sessionStorage.redirect;
+        if (redirect && redirect !== location.href) {
+            console.log('🚀 [HEAD] Restaurando redirect:', redirect);
+            sessionStorage.removeItem('redirect');
+            history.replaceState(null, '', redirect);
+        }
+    })();
+</script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -7688,19 +7700,24 @@ function App() {
     var [prestadorId, setPrestadorId] = useState(null);
 
     window.appSetModo = setModo;
-
-   useEffect(function() {
-    var path = window.location.pathname.replace(BASE_PATH, '') || '/';
-    console.log('📍 Path atual:', path);
     
-    // CORREÇÃO: Verificar resetar-senha PRIMEIRO
-    if (path.startsWith('/resetar-senha/')) {
-        console.log('🔐 Rota de resetar senha detectada:', path);
-        setModo('resetar-senha');
-    } 
-    else if (path.startsWith('/avaliar/')) {
-        setModo('avaliar');
-    }
+    // ADICIONE ESTE LOG
+    console.log('🚀 [APP] App iniciou!');
+    console.log('🚀 [APP] window.location.pathname:', window.location.pathname);
+    console.log('🚀 [APP] BASE_PATH:', BASE_PATH);
+
+    useEffect(function() {
+        var path = window.location.pathname.replace(BASE_PATH, '') || '/';
+        console.log('📍 Path atual:', path);
+        
+        // CORREÇÃO: Verificar resetar-senha PRIMEIRO
+        if (path.startsWith('/resetar-senha/')) {
+            console.log('🔐 Rota de resetar senha detectada! Path:', path);
+            setModo('resetar-senha');
+        } 
+        else if (path.startsWith('/avaliar/')) {
+            setModo('avaliar');
+        }
     else if (path === '/login') {
         setModo('login');
     } 
