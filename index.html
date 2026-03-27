@@ -7608,56 +7608,56 @@ function ResetarSenha(props) {
         }
 
         // ========== FUNÇÃO DE NAVEGAÇÃO ==========
-        function navigate(path) {
-            // Rola a página para o topo
-            window.scrollTo(0, 0);
-            
-            var fullPath = BASE_PATH + path;
-            window.history.pushState({}, '', fullPath);
-            
-            if (path.startsWith('/avaliar/')) {
-                window.appSetModo('avaliar');
-            } else if (path === '/login') {
-                window.appSetModo('login');
-            } else if (path === '/cadastro') {
-                window.appSetModo('cadastro');
-            } else if (path === '/dashboard') {
-                window.appSetModo('dashboard');
-            } else if (path === '/dashboard-cliente') {
-                window.appSetModo('dashboard-cliente');
-            } else if (path.startsWith('/perfil/')) {
-                window.appSetModo('perfil');
-            } else if (path === '/esqueci-senha') {
-                window.appSetModo('esqueci-senha');
-            } else if (path.startsWith('/resetar-senha/')) {
-                window.appSetModo('resetar-senha');
-            } 
-            else if (path === '/termos') {
-                window.appSetModo('termos');
-            } else if (path === '/privacidade') {
-                window.appSetModo('privacidade');
-            } else if (path === '/cookies') {
-                window.appSetModo('cookies');
-            } else if (path === '/contato') {
-                window.appSetModo('contato');
-            } else if (path === '/sobre') {
-                window.appSetModo('sobre');
-            } else if (path === '/como-funciona') {
-                window.appSetModo('como-funciona');
-            } else if (path === '/faq-prestador') {
-                window.appSetModo('faq-prestador');
-            } else if (path === '/faq-cliente') {
-                window.appSetModo('faq-cliente');
-            } else if (path === '/sobre-dashboard-prestador') {
-                window.appSetModo('sobre-dashboard-prestador');
-            } else if (path === '/meus-favoritos') {
-                window.appSetModo('meus-favoritos');
-            } else if (path === '/admin') {
-                window.appSetModo('admin');
-            } else {
-                window.appSetModo('busca');
-            }
-        }
+function navigate(path) {
+    // Rola a página para o topo
+    window.scrollTo(0, 0);
+    
+    var fullPath = BASE_PATH + path;
+    window.history.pushState({}, '', fullPath);
+    
+    // CORREÇÃO: Verificar rotas dinâmicas primeiro
+    if (path.startsWith('/resetar-senha/')) {
+        window.appSetModo('resetar-senha');
+    } else if (path.startsWith('/avaliar/')) {
+        window.appSetModo('avaliar');
+    } else if (path === '/login') {
+        window.appSetModo('login');
+    } else if (path === '/cadastro') {
+        window.appSetModo('cadastro');
+    } else if (path === '/dashboard') {
+        window.appSetModo('dashboard');
+    } else if (path === '/dashboard-cliente') {
+        window.appSetModo('dashboard-cliente');
+    } else if (path.startsWith('/perfil/')) {
+        window.appSetModo('perfil');
+    } else if (path === '/esqueci-senha') {
+        window.appSetModo('esqueci-senha');
+    } else if (path === '/termos') {
+        window.appSetModo('termos');
+    } else if (path === '/privacidade') {
+        window.appSetModo('privacidade');
+    } else if (path === '/cookies') {
+        window.appSetModo('cookies');
+    } else if (path === '/contato') {
+        window.appSetModo('contato');
+    } else if (path === '/sobre') {
+        window.appSetModo('sobre');
+    } else if (path === '/como-funciona') {
+        window.appSetModo('como-funciona');
+    } else if (path === '/faq-prestador') {
+        window.appSetModo('faq-prestador');
+    } else if (path === '/faq-cliente') {
+        window.appSetModo('faq-cliente');
+    } else if (path === '/sobre-dashboard-prestador') {
+        window.appSetModo('sobre-dashboard-prestador');
+    } else if (path === '/meus-favoritos') {
+        window.appSetModo('meus-favoritos');
+    } else if (path === '/admin') {
+        window.appSetModo('admin');
+    } else {
+        window.appSetModo('busca');
+    }
+}
 
               // ========== APP PRINCIPAL ==========
 function App() {
@@ -7670,59 +7670,79 @@ function App() {
     window.appSetModo = setModo;
 
     useEffect(function() {
-        var path = window.location.pathname.replace(BASE_PATH, '') || '/';
-        console.log('📍 Path atual:', path);
-        
-        if (path.startsWith('/avaliar/')) {
-            setModo('avaliar');
-        } else if (path === '/login') {
-            setModo('login');
-        } else if (path === '/cadastro') {
-            setModo('cadastro');
-        } else if (path === '/dashboard') {
-            setModo('dashboard');
-        } else if (path === '/dashboard-cliente') {
-            setModo('dashboard-cliente');
-        } else if (path.startsWith('/perfil/')) {
-            var id = path.split('/')[2];
-            console.log('📌 ID do perfil da URL:', id);
-            if (id) {
-                setPrestadorId(id);
-                setPrestadorSelecionado(null);
-                setModo('perfil');
-            } else {
-                setModo('busca');
-            }
-        } else if (path === '/esqueci-senha') {
-            setModo('esqueci-senha');
-        } else if (path.startsWith('/resetar-senha/')) {
-            setModo('resetar-senha');
-        } 
-        else if (path === '/termos') {
-            setModo('termos');
-        } else if (path === '/privacidade') {
-            setModo('privacidade');
-        } else if (path === '/cookies') {
-            setModo('cookies');
-        } else if (path === '/contato') {
-            setModo('contato');
-        } else if (path === '/sobre') {
-            setModo('sobre');
-        } else if (path === '/como-funciona') {
-            setModo('como-funciona');
-        } else if (path === '/faq-prestador') {
-            setModo('faq-prestador');
-        } else if (path === '/faq-cliente') {
-            setModo('faq-cliente');
-        } else if (path === '/sobre-dashboard-prestador') {
-            setModo('sobre-dashboard-prestador');
-        } else if (path === '/meus-favoritos') {
-            setModo('meus-favoritos');
-        } else if (path === '/admin') {
-            setModo('admin');
+    var path = window.location.pathname.replace(BASE_PATH, '') || '/';
+    console.log('📍 Path atual:', path);
+    
+    // CORREÇÃO: Verificar rotas dinâmicas primeiro
+    if (path.startsWith('/resetar-senha/')) {
+        console.log('🔐 Rota de resetar senha detectada:', path);
+        setModo('resetar-senha');
+    } 
+    else if (path.startsWith('/avaliar/')) {
+        setModo('avaliar');
+    }
+    else if (path === '/login') {
+        setModo('login');
+    } 
+    else if (path === '/cadastro') {
+        setModo('cadastro');
+    } 
+    else if (path === '/dashboard') {
+        setModo('dashboard');
+    } 
+    else if (path === '/dashboard-cliente') {
+        setModo('dashboard-cliente');
+    } 
+    else if (path.startsWith('/perfil/')) {
+        var id = path.split('/')[2];
+        console.log('📌 ID do perfil da URL:', id);
+        if (id) {
+            setPrestadorId(id);
+            setPrestadorSelecionado(null);
+            setModo('perfil');
         } else {
             setModo('busca');
         }
+    } 
+    else if (path === '/esqueci-senha') {
+        setModo('esqueci-senha');
+    }
+    else if (path === '/termos') {
+        setModo('termos');
+    } 
+    else if (path === '/privacidade') {
+        setModo('privacidade');
+    } 
+    else if (path === '/cookies') {
+        setModo('cookies');
+    } 
+    else if (path === '/contato') {
+        setModo('contato');
+    } 
+    else if (path === '/sobre') {
+        setModo('sobre');
+    } 
+    else if (path === '/como-funciona') {
+        setModo('como-funciona');
+    } 
+    else if (path === '/faq-prestador') {
+        setModo('faq-prestador');
+    } 
+    else if (path === '/faq-cliente') {
+        setModo('faq-cliente');
+    } 
+    else if (path === '/sobre-dashboard-prestador') {
+        setModo('sobre-dashboard-prestador');
+    } 
+    else if (path === '/meus-favoritos') {
+        setModo('meus-favoritos');
+    } 
+    else if (path === '/admin') {
+        setModo('admin');
+    } 
+    else {
+        setModo('busca');
+    }
         
         var token = localStorage.getItem('token');
         if (token) {
