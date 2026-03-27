@@ -54,11 +54,13 @@
       // CORREÇÃO: Verificar se é uma rota que deve ser preservada (resetar-senha, avaliar, perfil)
       var rotasPreservadas = ['/resetar-senha/', '/avaliar/', '/perfil/'];
       var devePreservar = false;
+      var rotaEncontrada = '';
       
       for (var i = 0; i < rotasPreservadas.length; i++) {
         if (pathname.includes(rotasPreservadas[i])) {
           devePreservar = true;
-          console.log('🔐 Rota preservada detectada:', rotasPreservadas[i]);
+          rotaEncontrada = rotasPreservadas[i];
+          console.log('🔐 Rota preservada detectada:', rotaEncontrada);
           break;
         }
       }
@@ -113,11 +115,21 @@
         return;
       }
       
-      // CORREÇÃO CRÍTICA: Se for rota preservada, CARREGAR O index.html
+      // CORREÇÃO CRÍTICA: Se for rota preservada, redirecionar para a raiz com o caminho
       if (devePreservar) {
-        console.log('🔐 Rota preservada, carregando index.html para:', pathname);
-        // Carrega o index.html que contém o React
-        window.location.replace('/SemLimites/index.html' + window.location.search);
+        // Remove o /SemLimites do pathname se existir
+        var finalPath = pathname;
+        if (finalPath.startsWith('/SemLimites')) {
+          finalPath = finalPath.substring('/SemLimites'.length);
+        }
+        // Se finalPath ficou vazio, coloca /
+        if (finalPath === '') {
+          finalPath = '/';
+        }
+        
+        var redirectUrl = finalPath + (search || '');
+        console.log('🔐 Rota preservada, redirecionando para:', redirectUrl);
+        window.location.replace(redirectUrl);
         return;
       }
       
