@@ -37,7 +37,7 @@
         
         var pathname = window.location.pathname;
         
-        // Verificar se é uma rota dinâmica
+        // ===== CORREÇÃO: Detectar rotas dinâmicas =====
         var rotasDinamicas = ['/resetar-senha/', '/avaliar/', '/perfil/'];
         var isDynamicRoute = false;
         
@@ -49,21 +49,21 @@
             }
         }
         
-        // Se for rota dinâmica e não tem /SemLimites, redireciona
+        // ===== CORREÇÃO: Se for rota dinâmica e não tem BASE_PATH, adiciona =====
         if (isDynamicRoute && !pathname.startsWith('/SemLimites')) {
             var newPath = '/SemLimites' + pathname;
-            console.log('🚀 [HEAD] Redirecionando para:', newPath);
+            console.log('🚀 [HEAD] Adicionando BASE_PATH:', newPath);
             window.location.replace(newPath);
             return;
         }
         
-        // Se for rota dinâmica e JÁ TEM /SemLimites, NÃO FAZ NADA - deixa o React processar
+        // ===== CORREÇÃO: Se for rota dinâmica e JÁ TEM BASE_PATH, NÃO FAZ NADA =====
         if (isDynamicRoute && pathname.startsWith('/SemLimites')) {
             console.log('🚀 [HEAD] Rota dinâmica OK, deixando React processar:', pathname);
-            // IMPORTANTE: Não fazer nada aqui, deixar a URL como está
+            // NÃO FAZ NADA - deixa o React processar
         }
         
-        // Restaurar redirect salvo (para casos de 404)
+        // ===== Restaurar redirect salvo (para casos de 404) =====
         var redirect = sessionStorage.redirect;
         if (redirect && redirect !== location.href) {
             console.log('🚀 [HEAD] Restaurando redirect:', redirect);
