@@ -277,16 +277,19 @@
             return React.createElement('span', { className: className }, children);
         }
 
-        // ========== COMPONENTE DE AVATAR CORRIGIDO COM TOKEN SAS ==========
-        function Avatar(props) {
+        // ========== CACHE GLOBAL PARA TOKENS SAS ==========
+// Cache persistente entre todas as instâncias do componente Avatar
+var globalTokenCache = {};
+var pendingRequests = {};
+
+function Avatar(props) {
     var size = props.size || "md";
     var src = props.src || null;
     var [imgSrc, setImgSrc] = useState(null);
     var [loading, setLoading] = useState(false);
     var [erro, setErro] = useState(false);
-    
-    // Cache em nível de componente
-    var tokenCache = {};
+    var requestId = useRef(null);
+    var isMounted = useRef(true);
 
     var sizeClasses = {
         sm: "w-8 h-8",
@@ -296,18 +299,55 @@
         xxl: "w-20 h-20 md:w-24 md:h-24"
     };
 
+    // Função para extrair o caminho do blob (ignorar parâmetros de query)
+    function getBlobPath(url) {
+        if (!url) return null;
+        var baseUrl = url.split('?')[0];
+        return baseUrl;
+    }
+
     function obterTokenLeitura(blobUrl) {
         if (!blobUrl) return;
         
-        // Verificar cache primeiro
-        if (tokenCache[blobUrl]) {
-            console.log('📦 [Avatar] Usando token em cache');
-            setImgSrc(tokenCache[blobUrl]);
+        var blobPath = getBlobPath(blobUrl);
+        
+        // 1. VERIFICAR CACHE GLOBAL
+        if (globalTokenCache[blobPath]) {
+            console.log('📦 [Avatar] Usando token em cache global');
+            if (isMounted.current) {
+                setImgSrc(globalTokenCache[blobPath]);
+            }
             return;
         }
         
+        // 2. VERIFICAR SE JÁ EXISTE UMA REQUISIÇÃO PENDENTE
+        if (pendingRequests[blobPath]) {
+            console.log('⏳ [Avatar] Requisição pendente para:', blobPath);
+            // Aguardar a requisição pendente
+            pendingRequests[blobPath].push(function(sasUrl) {
+                if (isMounted.current) {
+                    setImgSrc(sasUrl);
+                }
+            });
+            return;
+        }
+        
+        // 3. INICIAR NOVA REQUISIÇÃO
+        pendingRequests[blobPath] = [];
         setLoading(true);
         setErro(false);
+        
+        console.log('🔄 [Avatar] Solicitando token SAS para:', blobPath);
+        
+        // Timeout para evitar espera infinita
+        var timeoutId = setTimeout(function() {
+            if (isMounted.current && loading) {
+                console.error('❌ [Avatar] Timeout ao carregar imagem');
+                setErro(true);
+                setLoading(false);
+                delete pendingRequests[blobPath];
+            }
+        }, 15000);
         
         fetch(API_URL + '/upload/sas-token-leitura', {
             method: 'POST',
@@ -315,74 +355,121 @@
             body: JSON.stringify({ blobUrl: blobUrl })
         })
         .then(function(res) { 
-            if (!res.ok) throw new Error('Erro: ' + res.status);
+            clearTimeout(timeoutId);
+            if (!res.ok) {
+                throw new Error('HTTP ' + res.status);
+            }
             return res.json(); 
         })
         .then(function(data) {
             if (data.sasUrl) {
-                tokenCache[blobUrl] = data.sasUrl;
-                setImgSrc(data.sasUrl);
+                // Armazenar em cache global
+                globalTokenCache[blobPath] = data.sasUrl;
+                console.log('✅ [Avatar] Token SAS obtido e armazenado em cache');
+                
+                // Atualizar componente atual
+                if (isMounted.current) {
+                    setImgSrc(data.sasUrl);
+                }
+                
+                // Notificar todas as requisições pendentes
+                if (pendingRequests[blobPath]) {
+                    pendingRequests[blobPath].forEach(function(callback) {
+                        callback(data.sasUrl);
+                    });
+                }
+                delete pendingRequests[blobPath];
             } else {
                 throw new Error('Token não retornado');
             }
             setLoading(false);
         })
         .catch(function(err) {
-            console.error('❌ [Avatar] Erro:', err);
-            setErro(true);
-            setLoading(false);
+            clearTimeout(timeoutId);
+            console.error('❌ [Avatar] Erro ao obter token:', err);
+            if (isMounted.current) {
+                setErro(true);
+                setLoading(false);
+            }
+            delete pendingRequests[blobPath];
         });
     }
 
     useEffect(function() {
+        isMounted.current = true;
+        
+        return function() {
+            isMounted.current = false;
+        };
+    }, []);
+
+    useEffect(function() {
+        // Resetar estados quando src mudar
         setImgSrc(null);
         setLoading(false);
         setErro(false);
+        
         if (!src) return;
         
+        // Se for URL do Azure, solicita token SAS de leitura
         if (src.includes('blob.core.windows.net')) {
             obterTokenLeitura(src);
         } else {
+            // Se não for Azure, usa a URL diretamente
             setImgSrc(src);
         }
     }, [src]);
 
+    // Estado de carregamento
     if (loading) {
         return React.createElement('div', {
-            className: cls("rounded-2xl bg-gradient-to-br from-indigo-100 to-indigo-200 animate-pulse border-2 border-white shadow-md", sizeClasses[size])
+            className: cls(
+                "rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse border-2 border-white shadow-md",
+                sizeClasses[size]
+            )
         });
     }
 
+    // Placeholder em caso de erro ou sem imagem
     if (erro || !imgSrc) {
         return React.createElement('div', {
-            className: cls("rounded-2xl avatar-placeholder border-2 border-white shadow-md", sizeClasses[size])
-        });
+            className: cls(
+                "rounded-2xl avatar-placeholder border-2 border-white shadow-md flex items-center justify-center",
+                sizeClasses[size]
+            )
+        }, 
+            React.createElement('svg', {
+                className: "w-1/2 h-1/2 text-gray-400",
+                fill: "currentColor",
+                viewBox: "0 0 24 24"
+            },
+                React.createElement('path', {
+                    d: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                })
+            )
+        );
     }
 
+    // Renderiza a imagem com o token SAS
     return React.createElement('img', {
         src: imgSrc,
         loading: "lazy",
         className: cls("rounded-2xl object-cover border-2 border-white shadow-md", sizeClasses[size]),
-        onError: function() {
+        onLoad: function() {
+            console.log('✅ [Avatar] Imagem carregada com sucesso');
+        },
+        onError: function(e) {
+            console.log('❌ [Avatar] Erro ao carregar imagem:', imgSrc);
             setErro(true);
             setImgSrc(null);
-            if (tokenCache[src]) delete tokenCache[src];
+            // Limpar cache em caso de erro
+            var blobPath = getBlobPath(src);
+            if (globalTokenCache[blobPath]) {
+                delete globalTokenCache[blobPath];
+            }
         }
     });
 }
-
-            // Renderiza a imagem com o token SAS
-            return React.createElement('img', {
-                src: imgSrc,
-                className: cls("rounded-2xl object-cover border-2 border-white shadow-md", sizeClasses[size]),
-                onError: function() {
-                    console.log('❌ Erro ao carregar imagem mesmo com token:', imgSrc);
-                    setErro(true);
-                    setImgSrc(null);
-                }
-            });
-        }
-
                // ========== COMPONENTE DO CABEÇALHO COMPLETO ==========
         function Header(props) {
             var onVoltar = props.onVoltar;
