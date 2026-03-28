@@ -4,7 +4,7 @@ import Prestador from '../models/Prestador.js';
 import User from '../models/User.js';
 import Servico from '../models/Servico.js';
 import { consultarCNPJ } from '../services/receitaFederal.js';
-import { cancelarAssinatura } from '../services/mercadopago.js'; // NOVA IMPORTAÇÃO
+import { cancelarAssinatura } from '../services/mercadopago.js';
 
 const router = express.Router();
 
@@ -20,6 +20,9 @@ async function garantirIndices() {
     await Prestador.collection.createIndex({ servicos: 1 });
     await Prestador.collection.createIndex({ estrelas: -1, avaliacoes: -1 });
     await Prestador.collection.createIndex({ avaliacoes: -1 });
+    
+    // NOVO ÍNDICE PARA planoStatus (otimiza busca)
+    await Prestador.collection.createIndex({ planoStatus: 1 });
     
     await Prestador.collection.createIndex(
       { 
@@ -73,7 +76,7 @@ const autenticar = async (req, res, next) => {
   }
 };
 
-// ========== BUSCAR PRESTADORES COM FILTROS (CORRIGIDO) ==========
+// ========== BUSCAR PRESTADORES COM FILTROS (CORRIGIDO - FILTRA PLANO ATIVO) ==========
 router.get('/busca', async (req, res) => {
   try {
     const { 
@@ -90,6 +93,11 @@ router.get('/busca', async (req, res) => {
     } = req.query;
 
     let query = {};
+
+    // ===== CORREÇÃO: FILTRAR APENAS PRESTADORES COM PLANO ATIVO =====
+    // Prestadores com plano pendente não aparecem nas buscas
+    query.planoStatus = 'ativo';
+    query.planoAtivo = true;
 
     if (cidade) {
       query.cidade = new RegExp(cidade, 'i');
@@ -172,7 +180,8 @@ router.get('/busca', async (req, res) => {
       console.log('📋 Primeiro prestador:', {
         nome: prestadores[0].nome,
         categoriaPrincipal: prestadores[0].categoriaPrincipal,
-        servicos: prestadores[0].servicos?.map(s => s.nome || s)
+        servicos: prestadores[0].servicos?.map(s => s.nome || s),
+        planoStatus: prestadores[0].planoStatus
       });
     }
 
@@ -307,7 +316,7 @@ router.put('/perfil', autenticar, async (req, res) => {
   }
 });
 
-// ========== NOVA ROTA: SALVAR URL DA FOTO DE PERFIL ==========
+// ========== SALVAR URL DA FOTO DE PERFIL ==========
 router.post('/foto', autenticar, async (req, res) => {
   try {
     const { fotoUrl, blobName } = req.body;
@@ -319,26 +328,19 @@ router.post('/foto', autenticar, async (req, res) => {
       return res.status(400).json({ error: 'fotoUrl é obrigatório' });
     }
 
-    // Buscar o usuário para obter o prestadorId
     const user = await User.findById(req.user.userId);
     
     if (!user || !user.prestadorId) {
       return res.status(404).json({ error: 'Prestador não encontrado' });
     }
 
-    // Buscar o prestador pelo ID
     const prestador = await Prestador.findById(user.prestadorId);
     
     if (!prestador) {
       return res.status(404).json({ error: 'Prestador não encontrado' });
     }
 
-    // Salvar URL da foto (campo 'foto' do modelo)
     prestador.foto = fotoUrl;
-    
-    // Se quiser guardar o blobName para referência futura
-    // prestador.fotoBlobName = blobName; // ← Se adicionar este campo no modelo
-    
     await prestador.save();
 
     console.log(`✅ Foto salva para prestador: ${prestador.nome} (ID: ${prestador._id})`);
@@ -356,7 +358,7 @@ router.post('/foto', autenticar, async (req, res) => {
   }
 });
 
-// ========== NOVA ROTA: REMOVER FOTO DE PERFIL ==========
+// ========== REMOVER FOTO DE PERFIL ==========
 router.delete('/foto', autenticar, async (req, res) => {
   try {
     console.log('🗑️ Requisição para remover foto recebida');
@@ -374,7 +376,6 @@ router.delete('/foto', autenticar, async (req, res) => {
       return res.status(404).json({ error: 'Prestador não encontrado' });
     }
 
-    // Remover URL da foto
     prestador.foto = null;
     await prestador.save();
 
@@ -412,48 +413,45 @@ router.delete('/perfil', autenticar, async (req, res) => {
 
     const prestadorId = user.prestadorId;
 
-    // ===== BUSCAR PRESTADOR PARA OBTER DADOS DA ASSINATURA =====
     const prestador = await Prestador.findById(prestadorId);
     
     if (!prestador) {
       return res.status(404).json({ error: 'Prestador não encontrado' });
     }
 
-    // ===== CANCELAR ASSINATURA NO MERCADO PAGO =====
     let assinaturaCancelada = false;
-    if (prestador.planoId) {
+    
+    // Cancelar assinatura no Mercado Pago (usando subscriptionId ou planoId)
+    const subscriptionId = prestador.mercadoPago?.subscriptionId || prestador.planoId;
+    
+    if (subscriptionId) {
       try {
-        console.log(`🔄 Cancelando assinatura no Mercado Pago: ${prestador.planoId}`);
+        console.log(`🔄 Cancelando assinatura no Mercado Pago: ${subscriptionId}`);
         
-        const resultado = await cancelarAssinatura(prestador.planoId);
+        const resultado = await cancelarAssinatura(subscriptionId);
         
         if (resultado.success) {
           console.log(`✅ Assinatura cancelada com sucesso no Mercado Pago`);
           assinaturaCancelada = true;
         } else {
           console.error(`❌ Erro ao cancelar assinatura no Mercado Pago:`, resultado.error);
-          // Continuamos mesmo com erro no MP? Melhor avisar
         }
       } catch (mpError) {
         console.error('❌ Erro ao chamar API do Mercado Pago:', mpError);
-        // Não interrompemos a exclusão, mas registramos
       }
     } else {
-      console.log('ℹ️ Prestador não possui planoId (assinatura não encontrada)');
+      console.log('ℹ️ Prestador não possui assinatura ativa');
     }
 
-    // ===== EXCLUIR SERVIÇOS DO PRESTADOR =====
     const servicosExcluidos = await Servico.deleteMany({ prestadorId: prestadorId });
     console.log(`✅ ${servicosExcluidos.deletedCount} serviços excluídos`);
 
-    // ===== EXCLUIR PRESTADOR =====
     const prestadorExcluido = await Prestador.findByIdAndDelete(prestadorId);
     
     if (!prestadorExcluido) {
       return res.status(404).json({ error: 'Prestador não encontrado' });
     }
 
-    // ===== EXCLUIR USUÁRIO =====
     await User.findByIdAndDelete(req.user.userId);
 
     console.log(`✅ Prestador ${prestadorId} e usuário ${req.user.userId} excluídos permanentemente`);
@@ -507,6 +505,7 @@ router.get('/id/:id', async (req, res) => {
     console.log(`📦 Categoria Principal:`, prestador.categoriaPrincipal);
     console.log(`📦 Serviços (${prestador.servicos?.length || 0}):`, prestador.servicos);
     console.log(`📸 Foto:`, prestador.foto || 'Sem foto');
+    console.log(`💰 Plano Status: ${prestador.planoStatus || 'pendente'}`);
 
     res.json(prestador);
   } catch (error) {
@@ -563,13 +562,16 @@ router.post('/', async (req, res) => {
       avaliacoes: 0,
       servicosRealizados: 0,
       clientesFieis: 0,
-      foto: null // Inicializa sem foto
+      foto: null,
+      planoStatus: 'pendente',  // Inicia como pendente
+      planoAtivo: false          // Inicia como inativo
     };
 
     const prestador = new Prestador(dadosPrestador);
     await prestador.save();
     
     console.log(`✅ Novo prestador cadastrado: ${prestador.nome} (${prestador._id})`);
+    console.log(`📊 Plano Status inicial: ${prestador.planoStatus}`);
     
     res.status(201).json({
       message: '✅ Prestador cadastrado com sucesso!',
@@ -582,7 +584,8 @@ router.post('/', async (req, res) => {
         cidade: prestador.cidade,
         estado: prestador.estado,
         verificado: prestador.verificado || false,
-        foto: prestador.foto
+        foto: prestador.foto,
+        planoStatus: prestador.planoStatus
       }
     });
   } catch (error) {
