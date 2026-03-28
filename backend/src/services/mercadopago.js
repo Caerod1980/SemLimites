@@ -1,7 +1,9 @@
 // /src/services/mercadopago.js
-import { MercadoPagoConfig, Preference, Payment, Customer, MerchantOrder, Subscription } from 'mercadopago';
+import pkg from 'mercadopago';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+
+const { MercadoPagoConfig, Preference, Payment, Customer, MerchantOrder, Subscription } = pkg;
 
 dotenv.config();
 
@@ -29,7 +31,7 @@ const preference = new Preference(client);
 const payment = new Payment(client);
 const customer = new Customer(client);
 const merchantOrder = new MerchantOrder(client);
-const subscription = new Subscription(client); // ADICIONADO
+const subscription = new Subscription(client); // AGORA FUNCIONA
 
 // ========== CONSTANTES ==========
 const PLANO_MENSAL_ID = process.env.MP_PLAN_ID_MENSAL; // ID do plano criado na interface
