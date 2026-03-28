@@ -756,7 +756,7 @@ function Avatar(props) {
                 }
             }, [categoriaBusca]);
 
-            function buscar() {
+                function buscar() {
                 setLoading(true);
                 setErro("");
 
@@ -769,6 +769,9 @@ function Avatar(props) {
                 if (buscaTexto) params.push('q=' + encodeURIComponent(buscaTexto));
 
                 params.push('limit=12');
+                // ===== CORREÇÃO: Filtrar apenas prestadores com plano ativo =====
+                // Prestadores com plano pendente NÃO aparecem nas buscas
+                params.push('planoStatus=ativo');
 
                 url = url + params.join('&');
 
@@ -796,7 +799,6 @@ function Avatar(props) {
                         setLoading(false);
                     });
             }
-
             useEffect(function() {
                 var timer = setTimeout(function() {
                     buscar();
