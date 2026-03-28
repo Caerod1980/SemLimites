@@ -51,7 +51,7 @@
       console.log('📍 Pathname:', pathname);
       console.log('📍 Search:', search);
       
-      // ===== CORREÇÃO: Rotas que devem ser preservadas =====
+      // CORREÇÃO: Verificar se é uma rota que deve ser preservada (resetar-senha, avaliar, perfil)
       var rotasPreservadas = ['/resetar-senha/', '/avaliar/', '/perfil/'];
       var devePreservar = false;
       
@@ -77,7 +77,7 @@
         payment_id: paymentId
       });
       
-      // Se tem retorno de pagamento ou status de aprovação, salvar no localStorage
+      // Se tem retorno de pagamento, salvar no localStorage e redirecionar
       if (retorno === 'sucesso' || retorno === 'erro' || retorno === 'pending' || collectionStatus === 'approved') {
         console.log('✅ Retorno de pagamento detectado no 404!');
         
@@ -113,15 +113,46 @@
         return;
       }
       
-      // CORREÇÃO: Se for rota preservada, CARREGAR O index.html
-if (devePreservar) {
-    console.log('🔐 Rota preservada, carregando index.html para:', pathname);
-    // Salva a URL para o React restaurar
-    sessionStorage.setItem('redirect', pathname);
-    // Carrega o index.html
-    window.location.replace('/SemLimites/index.html');
-    return;
-}
+      // ===== CORREÇÃO CRÍTICA: Se for rota preservada, CARREGAR O CONTEÚDO VIA AJAX =====
+      if (devePreservar) {
+        console.log('🔐 Rota preservada, carregando SPA via fetch...');
+        
+        // Carregar o index.html via fetch e substituir o conteúdo
+        fetch('/SemLimites/index.html')
+          .then(function(response) { return response.text(); })
+          .then(function(html) {
+            // Extrair o conteúdo do body e scripts
+            var parser = new DOMParser();
+            var doc = parser.parseFromString(html, 'text/html');
+            var newContent = doc.body.innerHTML;
+            var scripts = doc.querySelectorAll('script');
+            
+            // Substituir o conteúdo do body
+            document.body.innerHTML = newContent;
+            
+            // Executar os scripts do novo conteúdo
+            scripts.forEach(function(script) {
+              var newScript = document.createElement('script');
+              if (script.src) {
+                newScript.src = script.src;
+              } else {
+                newScript.textContent = script.textContent;
+              }
+              document.body.appendChild(newScript);
+            });
+            
+            // Atualizar a URL no navegador sem recarregar
+            history.replaceState(null, '', pathname);
+            
+            console.log('✅ SPA carregado com sucesso para:', pathname);
+          })
+          .catch(function(error) {
+            console.error('❌ Erro ao carregar SPA:', error);
+            // Fallback: redirecionar para a raiz
+            window.location.replace('/');
+          });
+        return;
+      }
       
       // Verificar se já está na raiz
       if (pathname === '/' || pathname === '/index.html' || pathname === '') {
