@@ -1,7 +1,7 @@
 // /src/routes/assinatura.js
 import express from 'express';
 import { 
-  criarAssinatura,
+  criarAssinaturaRecorrente as criarAssinatura,
   criarPreferenciaPublica, 
   buscarStatusAssinatura, 
   cancelarAssinatura,
@@ -64,11 +64,15 @@ router.post('/criar-assinatura', async (req, res) => {
       prestadorExistente.mercadoPago.customerId = resultado.customerId;
       prestadorExistente.planoStatus = 'pendente';
       prestadorExistente.planoAtivo = false;
-      prestadorExistente.adicionarHistoricoPlano(
-        'assinatura_criada',
-        `Assinatura criada - ID: ${resultado.subscriptionId}`,
-        { subscriptionId: resultado.subscriptionId }
-      );
+      
+      // Verificar se o método existe
+      if (typeof prestadorExistente.adicionarHistoricoPlano === 'function') {
+        prestadorExistente.adicionarHistoricoPlano(
+          'assinatura_criada',
+          `Assinatura criada - ID: ${resultado.subscriptionId}`,
+          { subscriptionId: resultado.subscriptionId }
+        );
+      }
       await prestadorExistente.save();
     }
     
@@ -284,11 +288,13 @@ router.post('/cancelar-assinatura', authMiddleware, async (req, res) => {
       // Atualizar localmente
       prestador.planoAtivo = false;
       prestador.planoStatus = 'cancelado';
-      prestador.adicionarHistoricoPlano(
-        'assinatura_cancelada',
-        `Assinatura cancelada pelo usuário - ID: ${subscriptionId}`,
-        { subscriptionId }
-      );
+      if (typeof prestador.adicionarHistoricoPlano === 'function') {
+        prestador.adicionarHistoricoPlano(
+          'assinatura_cancelada',
+          `Assinatura cancelada pelo usuário - ID: ${subscriptionId}`,
+          { subscriptionId }
+        );
+      }
       await prestador.save();
       
       console.log(`✅ Assinatura cancelada: ${subscriptionId}`);
@@ -348,28 +354,34 @@ router.post('/webhooks/mercadopago', async (req, res) => {
             paymentId: resultado.paymentId
           };
           
-          prestador.adicionarHistoricoPlano(
-            'pagamento_aprovado',
-            `Pagamento de assinatura aprovado - ID: ${resultado.paymentId}`,
-            { paymentId: resultado.paymentId, valor: resultado.valor }
-          );
+          if (typeof prestador.adicionarHistoricoPlano === 'function') {
+            prestador.adicionarHistoricoPlano(
+              'pagamento_aprovado',
+              `Pagamento de assinatura aprovado - ID: ${resultado.paymentId}`,
+              { paymentId: resultado.paymentId, valor: resultado.valor }
+            );
+          }
           
           console.log(`✅ Pagamento de assinatura aprovado: ${prestador._id}`);
           
         } else if (resultado.action === 'subscription_cancelled') {
           prestador.planoAtivo = false;
           prestador.planoStatus = 'cancelado';
-          prestador.adicionarHistoricoPlano(
-            'assinatura_cancelada',
-            `Assinatura cancelada via webhook - ID: ${resultado.subscriptionId}`
-          );
+          if (typeof prestador.adicionarHistoricoPlano === 'function') {
+            prestador.adicionarHistoricoPlano(
+              'assinatura_cancelada',
+              `Assinatura cancelada via webhook - ID: ${resultado.subscriptionId}`
+            );
+          }
           console.log(`❌ Assinatura cancelada: ${prestador._id}`);
           
         } else if (resultado.action === 'subscription_failed_payment') {
-          prestador.adicionarHistoricoPlano(
-            'pagamento_falhou',
-            `Pagamento de assinatura falhou - ID: ${resultado.paymentId}`
-          );
+          if (typeof prestador.adicionarHistoricoPlano === 'function') {
+            prestador.adicionarHistoricoPlano(
+              'pagamento_falhou',
+              `Pagamento de assinatura falhou - ID: ${resultado.paymentId}`
+            );
+          }
           console.log(`⚠️ Pagamento falhou para: ${prestador._id}`);
         }
         
