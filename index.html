@@ -279,93 +279,97 @@
 
         // ========== COMPONENTE DE AVATAR CORRIGIDO COM TOKEN SAS ==========
         function Avatar(props) {
-            var size = props.size || "md";
-            var src = props.src || null;
-            var [imgSrc, setImgSrc] = useState(null);
-            var [loading, setLoading] = useState(false);
-            var [erro, setErro] = useState(false);
+    var size = props.size || "md";
+    var src = props.src || null;
+    var [imgSrc, setImgSrc] = useState(null);
+    var [loading, setLoading] = useState(false);
+    var [erro, setErro] = useState(false);
+    
+    // Cache em nível de componente
+    var tokenCache = {};
 
-            var sizeClasses = {
-                sm: "w-8 h-8",
-                md: "w-10 h-10",
-                lg: "w-12 h-12",
-                xl: "w-14 h-14 md:w-16 md:h-16",
-                xxl: "w-20 h-20 md:w-24 md:h-24"
-            };
+    var sizeClasses = {
+        sm: "w-8 h-8",
+        md: "w-10 h-10",
+        lg: "w-12 h-12",
+        xl: "w-14 h-14 md:w-16 md:h-16",
+        xxl: "w-20 h-20 md:w-24 md:h-24"
+    };
 
-            // Função para obter token SAS de leitura
-            function obterTokenLeitura(blobUrl) {
-                if (!blobUrl) return;
-                
-                setLoading(true);
-                setErro(false);
-                
-                console.log('🔄 Solicitando token SAS para:', blobUrl);
-                
-                fetch(API_URL + '/upload/sas-token-leitura', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ blobUrl: blobUrl })
-                })
-                .then(function(res) { 
-                    if (!res.ok) {
-                        throw new Error('Erro ao obter token: ' + res.status);
-                    }
-                    return res.json(); 
-                })
-                .then(function(data) {
-                    if (data.sasUrl) {
-                        console.log('✅ Token SAS obtido com sucesso');
-                        setImgSrc(data.sasUrl);
-                    } else {
-                        throw new Error('Token não retornado pela API');
-                    }
-                    setLoading(false);
-                })
-                .catch(function(err) {
-                    console.error('❌ Erro ao obter token de leitura:', err);
-                    setErro(true);
-                    setLoading(false);
-                });
+    function obterTokenLeitura(blobUrl) {
+        if (!blobUrl) return;
+        
+        // Verificar cache primeiro
+        if (tokenCache[blobUrl]) {
+            console.log('📦 [Avatar] Usando token em cache');
+            setImgSrc(tokenCache[blobUrl]);
+            return;
+        }
+        
+        setLoading(true);
+        setErro(false);
+        
+        fetch(API_URL + '/upload/sas-token-leitura', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ blobUrl: blobUrl })
+        })
+        .then(function(res) { 
+            if (!res.ok) throw new Error('Erro: ' + res.status);
+            return res.json(); 
+        })
+        .then(function(data) {
+            if (data.sasUrl) {
+                tokenCache[blobUrl] = data.sasUrl;
+                setImgSrc(data.sasUrl);
+            } else {
+                throw new Error('Token não retornado');
             }
+            setLoading(false);
+        })
+        .catch(function(err) {
+            console.error('❌ [Avatar] Erro:', err);
+            setErro(true);
+            setLoading(false);
+        });
+    }
 
-            // Efeito para processar a URL quando ela mudar
-            useEffect(function() {
-                // Resetar estados
-                setImgSrc(null);
-                setLoading(false);
-                setErro(false);
+    useEffect(function() {
+        setImgSrc(null);
+        setLoading(false);
+        setErro(false);
+        if (!src) return;
+        
+        if (src.includes('blob.core.windows.net')) {
+            obterTokenLeitura(src);
+        } else {
+            setImgSrc(src);
+        }
+    }, [src]);
 
-                if (!src) return;
+    if (loading) {
+        return React.createElement('div', {
+            className: cls("rounded-2xl bg-gradient-to-br from-indigo-100 to-indigo-200 animate-pulse border-2 border-white shadow-md", sizeClasses[size])
+        });
+    }
 
-                // Se for URL do Azure, solicita token SAS de leitura
-                if (src.includes('blob.core.windows.net')) {
-                    obterTokenLeitura(src);
-                } else {
-                    // Se não for Azure, usa a URL diretamente (para imagens locais ou de outros domínios)
-                    setImgSrc(src);
-                }
-            }, [src]);
+    if (erro || !imgSrc) {
+        return React.createElement('div', {
+            className: cls("rounded-2xl avatar-placeholder border-2 border-white shadow-md", sizeClasses[size])
+        });
+    }
 
-            // Estado de carregamento
-            if (loading) {
-                return React.createElement('div', {
-                    className: cls(
-                        "rounded-2xl bg-gradient-to-br from-indigo-100 to-indigo-200 animate-pulse border-2 border-white shadow-md",
-                        sizeClasses[size]
-                    )
-                });
-            }
-
-            // Se houve erro ou não tem imagem, mostra placeholder
-            if (erro || !imgSrc) {
-                return React.createElement('div', {
-                    className: cls(
-                        "rounded-2xl avatar-placeholder border-2 border-white shadow-md",
-                        sizeClasses[size]
-                    )
-                });
-            }
+    return React.createElement('img', {
+        src: imgSrc,
+        loading: "lazy",
+        className: cls("rounded-2xl object-cover border-2 border-white shadow-md", sizeClasses[size]),
+        onError: function() {
+            setErro(true);
+            setImgSrc(null);
+            if (tokenCache[src]) delete tokenCache[src];
+        }
+    });
+}
 
             // Renderiza a imagem com o token SAS
             return React.createElement('img', {
