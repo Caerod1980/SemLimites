@@ -113,12 +113,15 @@
         return;
       }
       
-      // ===== CORREÇÃO PONTUAL: Se for rota preservada, NÃO REDIRECIONAR =====
-      if (devePreservar) {
-        console.log('🔐 Rota preservada, mantendo a URL para o SPA:', pathname);
-        // Não redireciona, deixa o SPA processar a rota
-        return;
-      }
+      // CORREÇÃO: Se for rota preservada, CARREGAR O index.html
+if (devePreservar) {
+    console.log('🔐 Rota preservada, carregando index.html para:', pathname);
+    // Salva a URL para o React restaurar
+    sessionStorage.setItem('redirect', pathname);
+    // Carrega o index.html
+    window.location.replace('/SemLimites/index.html');
+    return;
+}
       
       // Verificar se já está na raiz
       if (pathname === '/' || pathname === '/index.html' || pathname === '') {
