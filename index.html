@@ -35,9 +35,20 @@
         console.log('🚀 [HEAD] Script iniciado');
         console.log('🚀 [HEAD] URL atual:', window.location.href);
         
-        var pathname = window.location.pathname;
+        // ===== RESTAURAR REDIRECT SALVO PELO 404 =====
+        var redirect = sessionStorage.getItem('redirect');
+        if (redirect) {
+            sessionStorage.removeItem('redirect');
+            console.log('🚀 [HEAD] Restaurando URL salva:', redirect);
+            // Se a URL atual não é a que queremos, redireciona
+            if (window.location.pathname !== redirect) {
+                window.location.replace(redirect);
+                return;
+            }
+        }
         
-        // ===== CORREÇÃO: Detectar rotas dinâmicas =====
+        // ===== DETECTAR ROTAS DINÂMICAS =====
+        var pathname = window.location.pathname;
         var rotasDinamicas = ['/resetar-senha/', '/avaliar/', '/perfil/'];
         var isDynamicRoute = false;
         
@@ -49,7 +60,7 @@
             }
         }
         
-        // ===== CORREÇÃO: Se for rota dinâmica e não tem BASE_PATH, adiciona =====
+        // ===== SE FOR ROTA DINÂMICA E NÃO TEM BASE_PATH, ADICIONA =====
         if (isDynamicRoute && !pathname.startsWith('/SemLimites')) {
             var newPath = '/SemLimites' + pathname;
             console.log('🚀 [HEAD] Adicionando BASE_PATH:', newPath);
@@ -57,18 +68,10 @@
             return;
         }
         
-        // ===== CORREÇÃO: Se for rota dinâmica e JÁ TEM BASE_PATH, NÃO FAZ NADA =====
+        // ===== SE FOR ROTA DINÂMICA E JÁ TEM BASE_PATH, DEIXA O REACT PROCESSAR =====
         if (isDynamicRoute && pathname.startsWith('/SemLimites')) {
             console.log('🚀 [HEAD] Rota dinâmica OK, deixando React processar:', pathname);
-            // NÃO FAZ NADA - deixa o React processar
-        }
-        
-        // ===== Restaurar redirect salvo (para casos de 404) =====
-        var redirect = sessionStorage.redirect;
-        if (redirect && redirect !== location.href) {
-            console.log('🚀 [HEAD] Restaurando redirect:', redirect);
-            sessionStorage.removeItem('redirect');
-            history.replaceState(null, '', redirect);
+            // NÃO FAZ NADA - o React vai processar
         }
     })();
 </script>
