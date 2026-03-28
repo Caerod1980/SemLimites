@@ -2241,6 +2241,107 @@ function Avatar(props) {
 
             return React.createElement('div', { className: "space-y-3" }, servicosElements);
         }
+        // ========== COMPONENTE DE STATUS DE ASSINATURA COM BOTÃO PAGAR ==========
+function StatusAssinatura({ prestador, onRenovar }) {
+    var [status, setStatus] = useState(null);
+    var [loading, setLoading] = useState(true);
+    var [renovando, setRenovando] = useState(false);
+    var [subscriptionId, setSubscriptionId] = useState(null);
+    
+    // URL do plano de assinatura (para pagamentos avulsos)
+    var PLANO_LINK = 'https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=baa2b8aa788b47ce977c6e5659201c05';
+    
+    useEffect(function() {
+        carregarStatus();
+    }, []);
+    
+    function carregarStatus() {
+        setLoading(true);
+        fetch(API_URL + '/assinatura/status-prestador/' + prestador._id, {
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    setStatus(data.planoStatus);
+                    setSubscriptionId(data.subscriptionId);
+                }
+                setLoading(false);
+            })
+            .catch(function(error) {
+                console.error('Erro ao carregar status:', error);
+                setLoading(false);
+            });
+    }
+    
+    function handlePagarAgora() {
+        setRenovando(true);
+        // Abre o link do Mercado Pago para pagamento
+        window.open(PLANO_LINK, '_blank');
+        setRenovando(false);
+        alert('🔗 Link de pagamento aberto em nova aba.\n\nApós o pagamento, sua assinatura será ativada automaticamente.');
+    }
+    
+    if (loading) {
+        return React.createElement('div', { className: "bg-slate-50 rounded-xl p-4 border border-slate-200 mb-4 animate-pulse" },
+            React.createElement('div', { className: "h-16 bg-slate-100 rounded-lg" })
+        );
+    }
+    
+    if (status === 'ativo') {
+        return React.createElement('div', { className: "bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-4" },
+            React.createElement('div', { className: "flex items-center gap-3" },
+                React.createElement('div', { className: "w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center" },
+                    React.createElement('span', { className: "text-xl" }, "✅")
+                ),
+                React.createElement('div', { className: "flex-1" },
+                    React.createElement('h3', { className: "font-semibold text-emerald-800" }, "Plano Ativo"),
+                    React.createElement('p', { className: "text-sm text-emerald-600" }, "Sua assinatura está ativa. Você tem acesso completo à plataforma.")
+                )
+            )
+        );
+    }
+    
+    if (status === 'pendente') {
+        return React.createElement('div', { className: "bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4" },
+            React.createElement('div', { className: "flex flex-col sm:flex-row items-center gap-3" },
+                React.createElement('div', { className: "w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center" },
+                    React.createElement('span', { className: "text-xl" }, "⏳")
+                ),
+                React.createElement('div', { className: "flex-1" },
+                    React.createElement('h3', { className: "font-semibold text-amber-800" }, "Aguardando Pagamento"),
+                    React.createElement('p', { className: "text-sm text-amber-600" }, "Seu cadastro será ativado após a confirmação do pagamento. Clique no botão para pagar agora.")
+                ),
+                React.createElement('button', {
+                    onClick: handlePagarAgora,
+                    disabled: renovando,
+                    className: "px-4 py-2 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white rounded-lg text-sm font-medium hover:shadow-md transition whitespace-nowrap"
+                }, renovando ? 'Processando...' : '💳 Pagar Agora')
+            )
+        );
+    }
+    
+    if (status === 'expirado' || status === 'cancelado') {
+        return React.createElement('div', { className: "bg-red-50 border border-red-200 rounded-xl p-4 mb-4" },
+            React.createElement('div', { className: "flex flex-col sm:flex-row items-center gap-3" },
+                React.createElement('div', { className: "w-10 h-10 rounded-full bg-red-100 flex items-center justify-center" },
+                    React.createElement('span', { className: "text-xl" }, "⚠️")
+                ),
+                React.createElement('div', { className: "flex-1" },
+                    React.createElement('h3', { className: "font-semibold text-red-800" }, "Plano Inativo"),
+                    React.createElement('p', { className: "text-sm text-red-600" }, "Sua assinatura está inativa. Clique no botão para renovar e continuar usando a plataforma.")
+                ),
+                React.createElement('button', {
+                    onClick: handlePagarAgora,
+                    disabled: renovando,
+                    className: "px-4 py-2 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white rounded-lg text-sm font-medium hover:shadow-md transition whitespace-nowrap"
+                }, renovando ? 'Processando...' : '💳 Renovar Agora')
+            )
+        );
+    }
+    
+    return null;
+}
 
         // ========== PÁGINA DE AVALIAÇÃO ==========
         function AvaliarServico() {
@@ -4213,73 +4314,90 @@ function ResetarSenha(props) {
                 totalCurtidas: prestador?.totalCurtidas || 0
             };
 
-            // ===== FUNÇÃO handleExcluirPerfil CORRIGIDA COM CANCELAMENTO DE ASSINATURA =====
-            function handleExcluirPerfil() {
-                var confirmacao1 = window.confirm(
-                    '⚠️ ATENÇÃO! Esta ação é PERMANENTE e IRREVERSÍVEL!\n\n' +
-                    'Todo o seu histórico, serviços, avaliações e dados serão excluídos do Sem Limites.\n\n' +
-                    'SUA ASSINATURA SERÁ CANCELADA AUTOMATICAMENTE.\n\n' +
-                    'Deseja continuar?'
-                );
-                if (!confirmacao1) return;
+            // ===== FUNÇÃO handleExcluirPerfil CORRIGIDA COM CANCELAMENTO DE ASSINATURA NO MP =====
+function handleExcluirPerfil() {
+    var confirmacao1 = window.confirm(
+        '⚠️ ATENÇÃO! Esta ação é PERMANENTE e IRREVERSÍVEL!\n\n' +
+        'Todo o seu histórico, serviços, avaliações e dados serão excluídos do Sem Limites.\n\n' +
+        'SUA ASSINATURA SERÁ CANCELADA AUTOMATICAMENTE.\n\n' +
+        'Deseja continuar?'
+    );
+    if (!confirmacao1) return;
 
-                var confirmacao2 = window.prompt('Para confirmar a exclusão PERMANENTE, digite o seu NOME completo:');
-                if (!confirmacao2) {
-                    alert('Operação cancelada.');
-                    return;
-                }
-                
-                if (confirmacao2.trim().toLowerCase() !== prestador?.nome?.toLowerCase()) {
-                    alert('❌ Nome incorreto. Operação cancelada.');
-                    return;
-                }
+    var confirmacao2 = window.prompt('Para confirmar a exclusão PERMANENTE, digite o seu NOME completo:');
+    if (!confirmacao2) {
+        alert('Operação cancelada.');
+        return;
+    }
+    
+    if (confirmacao2.trim().toLowerCase() !== prestador?.nome?.toLowerCase()) {
+        alert('❌ Nome incorreto. Operação cancelada.');
+        return;
+    }
 
-                var confirmacao3 = window.prompt('Digite "EXCLUIR PERMANENTEMENTE" para confirmação final:');
-                if (confirmacao3 !== 'EXCLUIR PERMANENTEMENTE') {
-                    alert('❌ Código de confirmação incorreto. Operação cancelada.');
-                    return;
-                }
+    var confirmacao3 = window.prompt('Digite "EXCLUIR PERMANENTEMENTE" para confirmação final:');
+    if (confirmacao3 !== 'EXCLUIR PERMANENTEMENTE') {
+        alert('❌ Código de confirmação incorreto. Operação cancelada.');
+        return;
+    }
 
-                setExcluindo(true);
+    setExcluindo(true);
 
-                fetch(API_URL + '/prestadores/perfil', {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
-                        'Content-Type': 'application/json'
-                    }
-                })
-                    .then(function(response) { 
-                        if (!response.ok) {
-                            return response.json().then(function(err) { 
-                                throw new Error(err.error || 'Erro ao excluir perfil'); 
-                            });
-                        }
-                        return response.json(); 
-                    })
-                    .then(function(data) {
-                        if (data.message || data.success) {
-                            var mensagem = '✅ Perfil excluído permanentemente com sucesso.\n\n';
-                            if (data.assinaturaCancelada) {
-                                mensagem += 'Sua assinatura foi cancelada automaticamente.';
-                            } else {
-                                mensagem += 'Não foi possível cancelar a assinatura automaticamente. Entre em contato com o suporte se necessário.';
-                            }
-                            alert(mensagem);
-                            
-                            localStorage.removeItem('token');
-                            localStorage.removeItem('user');
-                            onSair();
-                        } else {
-                            throw new Error(data.error || 'Erro ao excluir perfil');
-                        }
-                    })
-                    .catch(function(error) {
-                        console.error('❌ Erro ao excluir:', error);
-                        alert('Erro ao excluir perfil: ' + error.message);
-                        setExcluindo(false);
-                    });
+    // Primeiro, se houver assinatura ativa, cancelar no Mercado Pago
+    if (prestador.mercadoPago?.subscriptionId) {
+        fetch(API_URL + '/assinatura/cancelar-assinatura', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ subscriptionId: prestador.mercadoPago.subscriptionId })
+        })
+        .catch(function(err) {
+            console.error('❌ Erro ao cancelar assinatura no MP:', err);
+            // Continua mesmo assim para tentar excluir a conta local
+        });
+    }
+
+    // Depois excluir o perfil
+    fetch(API_URL + '/prestadores/perfil', {
+        method: 'DELETE',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token'),
+            'Content-Type': 'application/json'
+        }
+    })
+        .then(function(response) { 
+            if (!response.ok) {
+                return response.json().then(function(err) { 
+                    throw new Error(err.error || 'Erro ao excluir perfil'); 
+                });
             }
+            return response.json(); 
+        })
+        .then(function(data) {
+            if (data.message || data.success) {
+                var mensagem = '✅ Perfil excluído permanentemente com sucesso.\n\n';
+                if (data.assinaturaCancelada) {
+                    mensagem += 'Sua assinatura foi cancelada automaticamente.';
+                } else {
+                    mensagem += 'Sua assinatura foi cancelada.';
+                }
+                alert(mensagem);
+                
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                onSair();
+            } else {
+                throw new Error(data.error || 'Erro ao excluir perfil');
+            }
+        })
+        .catch(function(error) {
+            console.error('❌ Erro ao excluir:', error);
+            alert('Erro ao excluir perfil: ' + error.message);
+            setExcluindo(false);
+        });
+}
 
             if (loading) {
                 return React.createElement('div', { className: "max-w-7xl mx-auto px-4 py-12 text-center" },
@@ -4351,6 +4469,7 @@ function ResetarSenha(props) {
                         )
                     )
                 ),
+                            React.createElement(StatusAssinatura, { prestador: prestador, onRenovar: function() { carregarDados(); } }),
 
                 React.createElement('div', { className: "grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-8" },
                     React.createElement('div', { className: "bg-white rounded-xl border border-[#c0dfc0] p-3 md:p-4 hover:shadow-md transition" },
@@ -7286,26 +7405,46 @@ function ResetarSenha(props) {
             }
 
             function excluirPrestador(id) {
-                if (!window.confirm('⚠️ ATENÇÃO! Exclusão PERMANENTE e IRREVERSÍVEL!\n\nTodo histórico, serviços e dados serão excluídos.\n\nSUA ASSINATURA SERÁ CANCELADA.\n\nDeseja continuar?')) return;
-                var confirmacao = window.prompt('Digite o NOME do prestador para confirmar:');
-                if (!confirmacao) return;
-                if (confirmacao.trim().toLowerCase() !== resultadoPrestador?.nome?.toLowerCase()) { alert('❌ Nome incorreto.'); return; }
-                if (window.prompt('Digite "EXCLUIR PERMANENTEMENTE":') !== 'EXCLUIR PERMANENTEMENTE') { alert('❌ Código incorreto.'); return; }
-                setExcluindo(true);
-                var token = localStorage.getItem('token');
-                fetch(API_URL + '/admin/excluir-prestador/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } })
-                    .then(function(r) { return r.json(); })
-                    .then(function(data) { 
-                        if (data.success) { 
-                            alert('✅ Prestador excluído!'); 
-                            setResultadoPrestador(null); 
-                            setBuscaPrestador(''); 
-                            carregarDados(); 
-                        } else throw new Error(data.error); 
-                    })
-                    .catch(function(err) { alert('Erro: ' + err.message); })
-                    .finally(function() { setExcluindo(false); });
-            }
+    if (!window.confirm('⚠️ ATENÇÃO! Exclusão PERMANENTE e IRREVERSÍVEL!\n\nTodo histórico, serviços e dados serão excluídos.\n\nSUA ASSINATURA SERÁ CANCELADA.\n\nDeseja continuar?')) return;
+    var confirmacao = window.prompt('Digite o NOME do prestador para confirmar:');
+    if (!confirmacao) return;
+    if (confirmacao.trim().toLowerCase() !== resultadoPrestador?.nome?.toLowerCase()) { alert('❌ Nome incorreto.'); return; }
+    if (window.prompt('Digite "EXCLUIR PERMANENTEMENTE":') !== 'EXCLUIR PERMANENTEMENTE') { alert('❌ Código incorreto.'); return; }
+    setExcluindo(true);
+    var token = localStorage.getItem('token');
+    
+    // Primeiro, se houver assinatura ativa, cancelar no Mercado Pago
+    if (resultadoPrestador.mercadoPago?.subscriptionId) {
+        fetch(API_URL + '/assinatura/cancelar-assinatura', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ subscriptionId: resultadoPrestador.mercadoPago.subscriptionId })
+        })
+        .catch(function(err) {
+            console.error('❌ Erro ao cancelar assinatura no MP:', err);
+        });
+    }
+    
+    // Depois excluir o prestador
+    fetch(API_URL + '/admin/excluir-prestador/' + id, { 
+        method: 'DELETE', 
+        headers: { 'Authorization': 'Bearer ' + token } 
+    })
+        .then(function(r) { return r.json(); })
+        .then(function(data) { 
+            if (data.success) { 
+                alert('✅ Prestador excluído!'); 
+                setResultadoPrestador(null); 
+                setBuscaPrestador(''); 
+                carregarDados(); 
+            } else throw new Error(data.error); 
+        })
+        .catch(function(err) { alert('Erro: ' + err.message); })
+        .finally(function() { setExcluindo(false); });
+}
 
             function excluirCliente(id) {
                 if (!window.confirm('⚠️ ATENÇÃO! Exclusão PERMANENTE e IRREVERSÍVEL!\n\nDeseja continuar?')) return;
