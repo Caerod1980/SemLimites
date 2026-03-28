@@ -46,10 +46,9 @@ function validarCPF(cpf) {
 
 // ========== FUNÇÃO PARA ENVIAR EMAIL DE RECUPERAÇÃO ==========
 async function enviarEmailResetSenha(email, nome, token) {
-  // CORREÇÃO: Adicionado /SemLimites no caminho
   const resetLink = `${process.env.FRONTEND_URL}/SemLimites/resetar-senha/${token}`;
   
-  console.log('🔗 Link de reset gerado:', resetLink); // LOG PARA DEBUG
+  console.log('🔗 Link de reset gerado:', resetLink);
   
   const mailOptions = {
     from: '"SemLimites" <' + process.env.GMAIL_USER + '>',
@@ -204,8 +203,8 @@ router.post('/register', async (req, res) => {
       cpf,
       responsavel,
       cnpj,
-      categoriaPrincipal, // NOVO
-      servicos, // NOVO
+      categoriaPrincipal,
+      servicos,
       cidade,
       estado,
       descricao,
@@ -312,10 +311,8 @@ router.post('/register', async (req, res) => {
         slug: slugFinal,
         email,
         tipoPessoa: tipoPessoa || 'juridica',
-        // NOVOS CAMPOS
         categoriaPrincipal: categoriaPrincipal,
         servicos: servicos || [],
-        // Campo antigo para compatibilidade
         categoria: req.body.categoria || null,
         cidade,
         estado,
@@ -370,7 +367,7 @@ router.post('/register', async (req, res) => {
 
     res.status(201).json({
       message: 'Usuário criado com sucesso',
-      token: token, // <-- TOKEN RETORNADO!
+      token: token,
       user: { 
         id: user._id, 
         email: user.email, 
@@ -551,7 +548,6 @@ router.post('/esqueci-senha', async (req, res) => {
 
     console.log('🔑 Solicitação de recuperação para:', email);
 
-    // CORREÇÃO: Buscar em TODOS os tipos de usuário (não apenas prestador)
     const user = await User.findOne({ email });
     
     if (!user) {
@@ -563,7 +559,7 @@ router.post('/esqueci-senha', async (req, res) => {
 
     console.log(`✅ Usuário encontrado: ${user.email}, tipo: ${user.tipo}`);
 
-    // Buscar nome do usuário (para clientes ou prestadores)
+    // Buscar nome do usuário
     let nome = user.tipo === 'cliente' ? 'Cliente' : 'Prestador';
     
     if (user.tipo === 'prestador' && user.prestadorId) {
@@ -572,7 +568,6 @@ router.post('/esqueci-senha', async (req, res) => {
         nome = prestador.nome;
       }
     } else if (user.tipo === 'cliente') {
-      // Se tiver um campo nome no cliente, use-o
       nome = user.nome || 'Cliente';
     }
 
@@ -591,7 +586,6 @@ router.post('/esqueci-senha', async (req, res) => {
       console.log(`✅ Email de recuperação enviado para: ${email}`);
     } catch (emailError) {
       console.error('❌ Erro ao enviar email:', emailError);
-      // Não retorna erro para o usuário por segurança
     }
 
     res.json({ 
@@ -601,6 +595,103 @@ router.post('/esqueci-senha', async (req, res) => {
   } catch (error) {
     console.error('❌ Erro ao solicitar reset:', error);
     res.status(500).json({ error: 'Erro ao processar solicitação' });
+  }
+});
+
+// ========== NOVA ROTA: VERIFICAR TOKEN DE RESET ==========
+/**
+ * @route   GET /api/auth/resetar-senha/:token
+ * @desc    Verificar se o token de recuperação é válido
+ * @access  Public
+ */
+router.get('/resetar-senha/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    
+    console.log('🔍 Verificando token:', token);
+    
+    if (!token) {
+      return res.status(400).json({ error: 'Token não fornecido' });
+    }
+    
+    // Buscar usuário com o token válido e não expirado
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+    
+    if (!user) {
+      console.log('❌ Token não encontrado ou expirado');
+      return res.status(404).json({ 
+        valid: false, 
+        error: 'Token inválido ou expirado' 
+      });
+    }
+    
+    console.log('✅ Token válido para:', user.email);
+    
+    res.json({
+      valid: true,
+      email: user.email,
+      tipo: user.tipo
+    });
+    
+  } catch (error) {
+    console.error('❌ Erro ao verificar token:', error);
+    res.status(500).json({ error: 'Erro ao verificar token' });
+  }
+});
+
+// ========== NOVA ROTA: ALTERAR SENHA COM TOKEN ==========
+/**
+ * @route   POST /api/auth/resetar-senha
+ * @desc    Alterar senha usando o token de recuperação
+ * @access  Public
+ */
+router.post('/resetar-senha', async (req, res) => {
+  try {
+    const { token, novaSenha } = req.body;
+    
+    if (!token || !novaSenha) {
+      return res.status(400).json({ error: 'Token e nova senha são obrigatórios' });
+    }
+    
+    if (novaSenha.length < 6) {
+      return res.status(400).json({ error: 'A senha deve ter pelo menos 6 caracteres' });
+    }
+    
+    console.log('🔄 Resetando senha com token:', token);
+    
+    // Buscar usuário com o token válido e não expirado
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+    
+    if (!user) {
+      console.log('❌ Token não encontrado ou expirado');
+      return res.status(404).json({ error: 'Token inválido ou expirado' });
+    }
+    
+    // Criptografar a nova senha
+    const senhaHash = await bcrypt.hash(novaSenha, 10);
+    
+    // Atualizar senha e limpar tokens
+    user.senha = senhaHash;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+    
+    console.log('✅ Senha alterada com sucesso para:', user.email);
+    
+    res.json({
+      success: true,
+      message: 'Senha alterada com sucesso!'
+    });
+    
+  } catch (error) {
+    console.error('❌ Erro ao resetar senha:', error);
+    res.status(500).json({ error: 'Erro ao resetar senha' });
   }
 });
 
