@@ -1,7 +1,7 @@
 // /src/routes/assinatura.js
 import express from 'express';
 import { 
-  criarAssinatura, 
+  criarAssinatura,
   criarPreferenciaPublica, 
   buscarStatusAssinatura, 
   cancelarAssinatura,
@@ -12,14 +12,91 @@ import Prestador from '../models/Prestador.js';
 
 const router = express.Router();
 
+// ========== CONSTANTES ==========
+const PLANO_MENSAL_ID = process.env.MP_PLAN_ID_MENSAL; // ID do plano criado no MP
+const VALOR_MENSAL = 9.90;
+
+// ========== ROTAS PÚBLICAS ==========
+
+/**
+ * @route   POST /api/assinatura/criar-assinatura
+ * @desc    Criar uma assinatura recorrente no Mercado Pago
+ * @access  Public (para cadastro inicial)
+ */
+router.post('/criar-assinatura', async (req, res) => {
+  try {
+    console.log('📝 Criando assinatura recorrente');
+    
+    const { email, nome, plano, valor } = req.body;
+    
+    if (!email || !nome) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Email e nome são obrigatórios' 
+      });
+    }
+    
+    // Verificar se já existe prestador com este email (para casos de renovação)
+    const prestadorExistente = await Prestador.findOne({ email });
+    const prestadorId = prestadorExistente?._id;
+    
+    const resultado = await criarAssinatura({
+      email,
+      nome,
+      prestadorId,
+      plano: plano || 'mensal',
+      valor: valor || VALOR_MENSAL,
+      planId: PLANO_MENSAL_ID
+    });
+    
+    if (!resultado.success) {
+      return res.status(500).json({ 
+        success: false, 
+        error: resultado.error,
+        details: resultado.details
+      });
+    }
+    
+    // Se já existe prestador, atualizar com os dados da assinatura
+    if (prestadorExistente) {
+      prestadorExistente.mercadoPago = prestadorExistente.mercadoPago || {};
+      prestadorExistente.mercadoPago.subscriptionId = resultado.subscriptionId;
+      prestadorExistente.mercadoPago.customerId = resultado.customerId;
+      prestadorExistente.planoStatus = 'pendente';
+      prestadorExistente.planoAtivo = false;
+      prestadorExistente.adicionarHistoricoPlano(
+        'assinatura_criada',
+        `Assinatura criada - ID: ${resultado.subscriptionId}`,
+        { subscriptionId: resultado.subscriptionId }
+      );
+      await prestadorExistente.save();
+    }
+    
+    res.json({
+      success: true,
+      subscriptionId: resultado.subscriptionId,
+      initPoint: resultado.initPoint,
+      message: 'Assinatura criada com sucesso'
+    });
+    
+  } catch (error) {
+    console.error('❌ Erro ao criar assinatura:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 /**
  * @route   POST /api/assinatura/criar-preferencia
- * @desc    Criar uma preferência de pagamento (público - para cadastro)
+ * @desc    Criar uma preferência de pagamento (pagamento único)
+ * @desc    USAR APENAS PARA TESTES OU PAGAMENTOS AVULSOS
  * @access  Public
  */
 router.post('/criar-preferencia', async (req, res) => {
   try {
-    console.log('📝 Requisição para criar preferência de pagamento (pública)');
+    console.log('📝 Criando preferência de pagamento (pagamento único)');
     
     const { email, nome, plano, valor } = req.body;
     
@@ -34,7 +111,7 @@ router.post('/criar-preferencia', async (req, res) => {
       email,
       nome,
       plano: plano || 'mensal',
-      valor: valor || 9.90
+      valor: valor || VALOR_MENSAL
     });
     
     if (!resultado.success) {
@@ -54,7 +131,7 @@ router.post('/criar-preferencia', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ Erro na rota pública de preferência:', error);
+    console.error('❌ Erro ao criar preferência:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 
@@ -64,7 +141,7 @@ router.post('/criar-preferencia', async (req, res) => {
 
 /**
  * @route   GET /api/assinatura/status-preferencia/:preferenceId
- * @desc    Buscar status de uma preferência pelo ID (para monitoramento do frontend)
+ * @desc    Buscar status de uma preferência (pagamento único)
  * @access  Public
  */
 router.get('/status-preferencia/:preferenceId', async (req, res) => {
@@ -73,13 +150,9 @@ router.get('/status-preferencia/:preferenceId', async (req, res) => {
     
     console.log(`🔍 Buscando status da preferência: ${preferenceId}`);
     
-    // Buscar prestador que tenha esta preferenceId
     const prestador = await Prestador.findOne({ preferenceId });
     
     if (prestador) {
-      // Se encontrou prestador com esta preferenceId, verifica o status
-      console.log(`✅ Prestador encontrado: ${prestador._id}, status: ${prestador.planoStatus}`);
-      
       return res.json({
         status: prestador.planoStatus === 'ativo' ? 'approved' : 'pending',
         pagamentoConfirmado: prestador.planoStatus === 'ativo',
@@ -88,8 +161,6 @@ router.get('/status-preferencia/:preferenceId', async (req, res) => {
       });
     }
     
-    // Se não encontrou prestador, retorna pending (ainda aguardando pagamento)
-    console.log(`⏳ Nenhum prestador encontrado para preferenceId: ${preferenceId}`);
     res.json({
       status: 'pending',
       pagamentoConfirmado: false,
@@ -97,7 +168,7 @@ router.get('/status-preferencia/:preferenceId', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ Erro ao buscar status da preferência:', error);
+    console.error('❌ Erro ao buscar status:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 
@@ -106,86 +177,138 @@ router.get('/status-preferencia/:preferenceId', async (req, res) => {
 });
 
 /**
- * @route   POST /api/assinatura/associar
- * @desc    Associar uma preferência existente ao prestador
+ * @route   GET /api/assinatura/status-assinatura/:subscriptionId
+ * @desc    Buscar status de uma assinatura recorrente
  * @access  Private
  */
-router.post('/associar', authMiddleware, async (req, res) => {
+router.get('/status-assinatura/:subscriptionId', authMiddleware, async (req, res) => {
   try {
-    console.log('📝 Associando preferência ao prestador');
-    console.log('👤 Usuário autenticado:', req.usuario);
+    const { subscriptionId } = req.params;
     
-    const { prestadorId, preferenceId, email, nome, plano, valor } = req.body;
+    console.log(`🔍 Buscando status da assinatura: ${subscriptionId}`);
     
-    // Converter IDs para string para comparação segura
-    const usuarioId = req.usuario.id?.toString();
-    const usuarioPrestadorId = req.usuario.prestadorId?.toString();
-    const prestadorIdStr = prestadorId?.toString();
-    
-    // Verificar se é o mesmo usuário (aceitar tanto id do usuário quanto prestadorId)
-    const autorizado = 
-      (usuarioId && usuarioId === prestadorIdStr) || 
-      (usuarioPrestadorId && usuarioPrestadorId === prestadorIdStr);
-    
-    if (!autorizado) {
-      console.log('❌ Acesso negado:', {
-        usuarioId,
-        usuarioPrestadorId,
-        prestadorId: prestadorIdStr
-      });
-      return res.status(403).json({ 
-        success: false, 
-        error: 'Não autorizado' 
-      });
-    }
-    
-    // Buscar prestador
-    const prestador = await Prestador.findById(prestadorId);
+    // Buscar prestador pela assinatura
+    const prestador = await Prestador.findOne({ 
+      'mercadoPago.subscriptionId': subscriptionId 
+    });
     
     if (!prestador) {
       return res.status(404).json({ 
         success: false, 
-        error: 'Prestador não encontrado' 
+        error: 'Assinatura não encontrada' 
       });
     }
     
-    // Verificar se já tem uma assinatura ativa
-    if (prestador.planoStatus === 'ativo') {
-      return res.status(400).json({
-        success: false,
-        error: 'Prestador já possui assinatura ativa'
+    // Verificar permissão
+    const autorizado = 
+      req.usuario.prestadorId?.toString() === prestador._id.toString() ||
+      req.usuario.id?.toString() === prestador._id.toString() ||
+      req.usuario.tipo === 'admin';
+    
+    if (!autorizado) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Acesso negado' 
       });
     }
     
-    // Atualizar status do prestador
-    prestador.planoStatus = 'pendente';
-    prestador.planoId = preferenceId;
-    prestador.preferenceId = preferenceId; // Adicionar campo para busca
-    prestador.planoHistorico = prestador.planoHistorico || [];
-    prestador.planoHistorico.push({
-      data: new Date(),
-      evento: 'preferencia_associada',
-      detalhes: `Preference ID: ${preferenceId}`
-    });
-    
-    await prestador.save();
-    
-    console.log(`✅ Preferência ${preferenceId} associada ao prestador ${prestadorId}`);
+    // Buscar status atual no Mercado Pago
+    const statusMP = await buscarStatusAssinatura(subscriptionId);
     
     res.json({
       success: true,
-      message: 'Preferência associada com sucesso',
-      planoStatus: 'pendente'
+      subscriptionId,
+      status: statusMP?.status || prestador.planoStatus,
+      planoAtivo: prestador.planoAtivo,
+      planoStatus: prestador.planoStatus,
+      planoExpiracao: prestador.planoExpiracao,
+      lastPayment: prestador.mercadoPago?.lastPayment,
+      proximaCobranca: statusMP?.next_payment_date,
+      historico: prestador.planoHistorico?.slice(-5)
     });
     
   } catch (error) {
-    console.error('❌ Erro ao associar:', error);
+    console.error('❌ Erro ao buscar status da assinatura:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message 
     });
   }
 });
+
+/**
+ * @route   POST /api/assinatura/cancelar-assinatura
+ * @desc    Cancelar assinatura recorrente
+ * @access  Private
+ */
+router.post('/cancelar-assinatura', authMiddleware, async (req, res) => {
+  try {
+    const { subscriptionId } = req.body;
+    
+    if (!subscriptionId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'subscriptionId é obrigatório' 
+      });
+    }
+    
+    // Buscar prestador pela assinatura
+    const prestador = await Prestador.findOne({ 
+      'mercadoPago.subscriptionId': subscriptionId 
+    });
+    
+    if (!prestador) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Assinatura não encontrada' 
+      });
+    }
+    
+    // Verificar permissão
+    const autorizado = 
+      req.usuario.prestadorId?.toString() === prestador._id.toString() ||
+      req.usuario.id?.toString() === prestador._id.toString() ||
+      req.usuario.tipo === 'admin';
+    
+    if (!autorizado) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Acesso negado' 
+      });
+    }
+    
+    // Cancelar no Mercado Pago
+    const resultado = await cancelarAssinatura(subscriptionId);
+    
+    if (resultado.success) {
+      // Atualizar localmente
+      prestador.planoAtivo = false;
+      prestador.planoStatus = 'cancelado';
+      prestador.adicionarHistoricoPlano(
+        'assinatura_cancelada',
+        `Assinatura cancelada pelo usuário - ID: ${subscriptionId}`,
+        { subscriptionId }
+      );
+      await prestador.save();
+      
+      console.log(`✅ Assinatura cancelada: ${subscriptionId}`);
+    }
+    
+    res.json({
+      success: resultado.success,
+      message: resultado.message || 'Assinatura cancelada com sucesso'
+    });
+    
+  } catch (error) {
+    console.error('❌ Erro ao cancelar assinatura:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// ========== WEBHOOK ==========
 
 /**
  * @route   POST /api/assinatura/webhooks/mercadopago
@@ -194,54 +317,65 @@ router.post('/associar', authMiddleware, async (req, res) => {
  */
 router.post('/webhooks/mercadopago', async (req, res) => {
   try {
-    console.log('📨 Webhook recebido em /assinatura/webhooks/mercadopago');
-    console.log('📦 Body:', JSON.stringify(req.body, null, 2));
+    console.log('📨 Webhook recebido');
+    console.log('📦 Tipo:', req.body.type);
+    console.log('📦 Action:', req.body.action);
     
     const resultado = await processarNotificacao(req.body);
     
-    // Se o webhook processou com sucesso e tem prestadorId, atualiza
-    if (resultado.success && resultado.prestadorId) {
-      console.log(`✅ Webhook processado para prestador: ${resultado.prestadorId}`);
+    // Se for evento de assinatura
+    if (resultado.type === 'subscription') {
+      console.log(`🔄 Processando evento de assinatura: ${resultado.action}`);
       
-      // Atualizar status do prestador
-      const prestador = await Prestador.findById(resultado.prestadorId);
+      const prestador = await Prestador.findOne({ 
+        'mercadoPago.subscriptionId': resultado.subscriptionId 
+      });
       
       if (prestador) {
         const statusAnterior = prestador.planoStatus;
         
-        if (resultado.status === 'approved') {
-          prestador.planoStatus = 'ativo';
+        if (resultado.action === 'subscription_authorized_payment') {
+          // Pagamento de assinatura aprovado
           prestador.planoAtivo = true;
-          prestador.assinaturaAtivadaEm = new Date();
-        } else if (resultado.status === 'rejected' || resultado.status === 'cancelled') {
-          prestador.planoStatus = 'falhou';
-        } else if (resultado.status === 'pending') {
-          prestador.planoStatus = 'pendente';
+          prestador.planoStatus = 'ativo';
+          prestador.planoExpiracao = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+          
+          prestador.mercadoPago = prestador.mercadoPago || {};
+          prestador.mercadoPago.lastPayment = {
+            date: new Date(),
+            amount: resultado.valor || VALOR_MENSAL,
+            status: 'approved',
+            paymentId: resultado.paymentId
+          };
+          
+          prestador.adicionarHistoricoPlano(
+            'pagamento_aprovado',
+            `Pagamento de assinatura aprovado - ID: ${resultado.paymentId}`,
+            { paymentId: resultado.paymentId, valor: resultado.valor }
+          );
+          
+          console.log(`✅ Pagamento de assinatura aprovado: ${prestador._id}`);
+          
+        } else if (resultado.action === 'subscription_cancelled') {
+          prestador.planoAtivo = false;
+          prestador.planoStatus = 'cancelado';
+          prestador.adicionarHistoricoPlano(
+            'assinatura_cancelada',
+            `Assinatura cancelada via webhook - ID: ${resultado.subscriptionId}`
+          );
+          console.log(`❌ Assinatura cancelada: ${prestador._id}`);
+          
+        } else if (resultado.action === 'subscription_failed_payment') {
+          prestador.adicionarHistoricoPlano(
+            'pagamento_falhou',
+            `Pagamento de assinatura falhou - ID: ${resultado.paymentId}`
+          );
+          console.log(`⚠️ Pagamento falhou para: ${prestador._id}`);
         }
         
-        prestador.planoHistorico = prestador.planoHistorico || [];
-        prestador.planoHistorico.push({
-          data: new Date(),
-          evento: `webhook_${resultado.status}`,
-          detalhes: `Payment ID: ${resultado.paymentId}`
-        });
-        
         await prestador.save();
-        
-        console.log(`📊 Status do prestador ${resultado.prestadorId}: ${statusAnterior} -> ${prestador.planoStatus}`);
+        console.log(`📊 Status alterado: ${statusAnterior} -> ${prestador.planoStatus}`);
       }
-    } 
-    // Se o webhook confirmou pagamento mas não tem prestadorId (prestador será criado pelo frontend)
-    else if (resultado.success && resultado.pagamentoConfirmado) {
-      console.log(`✅ Pagamento confirmado via webhook! Dados:`, {
-        paymentId: resultado.paymentId,
-        email: resultado.email,
-        status: resultado.status
-      });
-      
-      // Não faz nada aqui - o frontend que vai criar o prestador
-      // Mas podemos armazenar o paymentId para referência futura
-      console.log(`ℹ️ Aguardando frontend criar prestador para paymentId: ${resultado.paymentId}`);
     }
     
     // Sempre retornar 200 para o Mercado Pago
@@ -249,10 +383,11 @@ router.post('/webhooks/mercadopago', async (req, res) => {
     
   } catch (error) {
     console.error('❌ Erro no webhook:', error);
-    // Mesmo com erro, retornar 200 para não bloquear o webhook
     res.status(200).json({ message: 'OK' });
   }
 });
+
+// ========== ROTAS DE CONSULTA ==========
 
 /**
  * @route   GET /api/assinatura/status-prestador/:prestadorId
@@ -263,23 +398,6 @@ router.get('/status-prestador/:prestadorId', authMiddleware, async (req, res) =>
   try {
     const { prestadorId } = req.params;
     
-    // Converter IDs para string para comparação segura
-    const usuarioId = req.usuario.id?.toString();
-    const usuarioPrestadorId = req.usuario.prestadorId?.toString();
-    const prestadorIdStr = prestadorId?.toString();
-    
-    // Verificar se é o mesmo usuário
-    const autorizado = 
-      (usuarioId && usuarioId === prestadorIdStr) || 
-      (usuarioPrestadorId && usuarioPrestadorId === prestadorIdStr);
-    
-    if (!autorizado) {
-      return res.status(403).json({ 
-        success: false, 
-        error: 'Não autorizado' 
-      });
-    }
-    
     const prestador = await Prestador.findById(prestadorId);
     
     if (!prestador) {
@@ -289,12 +407,27 @@ router.get('/status-prestador/:prestadorId', authMiddleware, async (req, res) =>
       });
     }
     
+    // Verificar permissão
+    const autorizado = 
+      req.usuario.prestadorId?.toString() === prestadorId ||
+      req.usuario.id?.toString() === prestadorId ||
+      req.usuario.tipo === 'admin';
+    
+    if (!autorizado) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Acesso negado' 
+      });
+    }
+    
     res.json({
       success: true,
       planoStatus: prestador.planoStatus || 'inativo',
-      planoId: prestador.planoId,
-      preferenceId: prestador.preferenceId,
-      planoHistorico: prestador.planoHistorico || []
+      planoAtivo: prestador.planoAtivo || false,
+      planoExpiracao: prestador.planoExpiracao,
+      subscriptionId: prestador.mercadoPago?.subscriptionId,
+      lastPayment: prestador.mercadoPago?.lastPayment,
+      historico: prestador.planoHistorico || []
     });
     
   } catch (error) {
