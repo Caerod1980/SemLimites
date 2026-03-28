@@ -63,7 +63,9 @@ const authMiddleware = async (req, res, next) => {
         '/assinatura',      // Rotas de assinatura (para pagar)
         '/auth',            // Rotas de autenticação
         '/prestadores/perfil', // Perfil básico (editar dados)
-        '/upload',          // Upload de fotos
+        '/upload/sas-token',   // <-- ADICIONADO: Upload de fotos (rota específica)
+        '/upload',          // Upload de fotos (rota geral)
+        '/upload/',         // Upload de fotos (com barra)
         '/webhooks',        // Webhooks (público)
         '/health',          // Health check
         '/test',            // Rotas de teste
@@ -72,15 +74,23 @@ const authMiddleware = async (req, res, next) => {
       
       // Verificar se a rota atual está na lista de permitidas
       const rotaAtual = req.path;
-      const permitida = rotasPermitidas.some(rota => rotaAtual.includes(rota));
+      const permitida = rotasPermitidas.some(rota => rotaAtual === rota || rotaAtual.startsWith(rota));
       
-      if (!permitida) {
-        console.log(`🚫 Acesso negado para prestador ${user._id} - Plano: ${planoStatus}`);
+      // CORREÇÃO: Verificar também se é uma rota de upload (qualquer rota que comece com /upload)
+      const isUploadRoute = rotaAtual.startsWith('/upload');
+      
+      if (!permitida && !isUploadRoute) {
+        console.log(`🚫 Acesso negado para prestador ${user._id} - Plano: ${planoStatus} - Rota: ${rotaAtual}`);
         return res.status(403).json({ 
           error: 'Acesso negado. Pagamento pendente.',
           planoStatus: planoStatus,
           message: 'Sua assinatura ainda não foi ativada. Complete o pagamento para acessar esta funcionalidade.'
         });
+      }
+      
+      // Log para rotas permitidas mesmo com plano pendente
+      if (permitida || isUploadRoute) {
+        console.log(`✅ Acesso permitido (plano pendente) para prestador ${user._id} - Rota: ${rotaAtual}`);
       }
     }
 
@@ -139,6 +149,7 @@ export const isAdmin = async (req, res, next) => {
 
 /**
  * Middleware para rotas que exigem que o prestador tenha plano ativo
+ * Use este middleware APÓS o authMiddleware para rotas que realmente precisam de plano ativo
  */
 export const planoAtivo = async (req, res, next) => {
   if (req.usuario.tipo !== 'prestador') {
