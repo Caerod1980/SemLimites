@@ -58,29 +58,23 @@ const authMiddleware = async (req, res, next) => {
     // Se for prestador com plano pendente, bloquear acesso a rotas protegidas
     if (user.tipo === 'prestador' && planoStatus !== 'ativo') {
       
-      // Lista de rotas que podem ser acessadas mesmo com pagamento pendente
-      const rotasPermitidas = [
-        '/assinatura',      // Rotas de assinatura (para pagar)
-        '/auth',            // Rotas de autenticação
-        '/prestadores/perfil', // Perfil básico (editar dados)
-        '/upload/sas-token',   // <-- ADICIONADO: Upload de fotos (rota específica)
-        '/upload',          // Upload de fotos (rota geral)
-        '/upload/',         // Upload de fotos (com barra)
-        '/webhooks',        // Webhooks (público)
-        '/health',          // Health check
-        '/test',            // Rotas de teste
-        '/admin'            // Rotas admin (separadas, mas com verificação própria)
-      ];
+      // CORREÇÃO SIMPLES: PERMITIR TODAS AS ROTAS DE UPLOAD
+      // Verificar se é uma rota de upload
+      const isUploadRoute = req.path.includes('/upload') || 
+                            req.path.includes('sas-token') || 
+                            req.path.includes('sas-token-leitura');
       
-      // Verificar se a rota atual está na lista de permitidas
-      const rotaAtual = req.path;
-      const permitida = rotasPermitidas.some(rota => rotaAtual === rota || rotaAtual.startsWith(rota));
+      // Verificar outras rotas permitidas
+      const isAuthRoute = req.path.includes('/auth');
+      const isAssinaturaRoute = req.path.includes('/assinatura');
+      const isPerfilRoute = req.path.includes('/prestadores/perfil');
+      const isHealthRoute = req.path === '/health';
       
-      // CORREÇÃO: Verificar também se é uma rota de upload (qualquer rota que comece com /upload)
-      const isUploadRoute = rotaAtual.startsWith('/upload');
+      // PERMITIR ACESSO A ESTAS ROTAS MESMO COM PLANO PENDENTE
+      const permitido = isUploadRoute || isAuthRoute || isAssinaturaRoute || isPerfilRoute || isHealthRoute;
       
-      if (!permitida && !isUploadRoute) {
-        console.log(`🚫 Acesso negado para prestador ${user._id} - Plano: ${planoStatus} - Rota: ${rotaAtual}`);
+      if (!permitido) {
+        console.log(`🚫 Acesso negado para prestador ${user._id} - Plano: ${planoStatus} - Rota: ${req.path}`);
         return res.status(403).json({ 
           error: 'Acesso negado. Pagamento pendente.',
           planoStatus: planoStatus,
@@ -88,10 +82,8 @@ const authMiddleware = async (req, res, next) => {
         });
       }
       
-      // Log para rotas permitidas mesmo com plano pendente
-      if (permitida || isUploadRoute) {
-        console.log(`✅ Acesso permitido (plano pendente) para prestador ${user._id} - Rota: ${rotaAtual}`);
-      }
+      // Log para rotas permitidas
+      console.log(`✅ Acesso permitido (plano pendente) para prestador ${user._id} - Rota: ${req.path}`);
     }
 
     // Log para debug (opcional - remover em produção)
