@@ -403,209 +403,227 @@ export default function App() {
     }
   }, []);
 
-  // ===== CAPTURAR RETORNO DO MERCADO PAGO - OTIMIZADO PARA PWA =====
-  useEffect(() => {
-    console.log('🔍 [App] Verificando retorno de pagamento...');
-    console.log('🔍 [App] URL atual:', window.location.href);
-    console.log('🔍 [App] Pathname:', window.location.pathname);
-    console.log('🔍 [App] Search:', window.location.search);
-    
-    // Prevenir processamento duplicado
-    if (window.pagamentoProcessando || processandoPagamento) {
-      console.log('⚠️ [App] Pagamento já está sendo processado');
-      return;
-    }
-    
-    // ===== 1. VERIFICAR PARÂMETROS DA URL (MAIS CONFIÁVEL PARA PWA) =====
-    const urlParams = new URLSearchParams(window.location.search);
-    const retornoUrl = urlParams.get('retorno');
-    const collectionStatusUrl = urlParams.get('collection_status');
-    const preferenceIdUrl = urlParams.get('preference_id');
-    const paymentIdUrl = urlParams.get('payment_id');
-    const statusUrl = urlParams.get('status');
-    
-    console.log('🔍 [App] URL Params:', {
-      retorno: retornoUrl,
-      collection_status: collectionStatusUrl,
-      preference_id: preferenceIdUrl,
-      payment_id: paymentIdUrl,
-      status: statusUrl
-    });
-    
-    // ===== 2. VERIFICAR LOCALSTORAGE (BACKUP) =====
-    const pagamentoRetorno = localStorage.getItem('pagamentoRetorno');
-    const preferenceIdSalvo = localStorage.getItem('preferenceId');
-    const paymentIdSalvo = localStorage.getItem('paymentId');
-    const collectionStatusSalvo = localStorage.getItem('collectionStatus');
-    const dadosSalvos = sessionStorage.getItem('cadastroPendente');
-    
-    console.log('🔍 [App] localStorage:', {
-      pagamentoRetorno,
-      preferenceIdSalvo,
-      paymentIdSalvo,
-      collectionStatusSalvo
-    });
-    console.log('🔍 [App] sessionStorage - dadosSalvos:', !!dadosSalvos);
-    
-    // ===== 3. DETERMINAR STATUS DO PAGAMENTO (PRIORIDADE: URL PARAMS) =====
-    let statusPagamento = null;
-    let preferenceId = null;
-    let paymentId = null;
-    
-    // Prioridade máxima para parâmetros da URL (funciona melhor em PWA)
-    if (retornoUrl === 'sucesso' || collectionStatusUrl === 'approved' || statusUrl === 'approved') {
-      statusPagamento = 'sucesso';
-      preferenceId = preferenceIdUrl;
-      paymentId = paymentIdUrl;
-      console.log('📦 [App] Pagamento detectado via URL Params (PRIORITÁRIO)');
-    }
-    else if (pagamentoRetorno === 'sucesso') {
-      statusPagamento = pagamentoRetorno;
-      preferenceId = preferenceIdSalvo;
-      paymentId = paymentIdSalvo;
-      console.log('📦 [App] Pagamento detectado via localStorage');
-    }
-    else if (retornoUrl === 'erro') {
-      statusPagamento = 'erro';
-      console.log('📦 [App] Pagamento com erro via URL');
-    }
-    else if (retornoUrl === 'pending') {
-      statusPagamento = 'pending';
-      console.log('📦 [App] Pagamento pendente via URL');
-    }
-    
-    console.log('🔍 [App] Status final:', statusPagamento);
-    console.log('🔍 [App] Payment ID:', paymentId);
-    console.log('🔍 [App] Dados cadastro:', !!dadosSalvos);
-    
-    // Se não tem dados de cadastro, não processar
-    if (!dadosSalvos) {
-      if (statusPagamento) {
-        console.log('🧹 [App] Limpando dados sem cadastro');
-        limparDadosPagamento();
-      }
-      return;
-    }
-    
-    // Se já está logado, limpar e ignorar
-    if (localStorage.getItem('token')) {
-      console.log('⚠️ [App] Usuário já logado, limpando dados pendentes');
+  // ===== CAPTURAR RETORNO DO MERCADO PAGO - VERSÃO CORRIGIDA =====
+useEffect(() => {
+  console.log('🔍 [App] Verificando retorno de pagamento...');
+  console.log('🔍 [App] URL atual:', window.location.href);
+  console.log('🔍 [App] Pathname:', window.location.pathname);
+  console.log('🔍 [App] Search:', window.location.search);
+  
+  // Prevenir processamento duplicado
+  if (window.pagamentoProcessando || processandoPagamento) {
+    console.log('⚠️ [App] Pagamento já está sendo processado');
+    return;
+  }
+  
+  // ===== 1. VERIFICAR PARÂMETROS DA URL (PRIORIDADE MÁXIMA) =====
+  const urlParams = new URLSearchParams(window.location.search);
+  const retornoUrl = urlParams.get('retorno');
+  const collectionStatusUrl = urlParams.get('collection_status');
+  const preferenceIdUrl = urlParams.get('preference_id');
+  const paymentIdUrl = urlParams.get('payment_id');
+  const statusUrl = urlParams.get('status');
+  
+  console.log('🔍 [App] URL Params (PRIORIDADE):', {
+    retorno: retornoUrl,
+    collection_status: collectionStatusUrl,
+    preference_id: preferenceIdUrl,
+    payment_id: paymentIdUrl,
+    status: statusUrl
+  });
+  
+  // ===== 2. VERIFICAR LOCALSTORAGE (BACKUP) =====
+  const pagamentoRetorno = localStorage.getItem('pagamentoRetorno');
+  const preferenceIdSalvo = localStorage.getItem('preferenceId');
+  const paymentIdSalvo = localStorage.getItem('paymentId');
+  const collectionStatusSalvo = localStorage.getItem('collectionStatus');
+  const dadosSalvos = sessionStorage.getItem('cadastroPendente');
+  
+  console.log('🔍 [App] localStorage (BACKUP):', {
+    pagamentoRetorno,
+    preferenceIdSalvo,
+    paymentIdSalvo,
+    collectionStatusSalvo
+  });
+  console.log('🔍 [App] sessionStorage - dadosSalvos:', !!dadosSalvos);
+  
+  // ===== 3. DETERMINAR STATUS DO PAGAMENTO - PRIORIDADE URL PARAMS =====
+  let statusPagamento = null;
+  let preferenceId = null;
+  let paymentId = null;
+  
+  // PRIORIDADE 1: URL Params (mais confiável para PWA)
+  if (retornoUrl === 'sucesso' || collectionStatusUrl === 'approved' || statusUrl === 'approved') {
+    statusPagamento = 'sucesso';
+    preferenceId = preferenceIdUrl || preferenceIdSalvo;
+    paymentId = paymentIdUrl || paymentIdSalvo;
+    console.log('📦 [App] Pagamento detectado via URL Params (PRIORITÁRIO)');
+  }
+  // PRIORIDADE 2: Collection Status da URL
+  else if (collectionStatusUrl === 'approved') {
+    statusPagamento = 'sucesso';
+    preferenceId = preferenceIdUrl;
+    paymentId = paymentIdUrl;
+    console.log('📦 [App] Pagamento detectado via collection_status');
+  }
+  // PRIORIDADE 3: localStorage
+  else if (pagamentoRetorno === 'sucesso') {
+    statusPagamento = pagamentoRetorno;
+    preferenceId = preferenceIdSalvo;
+    paymentId = paymentIdSalvo;
+    console.log('📦 [App] Pagamento detectado via localStorage');
+  }
+  // PRIORIDADE 4: Erro ou Pendente
+  else if (retornoUrl === 'erro') {
+    statusPagamento = 'erro';
+    console.log('📦 [App] Pagamento com erro via URL');
+  }
+  else if (retornoUrl === 'pending') {
+    statusPagamento = 'pending';
+    console.log('📦 [App] Pagamento pendente via URL');
+  }
+  
+  console.log('🔍 [App] Status final:', statusPagamento);
+  console.log('🔍 [App] Preference ID:', preferenceId);
+  console.log('🔍 [App] Payment ID:', paymentId);
+  console.log('🔍 [App] Dados cadastro:', !!dadosSalvos);
+  
+  // Se não tem dados de cadastro, não processar
+  if (!dadosSalvos) {
+    if (statusPagamento) {
+      console.log('🧹 [App] Limpando dados sem cadastro');
       limparDadosPagamento();
-      return;
+    }
+    return;
+  }
+  
+  // Se já está logado, limpar e ignorar
+  if (localStorage.getItem('token')) {
+    console.log('⚠️ [App] Usuário já logado, limpando dados pendentes');
+    limparDadosPagamento();
+    return;
+  }
+  
+  // Processar apenas se for sucesso
+  if (statusPagamento === 'sucesso') {
+    console.log('✅✅✅ [App] PROCESSANDO PAGAMENTO APROVADO! ✅✅✅');
+    console.log('💰 Payment ID:', paymentId);
+    console.log('💰 Preference ID:', preferenceId);
+    console.log('📦 Dados salvos encontrados');
+    
+    window.pagamentoProcessando = true;
+    setProcessandoPagamento(true);
+    
+    const dados = JSON.parse(dadosSalvos);
+    
+    // Atualizar preferenceId e paymentId
+    if (preferenceId && !dados.preferenceId) {
+      dados.preferenceId = preferenceId;
+    }
+    if (paymentId) {
+      dados.paymentId = paymentId;
     }
     
-    // Processar apenas se for sucesso
-    if (statusPagamento === 'sucesso') {
-      console.log('✅✅✅ [App] PROCESSANDO PAGAMENTO APROVADO! ✅✅✅');
-      console.log('💰 Payment ID:', paymentId);
-      console.log('📦 Dados salvos encontrados');
+    async function criarPrestador() {
+      console.log('📝 Criando prestador para:', dados.email);
+      console.log('💰 Payment ID usado:', paymentId);
+      console.log('🏷️ Preference ID usado:', dados.preferenceId);
       
-      window.pagamentoProcessando = true;
-      setProcessandoPagamento(true);
+      var dadosEnvio = {
+        nome: dados.nome,
+        email: dados.email,
+        senha: dados.senha,
+        tipo: 'prestador',
+        tipoPessoa: dados.tipoPessoa,
+        cidade: dados.cidade,
+        estado: dados.estado,
+        whatsapp: dados.whatsapp,
+        telefone: dados.telefone || '',
+        descricao: dados.descricao || '',
+        tags: dados.tags || [],
+        categoriaPrincipal: dados.categoriaPrincipal,
+        servicos: dados.servicos,
+        aceitouTermos: true,
+        preferenceId: dados.preferenceId,
+        paymentId: paymentId,
+        planoStatus: 'ativo',
+        planoAtivo: true,
+        assinaturaAtivadaEm: new Date().toISOString()
+      };
       
-      const dados = JSON.parse(dadosSalvos);
-      
-      // Atualizar preferenceId e paymentId
-      if (preferenceId && !dados.preferenceId) {
-        dados.preferenceId = preferenceId;
+      if (dados.tipoPessoa === 'fisica') {
+        dadosEnvio.cpf = dados.cpf;
+      } else {
+        dadosEnvio.cnpj = dados.cnpj;
+        dadosEnvio.responsavel = dados.responsavel;
+        if (dados.cnpjVerificado) {
+          dadosEnvio.cnpjVerificado = true;
+          dadosEnvio.razaoSocialVerificada = dados.razaoSocialVerificada;
+          dadosEnvio.verificado = true;
+        }
       }
-      if (paymentId) {
-        dados.paymentId = paymentId;
-      }
       
-      async function criarPrestador() {
-        console.log('📝 Criando prestador para:', dados.email);
-        console.log('💰 Payment ID usado:', paymentId);
-        console.log('🏷️ Preference ID usado:', dados.preferenceId);
+      try {
+        console.log('📤 Enviando requisição para /auth/register');
+        const response = await fetch(API_URL + '/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dadosEnvio)
+        });
         
-        var dadosEnvio = {
-          nome: dados.nome,
-          email: dados.email,
-          senha: dados.senha,
-          tipo: 'prestador',
-          tipoPessoa: dados.tipoPessoa,
-          cidade: dados.cidade,
-          estado: dados.estado,
-          whatsapp: dados.whatsapp,
-          telefone: dados.telefone || '',
-          descricao: dados.descricao || '',
-          tags: dados.tags || [],
-          categoriaPrincipal: dados.categoriaPrincipal,
-          servicos: dados.servicos,
-          aceitouTermos: true,
-          preferenceId: dados.preferenceId,
-          paymentId: paymentId,
-          planoStatus: 'ativo',
-          planoAtivo: true,
-          assinaturaAtivadaEm: new Date().toISOString()
-        };
+        const registerData = await response.json();
+        console.log('📥 Resposta do registro:', registerData);
         
-        if (dados.tipoPessoa === 'fisica') {
-          dadosEnvio.cpf = dados.cpf;
+        if (registerData.token) {
+          console.log('✅ Prestador criado com sucesso!');
+          localStorage.setItem('token', registerData.token);
+          localStorage.setItem('user', JSON.stringify(registerData.user));
+          setUsuario(registerData.user);
+          
+          // Limpar todos os dados pendentes
+          limparDadosPagamento();
+          sessionStorage.removeItem('cadastroPendente');
+          
+          // Limpar parâmetros da URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
+          alert('✅ Pagamento confirmado! Seu cadastro foi ativado com sucesso!');
+          
+          setTimeout(() => {
+            setModo('dashboard');
+            window.pagamentoProcessando = false;
+            setProcessandoPagamento(false);
+          }, 2000);
         } else {
-          dadosEnvio.cnpj = dados.cnpj;
-          dadosEnvio.responsavel = dados.responsavel;
-          if (dados.cnpjVerificado) {
-            dadosEnvio.cnpjVerificado = true;
-            dadosEnvio.razaoSocialVerificada = dados.razaoSocialVerificada;
-            dadosEnvio.verificado = true;
-          }
+          throw new Error(registerData.error || 'Erro no cadastro');
         }
-        
-        try {
-          console.log('📤 Enviando requisição para /auth/register');
-          const response = await fetch(API_URL + '/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dadosEnvio)
-          });
-          
-          const registerData = await response.json();
-          console.log('📥 Resposta do registro:', registerData);
-          
-          if (registerData.token) {
-            console.log('✅ Prestador criado com sucesso!');
-            localStorage.setItem('token', registerData.token);
-            localStorage.setItem('user', JSON.stringify(registerData.user));
-            setUsuario(registerData.user);
-            
-            // Limpar todos os dados pendentes
-            limparDadosPagamento();
-            sessionStorage.removeItem('cadastroPendente');
-            
-            // Limpar parâmetros da URL
-            window.history.replaceState({}, document.title, window.location.pathname);
-            
-            alert('✅ Pagamento confirmado! Seu cadastro foi ativado com sucesso!');
-            
-            setTimeout(() => {
-              setModo('dashboard');
-            }, 2000);
-          } else {
-            throw new Error(registerData.error || 'Erro no cadastro');
-          }
-        } catch (error) {
-          console.error('❌ Erro no cadastro:', error);
-          alert('Erro ao finalizar cadastro: ' + error.message + '\n\nEntre em contato com o suporte.');
-          window.pagamentoProcessando = false;
-          setProcessandoPagamento(false);
-        }
+      } catch (error) {
+        console.error('❌ Erro no cadastro:', error);
+        alert('Erro ao finalizar cadastro: ' + error.message + '\n\nEntre em contato com o suporte.');
+        window.pagamentoProcessando = false;
+        setProcessandoPagamento(false);
+        // Manter os dados para tentar novamente
+        // Não limpar os dados aqui para que possa tentar novamente
       }
-      
-      criarPrestador();
-      
-    } else if (statusPagamento === 'erro') {
-      console.log('❌ Pagamento com erro');
-      alert('Ocorreu um erro no pagamento. Tente novamente.');
-      limparDadosPagamento();
-      setTimeout(() => setModo('cadastro'), 1500);
-    } else if (statusPagamento === 'pending') {
-      console.log('⏳ Pagamento pendente');
-      alert('Seu pagamento está pendente. Aguarde a confirmação e tente novamente.');
-      limparDadosPagamento();
-      setTimeout(() => setModo('cadastro'), 1500);
     }
-  }, [processandoPagamento]);
+    
+    criarPrestador();
+    
+  } else if (statusPagamento === 'erro') {
+    console.log('❌ Pagamento com erro');
+    alert('Ocorreu um erro no pagamento. Tente novamente.');
+    limparDadosPagamento();
+    setTimeout(() => setModo('cadastro'), 1500);
+  } else if (statusPagamento === 'pending') {
+    console.log('⏳ Pagamento pendente');
+    // Para pagamento pendente, tenta verificar novamente em 5 segundos
+    setTimeout(() => {
+      console.log('🔄 Tentando verificar pagamento pendente novamente...');
+      window.location.reload();
+    }, 5000);
+    alert('Seu pagamento está sendo processado. Aguarde um momento...');
+  }
+}, [processandoPagamento]);
 
   const handleLoginSuccess = (userData) => {
     setUsuario(userData);
