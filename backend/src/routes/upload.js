@@ -6,12 +6,14 @@ import authMiddleware from '../middlewares/auth.js';
 const router = express.Router();
 
 // ========== ROTA PARA GERAR SAS TOKEN PARA UPLOAD (ESCRITA) ==========
+// REMOVIDA QUALQUER VERIFICAÇÃO DE PLANO - APENAS VERIFICA SE É PRESTADOR
 router.post('/sas-token', authMiddleware, async (req, res) => {
     try {
         console.log('📸 Requisição de SAS token (upload) recebida');
         console.log('👤 Usuário autenticado:', req.usuario.email, 'Tipo:', req.usuario.tipo);
         
-        // Verificar se é prestador
+        // Única verificação: se é prestador
+        // NÃO VERIFICA PLANO - O upload de foto é permitido independentemente do status do plano
         if (req.usuario.tipo !== 'prestador') {
             return res.status(403).json({ error: 'Apenas prestadores podem fazer upload de fotos' });
         }
@@ -55,12 +57,12 @@ router.post('/sas-token', authMiddleware, async (req, res) => {
         const blobName = `prestadores/${userId}/${timestamp}-${safeFilename}`;
         const blockBlobClient = containerClient.getBlockBlobClient(blobName);
 
-        // Gerar SAS token válido por 10 minutos (apenas para escrita)
+        // Gerar SAS token válido por 15 minutos (apenas para escrita)
         const sasOptions = {
             containerName,
             blobName,
             startsOn: new Date(),
-            expiresOn: new Date(Date.now() + 10 * 60 * 1000), // 10 minutos
+            expiresOn: new Date(Date.now() + 15 * 60 * 1000), // 15 minutos (aumentado de 10)
             permissions: BlobSASPermissions.parse("w") // Apenas escrita
         };
 
@@ -68,6 +70,7 @@ router.post('/sas-token', authMiddleware, async (req, res) => {
         const sasUrl = `${blockBlobClient.url}?${sasToken}`;
 
         console.log(`✅ SAS token de UPLOAD gerado para: ${blobName}`);
+        console.log(`⏰ Expira em: ${new Date(Date.now() + 15 * 60 * 1000).toLocaleTimeString()}`);
 
         res.json({
             sasUrl,
@@ -77,11 +80,16 @@ router.post('/sas-token', authMiddleware, async (req, res) => {
 
     } catch (error) {
         console.error('❌ Erro ao gerar SAS token de upload:', error);
+        
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({ error: 'Token inválido' });
+        }
+        
         res.status(500).json({ error: error.message || 'Erro interno ao gerar token' });
     }
 });
 
-// ========== NOVA ROTA: GERAR SAS TOKEN PARA LEITURA ==========
+// ========== ROTA: GERAR SAS TOKEN PARA LEITURA ==========
 // Esta rota NÃO requer autenticação porque é usada para exibir imagens publicamente
 router.post('/sas-token-leitura', async (req, res) => {
     try {
@@ -129,6 +137,13 @@ router.post('/sas-token-leitura', async (req, res) => {
             const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
             const containerClient = blobServiceClient.getContainerClient(containerName);
             const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+            // Verificar se o blob existe
+            const existe = await blockBlobClient.exists();
+            if (!existe) {
+                console.log('⚠️ Blob não encontrado:', blobName);
+                return res.status(404).json({ error: 'Imagem não encontrada' });
+            }
 
             // Gerar SAS token válido por 60 minutos para LEITURA
             const sasOptions = {
