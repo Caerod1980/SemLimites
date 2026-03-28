@@ -51,19 +51,7 @@
       console.log('📍 Pathname:', pathname);
       console.log('📍 Search:', search);
       
-      // CORREÇÃO: Verificar se é uma rota que deve ser preservada (resetar-senha, avaliar, perfil)
-      var rotasPreservadas = ['/resetar-senha/', '/avaliar/', '/perfil/'];
-      var devePreservar = false;
-      
-      for (var i = 0; i < rotasPreservadas.length; i++) {
-        if (pathname.includes(rotasPreservadas[i])) {
-          devePreservar = true;
-          console.log('🔐 Rota preservada detectada:', rotasPreservadas[i]);
-          break;
-        }
-      }
-      
-      // Verificar se é um retorno de pagamento
+      // ===== 1. DETECTAR RETORNO DO MERCADO PAGO =====
       var params = new URLSearchParams(search);
       var retorno = params.get('retorno');
       var collectionStatus = params.get('collection_status');
@@ -77,10 +65,13 @@
         payment_id: paymentId
       });
       
-      // Se tem retorno de pagamento, salvar no localStorage e redirecionar
-      if (retorno === 'sucesso' || retorno === 'erro' || retorno === 'pending' || collectionStatus === 'approved') {
+      // ===== 2. VERIFICAR SE É RETORNO DO MERCADO PAGO =====
+      var isPagamento = (retorno === 'sucesso' || retorno === 'erro' || retorno === 'pending' || collectionStatus === 'approved');
+      
+      if (isPagamento) {
         console.log('✅ Retorno de pagamento detectado no 404!');
         
+        // Salvar status do pagamento no localStorage
         if (retorno === 'sucesso' || collectionStatus === 'approved') {
           localStorage.setItem('pagamentoRetorno', 'sucesso');
         } else if (retorno === 'erro') {
@@ -89,6 +80,7 @@
           localStorage.setItem('pagamentoRetorno', 'pending');
         }
         
+        // Salvar dados do pagamento
         if (preferenceId) {
           localStorage.setItem('preferenceId', preferenceId);
         }
@@ -99,6 +91,7 @@
           localStorage.setItem('collectionStatus', collectionStatus);
         }
         
+        // Salvar todos os parâmetros para debug
         var allParams = {};
         for (var pair of params.entries()) {
           allParams[pair[0]] = pair[1];
@@ -106,106 +99,118 @@
         localStorage.setItem('pagamentoParams', JSON.stringify(allParams));
         
         console.log('💾 Dados salvos no localStorage');
+        console.log('📌 IMPORTANTE: NÃO REDIRECIONAR - O App.js vai processar os dados');
         
-        var redirectUrl = '/SemLimites/cadastro' + (search || '');
-        console.log('🔄 Redirecionando para cadastro:', redirectUrl);
-        window.location.replace(redirectUrl);
+        // ===== CORREÇÃO CRÍTICA: NÃO REDIRECIONAR! =====
+        // O App.js vai ler o localStorage e processar o pagamento
+        // Apenas deixamos o loader aparecer enquanto o SPA carrega
+        // O fluxo continua para carregar o SPA normalmente
+      }
+      
+      // ===== 3. DETECTAR ROTAS PRESERVADAS =====
+      var rotasPreservadas = ['/resetar-senha/', '/avaliar/', '/perfil/'];
+      var devePreservar = false;
+      
+      for (var i = 0; i < rotasPreservadas.length; i++) {
+        if (pathname.includes(rotasPreservadas[i])) {
+          devePreservar = true;
+          console.log('🔐 Rota preservada detectada:', rotasPreservadas[i]);
+          break;
+        }
+      }
+      
+      // ===== 4. CARREGAR SPA VIA FETCH PARA ROTAS PRESERVADAS =====
+      if (devePreservar) {
+        console.log('🔐 Rota preservada, carregando SPA via fetch...');
+        
+        fetch('/index.html')
+          .then(function(response) { 
+            if (!response.ok) {
+              throw new Error('HTTP ' + response.status);
+            }
+            return response.text(); 
+          })
+          .then(function(html) {
+            // Criar um elemento temporário para parsear o HTML
+            var temp = document.createElement('div');
+            temp.innerHTML = html;
+            
+            // Extrair o conteúdo do body
+            var newBodyContent = '';
+            var bodyElement = temp.querySelector('body');
+            if (bodyElement) {
+              newBodyContent = bodyElement.innerHTML;
+            } else {
+              newBodyContent = temp.innerHTML;
+            }
+            
+            // Extrair todos os scripts
+            var scripts = temp.querySelectorAll('script');
+            var scriptsToLoad = [];
+            
+            scripts.forEach(function(script) {
+              if (script.src) {
+                scriptsToLoad.push({
+                  src: script.src,
+                  text: null
+                });
+              } else {
+                scriptsToLoad.push({
+                  src: null,
+                  text: script.textContent
+                });
+              }
+            });
+            
+            // Substituir o conteúdo do body
+            document.body.innerHTML = newBodyContent;
+            
+            // Função para carregar scripts em sequência (mantendo a ordem)
+            function loadScripts(index) {
+              if (index >= scriptsToLoad.length) {
+                console.log('✅ SPA carregado com sucesso para:', pathname);
+                // Atualizar a URL no navegador sem recarregar
+                history.replaceState(null, '', pathname);
+                return;
+              }
+              
+              var scriptData = scriptsToLoad[index];
+              var script = document.createElement('script');
+              
+              if (scriptData.src) {
+                script.src = scriptData.src;
+                script.onload = function() { loadScripts(index + 1); };
+                script.onerror = function() { 
+                  console.warn('⚠️ Script não carregou:', scriptData.src);
+                  loadScripts(index + 1); 
+                };
+              } else if (scriptData.text) {
+                script.textContent = scriptData.text;
+                document.body.appendChild(script);
+                loadScripts(index + 1);
+                return;
+              }
+              
+              document.body.appendChild(script);
+            }
+            
+            // Iniciar o carregamento dos scripts em ordem
+            loadScripts(0);
+          })
+          .catch(function(error) {
+            console.error('❌ Erro ao carregar SPA:', error);
+            window.location.replace('/');
+          });
         return;
       }
       
-     // ===== CORREÇÃO CRÍTICA: Se for rota preservada, CARREGAR O SPA CORRETAMENTE =====
-if (devePreservar) {
-  console.log('🔐 Rota preservada, carregando SPA via fetch...');
-  
-  fetch('/index.html')
-    .then(function(response) { 
-      if (!response.ok) {
-        throw new Error('HTTP ' + response.status);
-      }
-      return response.text(); 
-    })
-    .then(function(html) {
-      // Criar um elemento temporário para parsear o HTML
-      var temp = document.createElement('div');
-      temp.innerHTML = html;
-      
-      // Extrair o conteúdo do body
-      var newBodyContent = '';
-      var bodyElement = temp.querySelector('body');
-      if (bodyElement) {
-        newBodyContent = bodyElement.innerHTML;
-      } else {
-        newBodyContent = temp.innerHTML;
-      }
-      
-      // Extrair todos os scripts
-      var scripts = temp.querySelectorAll('script');
-      var scriptsToLoad = [];
-      
-      scripts.forEach(function(script) {
-        if (script.src) {
-          scriptsToLoad.push({
-            src: script.src,
-            text: null
-          });
-        } else {
-          scriptsToLoad.push({
-            src: null,
-            text: script.textContent
-          });
-        }
-      });
-      
-      // Substituir o conteúdo do body
-      document.body.innerHTML = newBodyContent;
-      
-      // Função para carregar scripts em sequência (mantendo a ordem)
-      function loadScripts(index) {
-        if (index >= scriptsToLoad.length) {
-          console.log('✅ SPA carregado com sucesso para:', pathname);
-          // Atualizar a URL no navegador sem recarregar
-          history.replaceState(null, '', pathname);
-          return;
-        }
-        
-        var scriptData = scriptsToLoad[index];
-        var script = document.createElement('script');
-        
-        if (scriptData.src) {
-          script.src = scriptData.src;
-          script.onload = function() { loadScripts(index + 1); };
-          script.onerror = function() { 
-            console.warn('⚠️ Script não carregou:', scriptData.src);
-            loadScripts(index + 1); 
-          };
-        } else if (scriptData.text) {
-          script.textContent = scriptData.text;
-          // Executa inline scripts imediatamente
-          document.body.appendChild(script);
-          loadScripts(index + 1);
-          return;
-        }
-        
-        document.body.appendChild(script);
-      }
-      
-      // Iniciar o carregamento dos scripts em ordem
-      loadScripts(0);
-    })
-    .catch(function(error) {
-      console.error('❌ Erro ao carregar SPA:', error);
-      window.location.replace('/');
-    });
-  return;
-}
-      
-      // Verificar se já está na raiz
+      // ===== 5. VERIFICAR SE JÁ ESTÁ NA RAIZ =====
       if (pathname === '/' || pathname === '/index.html' || pathname === '') {
         console.log('✅ Já está na raiz, carregando normalmente');
         return;
       }
       
-      // Para qualquer outro caminho, redirecionar para a raiz
+      // ===== 6. REDIRECIONAR PARA A RAIZ (apenas se não for rota preservada nem pagamento) =====
       var redirectUrl = '/' + (search || '');
       console.log('🔄 Redirecionando para raiz:', redirectUrl);
       window.location.replace(redirectUrl);
