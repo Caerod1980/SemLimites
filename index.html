@@ -3656,7 +3656,7 @@ function ResetarSenha(props) {
                 });
             }
 
-            // ===== FUNÇÃO handleSubmit (SEM MONITORAMENTO, SEM NOVA ABA) =====
+                        // ===== FUNÇÃO handleSubmit (COM ASSINATURA RECORRENTE) =====
             function handleSubmit(e) {
                 e.preventDefault();
                 
@@ -3744,38 +3744,40 @@ function ResetarSenha(props) {
 
                 setEtapa('processando');
                 
-                fetch(API_URL + '/assinatura/criar-preferencia', {
+                // ===== CORREÇÃO: USAR ASSINATURA RECORRENTE =====
+                fetch(API_URL + '/assinatura/criar-assinatura', {  // ← ALTERADO!
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         email: formData.email,
-                        nome: formData.nome,
-                        plano: 'mensal',
-                        valor: 9.90
+                        nome: formData.nome
+                        // Não precisa enviar plano/valor
                     })
                 })
                     .then(function(response) { 
                         if (!response.ok) {
                             return response.json().then(function(err) { 
-                                throw new Error(err.error || 'Erro ao criar preferência de pagamento'); 
+                                throw new Error(err.error || 'Erro ao criar assinatura'); 
                             });
                         }
                         return response.json(); 
                     })
-                    .then(function(pagamentoData) {
-                        if (pagamentoData.success) {
-                            console.log('✅ Preferência de pagamento criada:', pagamentoData);
+                    .then(function(assinaturaData) {
+                        if (assinaturaData.success) {
+                            console.log('✅ Assinatura criada:', assinaturaData);
                             
-                            // Salvar preferenceId no sessionStorage
-                            sessionStorage.setItem('preferenceId', pagamentoData.preferenceId);
+                            // Salvar subscriptionId no sessionStorage
+                            sessionStorage.setItem('subscriptionId', assinaturaData.subscriptionId);
+                            sessionStorage.setItem('preferenceId', assinaturaData.subscriptionId); // Para compatibilidade
                             
-                            var linkParaAbrir = pagamentoData.initPoint;
-                            console.log('🔗 Link de pagamento (PRODUÇÃO):', linkParaAbrir)
+                            var linkParaAbrir = assinaturaData.initPoint;
+                            console.log('🔗 Link de pagamento da assinatura:', linkParaAbrir)
                             
                             setLinkPagamento(linkParaAbrir);
-                            setPreferenceId(pagamentoData.preferenceId);
+                            setPreferenceId(assinaturaData.subscriptionId);
                             
-                            dadosPendentesTemp.preferenceId = pagamentoData.preferenceId;
+                            dadosPendentesTemp.subscriptionId = assinaturaData.subscriptionId;
+                            dadosPendentesTemp.preferenceId = assinaturaData.subscriptionId;
                             setDadosPendentes(dadosPendentesTemp);
                             
                             sessionStorage.setItem('cadastroPendente', JSON.stringify(dadosPendentesTemp));
@@ -3785,17 +3787,16 @@ function ResetarSenha(props) {
                             
                             window.scrollTo({ top: 0, behavior: 'smooth' });
                             
-                            // ===== CORREÇÃO CRÍTICA: REDIRECIONAR NA MESMA ABA =====
-                            // NÃO usar window.open com nova aba!
+                            // Redirecionar para o link de pagamento
                             setTimeout(function() {
                                 window.location.href = linkParaAbrir;
                             }, 500);
                         } else {
-                            throw new Error(pagamentoData.error || 'Erro ao criar pagamento');
+                            throw new Error(assinaturaData.error || 'Erro ao criar assinatura');
                         }
                     })
                     .catch(function(error) {
-                        console.error('❌ Erro ao criar preferência:', error);
+                        console.error('❌ Erro ao criar assinatura:', error);
                         setErro(error.message);
                         setLoading(false);
                         setEtapa('form');
