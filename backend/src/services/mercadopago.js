@@ -3,7 +3,7 @@ import pkg from 'mercadopago';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 
-const { MercadoPagoConfig, Preference, Payment, Customer, MerchantOrder, Subscription } = pkg;
+const { MercadoPagoConfig, Preference, Payment, Customer, MerchantOrder } = pkg;
 
 dotenv.config();
 
@@ -31,17 +31,188 @@ const preference = new Preference(client);
 const payment = new Payment(client);
 const customer = new Customer(client);
 const merchantOrder = new MerchantOrder(client);
-const subscription = new Subscription(client); // AGORA FUNCIONA
 
 // ========== CONSTANTES ==========
 const PLANO_MENSAL_ID = process.env.MP_PLAN_ID_MENSAL; // ID do plano criado na interface
 const VALOR_MENSAL = 9.90;
 
+// ========== FUNÇÕES PARA ASSINATURA USANDO API REST ==========
+
+/**
+ * Cria assinatura recorrente no Mercado Pago usando API REST
+ */
+export async function criarAssinaturaRecorrente({ email, nome, prestadorId, cpf }) {
+  try {
+    console.log(`📝 [${AMBIENTE}] Criando assinatura recorrente para: ${email}`);
+    console.log(`🏷️ Plano ID: ${PLANO_MENSAL_ID}`);
+    
+    if (!PLANO_MENSAL_ID) {
+      console.error('❌ MP_PLAN_ID_MENSAL não configurado!');
+      return { 
+        success: false, 
+        error: 'Plano de assinatura não configurado. Configure MP_PLAN_ID_MENSAL no .env' 
+      };
+    }
+    
+    // Usar API REST diretamente
+    const url = 'https://api.mercadopago.com/preapproval';
+    
+    const body = {
+      preapproval_plan_id: PLANO_MENSAL_ID,
+      reason: 'Plano Mensal SemLimites - Prestadores',
+      external_reference: `prestador_${prestadorId || 'novo'}_${Date.now()}`,
+      payer_email: email,
+      back_url: `${process.env.FRONTEND_URL || 'https://www.semlimitesprestadores.com.br'}/cadastro?retorno=sucesso`,
+      auto_recurring: {
+        frequency: 1,
+        frequency_type: 'months',
+        transaction_amount: VALOR_MENSAL,
+        currency_id: 'BRL'
+      },
+      status: 'pending'
+    };
+    
+    // Adicionar CPF se fornecido
+    if (cpf) {
+      body.payer = {
+        email: email,
+        name: nome,
+        identification: {
+          type: 'CPF',
+          number: cpf.replace(/\D/g, '')
+        }
+      };
+    }
+    
+    console.log('📤 Enviando para Mercado Pago (API REST):', JSON.stringify(body, null, 2));
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error('❌ Erro na API do Mercado Pago:', data);
+      throw new Error(data.message || 'Erro ao criar assinatura');
+    }
+    
+    console.log(`✅ Assinatura criada com ID: ${data.id}`);
+    console.log(`🔗 Link de pagamento: ${data.init_point}`);
+    
+    return {
+      success: true,
+      subscriptionId: data.id,
+      initPoint: data.init_point,
+      customerId: data.payer_id,
+      status: data.status,
+      ambiente: AMBIENTE
+    };
+    
+  } catch (error) {
+    console.error('❌ Erro ao criar assinatura recorrente:', error);
+    return {
+      success: false,
+      error: error.message,
+      details: error.cause || error
+    };
+  }
+}
+
+/**
+ * Busca status de uma assinatura recorrente
+ */
+export async function buscarStatusAssinatura(subscriptionId) {
+  try {
+    console.log(`🔍 [${AMBIENTE}] Buscando status da assinatura: ${subscriptionId}`);
+    
+    const url = `https://api.mercadopago.com/preapproval/${subscriptionId}`;
+    
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${ACCESS_TOKEN}`
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error('❌ Erro ao buscar assinatura:', data);
+      throw new Error(data.message || 'Erro ao buscar assinatura');
+    }
+    
+    console.log(`📊 Status: ${data.status}`);
+    
+    return {
+      success: true,
+      status: data.status,
+      nextPaymentDate: data.next_payment_date,
+      lastPaymentDate: data.last_payment_date,
+      paymentMethodId: data.payment_method_id,
+      externalReference: data.external_reference,
+      data: data
+    };
+    
+  } catch (error) {
+    console.error('❌ Erro ao buscar status da assinatura:', error);
+    return { 
+      success: false, 
+      error: error.message 
+    };
+  }
+}
+
+/**
+ * Cancela uma assinatura recorrente
+ */
+export async function cancelarAssinaturaRecorrente(subscriptionId) {
+  try {
+    console.log(`🔄 [${AMBIENTE}] Cancelando assinatura: ${subscriptionId}`);
+    
+    const url = `https://api.mercadopago.com/preapproval/${subscriptionId}`;
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ status: 'cancelled' })
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error('❌ Erro ao cancelar assinatura:', data);
+      throw new Error(data.message || 'Erro ao cancelar assinatura');
+    }
+    
+    console.log(`✅ Assinatura ${subscriptionId} cancelada com sucesso`);
+    
+    return {
+      success: true,
+      data: data,
+      message: 'Assinatura cancelada com sucesso'
+    };
+    
+  } catch (error) {
+    console.error('❌ Erro ao cancelar assinatura:', error);
+    return { 
+      success: false, 
+      error: error.message 
+    };
+  }
+}
+
 // ========== FUNÇÕES EXISTENTES (MANTIDAS) ==========
 
 /**
  * Cria preferência de pagamento para cadastro de prestador (PAGAMENTO ÚNICO)
- * Mantido para compatibilidade, mas recomendado usar criarAssinaturaRecorrente
  */
 export async function criarPreferenciaPublica({ email, nome, plano = 'mensal', valor = 9.90 }) {
   try {
@@ -108,160 +279,8 @@ export async function criarPreferenciaPublica({ email, nome, plano = 'mensal', v
   }
 }
 
-// ========== NOVAS FUNÇÕES PARA ASSINATURA RECORRENTE ==========
-
-/**
- * Cria assinatura recorrente no Mercado Pago (PAGAMENTO RECORRENTE)
- * @param {Object} dados - Dados da assinatura
- * @param {string} dados.email - Email do prestador
- * @param {string} dados.nome - Nome do prestador
- * @param {string} dados.prestadorId - ID do prestador (opcional, para renovação)
- * @param {string} dados.cpf - CPF do prestador (opcional)
- * @returns {Promise<Object>} Resultado da criação
- */
-export async function criarAssinaturaRecorrente({ email, nome, prestadorId, cpf }) {
-  try {
-    console.log(`📝 [${AMBIENTE}] Criando assinatura recorrente para: ${email}`);
-    console.log(`🏷️ Plano ID: ${PLANO_MENSAL_ID}`);
-    
-    if (!PLANO_MENSAL_ID) {
-      console.error('❌ MP_PLAN_ID_MENSAL não configurado!');
-      return { 
-        success: false, 
-        error: 'Plano de assinatura não configurado. Configure MP_PLAN_ID_MENSAL no .env' 
-      };
-    }
-    
-    // Buscar ou criar cliente no Mercado Pago
-    let customerId = null;
-    try {
-      const searchResponse = await customer.search({ email });
-      if (searchResponse.results && searchResponse.results.length > 0) {
-        customerId = searchResponse.results[0].id;
-        console.log(`👤 Cliente existente: ${customerId}`);
-      }
-    } catch (error) {
-      console.log('Cliente não encontrado, será criado na assinatura...');
-    }
-    
-    // Montar o corpo da requisição de assinatura
-    const body = {
-      preapproval_plan_id: PLANO_MENSAL_ID,
-      reason: 'Plano Mensal SemLimites - Prestadores',
-      external_reference: `prestador_${prestadorId || 'novo'}_${Date.now()}`,
-      payer_email: email,
-      back_url: `${process.env.FRONTEND_URL || 'https://www.semlimitesprestadores.com.br'}/cadastro?retorno=sucesso`,
-      auto_recurring: {
-        frequency: 1,
-        frequency_type: 'months',
-        transaction_amount: VALOR_MENSAL,
-        currency_id: 'BRL'
-      },
-      status: 'pending'
-    };
-    
-    // Adicionar payer_id se cliente existir
-    if (customerId) {
-      body.payer_id = customerId;
-    }
-    
-    // Adicionar CPF se fornecido
-    if (cpf) {
-      body.cardholder_identification = {
-        type: 'CPF',
-        number: cpf.replace(/\D/g, '')
-      };
-    }
-    
-    console.log('📤 Enviando para Mercado Pago:', JSON.stringify(body, null, 2));
-    
-    const response = await subscription.create({ body });
-    
-    console.log(`✅ Assinatura criada com ID: ${response.id}`);
-    console.log(`🔗 Link de pagamento: ${response.init_point}`);
-    
-    return {
-      success: true,
-      subscriptionId: response.id,
-      initPoint: response.init_point,
-      customerId: response.payer_id || customerId,
-      status: response.status,
-      ambiente: AMBIENTE
-    };
-    
-  } catch (error) {
-    console.error('❌ Erro ao criar assinatura recorrente:', error);
-    return {
-      success: false,
-      error: error.message,
-      details: error.cause || error
-    };
-  }
-}
-
-/**
- * Busca status de uma assinatura recorrente
- * @param {string} subscriptionId - ID da assinatura
- * @returns {Promise<Object>} Status da assinatura
- */
-export async function buscarStatusAssinatura(subscriptionId) {
-  try {
-    console.log(`🔍 [${AMBIENTE}] Buscando status da assinatura: ${subscriptionId}`);
-    
-    const response = await subscription.get({ id: subscriptionId });
-    
-    console.log(`📊 Status: ${response.status}`);
-    
-    return {
-      success: true,
-      status: response.status,
-      nextPaymentDate: response.next_payment_date,
-      lastPaymentDate: response.last_payment_date,
-      paymentMethodId: response.payment_method_id,
-      externalReference: response.external_reference,
-      data: response
-    };
-    
-  } catch (error) {
-    console.error('❌ Erro ao buscar status da assinatura:', error);
-    return { 
-      success: false, 
-      error: error.message 
-    };
-  }
-}
-
-/**
- * Cancela uma assinatura recorrente
- * @param {string} subscriptionId - ID da assinatura
- * @returns {Promise<Object>} Resultado do cancelamento
- */
-export async function cancelarAssinaturaRecorrente(subscriptionId) {
-  try {
-    console.log(`🔄 [${AMBIENTE}] Cancelando assinatura: ${subscriptionId}`);
-    
-    const response = await subscription.cancel({ id: subscriptionId });
-    
-    console.log(`✅ Assinatura ${subscriptionId} cancelada com sucesso`);
-    
-    return {
-      success: true,
-      data: response,
-      message: 'Assinatura cancelada com sucesso'
-    };
-    
-  } catch (error) {
-    console.error('❌ Erro ao cancelar assinatura:', error);
-    return { 
-      success: false, 
-      error: error.message 
-    };
-  }
-}
-
 /**
  * Processa notificação de pagamento/assinatura recebida via webhook
- * VERSÃO ATUALIZADA - Suporta tanto pagamento único quanto assinatura
  */
 export async function processarNotificacao(notificacao) {
   try {
@@ -483,6 +502,5 @@ export {
   preference, 
   payment, 
   customer, 
-  merchantOrder,
-  subscription
+  merchantOrder
 };
