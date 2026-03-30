@@ -291,7 +291,7 @@ export async function processarNotificacao(notificacao) {
     const { action, data, type, topic, resource } = notificacao;
     const tipoNotificacao = type || topic;
     
-    // ===== PROCESSAR ASSINATURA =====
+    // ===== PROCESSAR PLANO DE ASSINATURA =====
     if (tipoNotificacao === 'subscription' || tipoNotificacao === 'subscription_authorized_payment') {
       console.log('🔄 Processando evento de assinatura');
       
