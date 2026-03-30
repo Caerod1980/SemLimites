@@ -40,11 +40,19 @@ const VALOR_MENSAL = 9.90;
 
 /**
  * Cria assinatura recorrente no Mercado Pago usando API REST
+ * @param {Object} params - Parâmetros da assinatura
+ * @param {string} params.email - Email do prestador
+ * @param {string} params.nome - Nome do prestador
+ * @param {string} params.prestadorId - ID do prestador (opcional)
+ * @param {string} params.cpf - CPF do prestador (opcional)
+ * @param {string} params.cardTokenId - Token do cartão gerado pelo CardForm (OBRIGATÓRIO)
+ * @returns {Promise<Object>} Resultado da criação
  */
-export async function criarAssinaturaRecorrente({ email, nome, prestadorId, cpf }) {
+export async function criarAssinaturaRecorrente({ email, nome, prestadorId, cpf, cardTokenId }) {
   try {
     console.log(`📝 [${AMBIENTE}] Criando assinatura recorrente para: ${email}`);
     console.log(`🏷️ Plano ID: ${PLANO_MENSAL_ID}`);
+    console.log(`💳 Card Token: ${cardTokenId ? '✅ RECEBIDO' : '❌ NÃO RECEBIDO'}`);
     
     if (!PLANO_MENSAL_ID) {
       console.error('❌ MP_PLAN_ID_MENSAL não configurado!');
@@ -54,37 +62,48 @@ export async function criarAssinaturaRecorrente({ email, nome, prestadorId, cpf 
       };
     }
     
+    // ===== VALIDAÇÃO OBRIGATÓRIA: cardTokenId é necessário =====
+    if (!cardTokenId) {
+      console.error('❌ card_token_id não fornecido');
+      return { 
+        success: false, 
+        error: 'card_token_id é obrigatório para criar assinatura' 
+      };
+    }
+    
     // Usar API REST diretamente
     const url = 'https://api.mercadopago.com/preapproval';
     
+    // ===== CORREÇÃO: Body com card_token_id e status 'authorized' =====
     const body = {
       preapproval_plan_id: PLANO_MENSAL_ID,
       reason: 'Plano Mensal SemLimites - Prestadores',
       external_reference: `prestador_${prestadorId || 'novo'}_${Date.now()}`,
       payer_email: email,
-      back_url: `${process.env.FRONTEND_URL || 'https://www.semlimitesprestadores.com.br'}/cadastro?retorno=sucesso`,
+      card_token_id: cardTokenId,           // ← ADICIONADO: Token do cartão
       auto_recurring: {
         frequency: 1,
         frequency_type: 'months',
         transaction_amount: VALOR_MENSAL,
         currency_id: 'BRL'
       },
-      status: 'pending'
+      status: 'authorized'                  // ← ALTERADO: de 'pending' para 'authorized'
     };
     
-    // Adicionar CPF se fornecido
-    if (cpf) {
-      body.payer = {
-        email: email,
-        name: nome,
-        identification: {
-          type: 'CPF',
-          number: cpf.replace(/\D/g, '')
-        }
-      };
-    }
+    // Adicionar dados do pagador
+    body.payer = {
+      email: email,
+      name: nome,
+      identification: cpf ? {
+        type: 'CPF',
+        number: cpf.replace(/\D/g, '')
+      } : undefined
+    };
     
-    console.log('📤 Enviando para Mercado Pago (API REST):', JSON.stringify(body, null, 2));
+    console.log('📤 Enviando para Mercado Pago (API REST):', JSON.stringify({
+      ...body,
+      card_token_id: '***'  // Esconder token no log por segurança
+    }, null, 2));
     
     const response = await fetch(url, {
       method: 'POST',
@@ -103,15 +122,15 @@ export async function criarAssinaturaRecorrente({ email, nome, prestadorId, cpf 
     }
     
     console.log(`✅ Assinatura criada com ID: ${data.id}`);
-    console.log(`🔗 Link de pagamento: ${data.init_point}`);
+    console.log(`📊 Status: ${data.status}`);
     
     return {
       success: true,
       subscriptionId: data.id,
-      initPoint: data.init_point,
       customerId: data.payer_id,
       status: data.status,
       ambiente: AMBIENTE
+      // ⚠️ NÃO retornar initPoint - assinatura já está autorizada
     };
     
   } catch (error) {
