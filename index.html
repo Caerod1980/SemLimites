@@ -3300,99 +3300,99 @@ function gerarCardToken() {
                 modalDiv.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm';
                 modalDiv.style.overflowY = 'auto';
                 modalDiv.innerHTML = `
-                    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-fadeIn" style="max-height: 90vh; overflow-y: auto;">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-xl font-bold text-[#3d7a3d]">Dados do Cartão</h2>
-                            <button id="close-card-modal" class="text-slate-400 hover:text-slate-600 text-2xl leading-none" type="button">&times;</button>
-                        </div>
+                    <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-4 sm:p-5 animate-fadeIn" style="max-height: 88vh; overflow-y: auto;">
+    <div class="flex justify-between items-center mb-3">
+        <h2 class="text-lg font-bold text-[#3d7a3d]">Dados do Cartão</h2>
+        <button id="close-card-modal" class="text-slate-400 hover:text-slate-600 text-xl leading-none" type="button">&times;</button>
+    </div>
 
-                        <p class="text-sm text-[#4a8a4a] mb-6">
-                            Informe os dados do cartão para ativar sua assinatura mensal de R$ 9,90.
-                        </p>
+    <p class="text-xs sm:text-sm text-[#4a8a4a] mb-4">
+        Informe os dados do cartão para ativar sua assinatura mensal de R$ 9,90.
+    </p>
 
-                        <form id="form-checkout" class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">Número do cartão *</label>
-                                <div id="form-checkout__cardNumber" class="w-full px-3 py-3 rounded-xl border border-slate-200 bg-white"></div>
-                            </div>
+    <form id="form-checkout" class="space-y-3">
+        <div>
+            <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">Número do cartão *</label>
+            <div id="form-checkout__cardNumber" class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white flex items-center"></div>
+        </div>
 
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">Validade *</label>
-                                    <div id="form-checkout__expirationDate" class="w-full px-3 py-3 rounded-xl border border-slate-200 bg-white"></div>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">Código de segurança *</label>
-                                    <div id="form-checkout__securityCode" class="w-full px-3 py-3 rounded-xl border border-slate-200 bg-white"></div>
-                                </div>
-                            </div>
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">Validade *</label>
+                <div id="form-checkout__expirationDate" class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white flex items-center"></div>
+            </div>
+            <div>
+                <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">Código *</label>
+                <div id="form-checkout__securityCode" class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white flex items-center"></div>
+            </div>
+        </div>
 
-                            <div>
-                                <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">Nome no cartão *</label>
-                                <input
-                                    type="text"
-                                    id="form-checkout__cardholderName"
-                                    class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
-                                    placeholder="NOME COMO ESTÁ NO CARTÃO"
-                                />
-                            </div>
+        <div>
+            <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">Nome no cartão *</label>
+            <input
+                type="text"
+                id="form-checkout__cardholderName"
+                class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
+                placeholder="NOME COMO ESTÁ NO CARTÃO"
+            />
+        </div>
 
-                            <div>
-                                <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">E-mail *</label>
-                                <input
-                                    type="email"
-                                    id="form-checkout__cardholderEmail"
-                                    class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
-                                    placeholder="seuemail@exemplo.com"
-                                    value="${(formData && formData.email) ? String(formData.email).replace(/"/g, '&quot;') : ''}"
-                                />
-                            </div>
+        <div>
+            <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">E-mail *</label>
+            <input
+                type="email"
+                id="form-checkout__cardholderEmail"
+                class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
+                placeholder="seuemail@exemplo.com"
+                value="${(formData && formData.email) ? String(formData.email).replace(/"/g, '&quot;') : ''}"
+            />
+        </div>
 
-                            <div>
-                                <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">CPF *</label>
-                                <input
-                                    type="text"
-                                    id="form-checkout__identificationNumber"
-                                    class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
-                                    placeholder="000.000.000-00"
-                                />
-                            </div>
+        <div>
+            <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">CPF *</label>
+            <input
+                type="text"
+                id="form-checkout__identificationNumber"
+                class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
+                placeholder="000.000.000-00"
+            />
+        </div>
 
-                            <div>
-                                <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">Banco emissor</label>
-                                <select
-                                    id="form-checkout__issuer"
-                                    class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
-                                ></select>
-                            </div>
+        <div>
+            <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">Banco emissor</label>
+            <select
+                id="form-checkout__issuer"
+                class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
+            ></select>
+        </div>
 
-                            <div>
-                                <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">Parcelas</label>
-                                <select
-                                    id="form-checkout__installments"
-                                    class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
-                                ></select>
-                            </div>
+        <div>
+            <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">Parcelas</label>
+            <select
+                id="form-checkout__installments"
+                class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
+            ></select>
+        </div>
 
-                            <input type="hidden" id="form-checkout__paymentMethodId" />
-                            <input type="hidden" id="form-checkout__identificationType" value="CPF" />
+        <input type="hidden" id="form-checkout__paymentMethodId" />
+        <input type="hidden" id="form-checkout__identificationType" value="CPF" />
 
-                            <div id="card-error" class="text-red-500 text-xs hidden bg-red-50 p-2 rounded-lg"></div>
-                            <div id="card-success" class="text-emerald-600 text-xs hidden bg-emerald-50 p-2 rounded-lg"></div>
+        <div id="card-error" class="text-red-500 text-xs hidden bg-red-50 p-2 rounded-lg"></div>
+        <div id="card-success" class="text-emerald-600 text-xs hidden bg-emerald-50 p-2 rounded-lg"></div>
 
-                            <button
-                                type="submit"
-                                id="form-checkout__submit"
-                                class="w-full px-4 py-3 bg-gradient-to-r from-[#3d7a3d] to-[#60a060] text-white font-semibold rounded-xl hover:shadow-md transition"
-                            >
-                                Confirmar Pagamento
-                            </button>
-                        </form>
+        <button
+            type="submit"
+            id="form-checkout__submit"
+            class="w-full h-10 px-4 bg-gradient-to-r from-[#3d7a3d] to-[#60a060] text-white text-sm font-semibold rounded-xl hover:shadow-md transition"
+        >
+            Confirmar Pagamento
+        </button>
+    </form>
 
-                        <p class="text-xs text-slate-400 text-center mt-4">
-                            Seus dados são processados diretamente pelo Mercado Pago.
-                        </p>
-                    </div>
+    <p class="text-[11px] text-slate-400 text-center mt-3">
+        Seus dados são processados diretamente pelo Mercado Pago.
+    </p>
+</div>
                 `;
                 document.body.appendChild(modalDiv);
 
