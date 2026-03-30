@@ -27,7 +27,8 @@ router.post('/criar-assinatura', async (req, res) => {
   try {
     console.log('📝 Criando assinatura recorrente');
     
-    const { email, nome, plano, valor } = req.body;
+    // ===== CORREÇÃO: Aceitar card_token_id =====
+    const { email, nome, cpf, card_token_id } = req.body;
     
     if (!email || !nome) {
       return res.status(400).json({ 
@@ -36,16 +37,25 @@ router.post('/criar-assinatura', async (req, res) => {
       });
     }
     
+    // ===== NOVO: Validar card_token_id =====
+    if (!card_token_id) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'card_token_id é obrigatório para criar assinatura' 
+      });
+    }
+    
     // Verificar se já existe prestador com este email (para casos de renovação)
     const prestadorExistente = await Prestador.findOne({ email });
     const prestadorId = prestadorExistente?._id;
     
+    // ===== CORREÇÃO: Passar card_token_id para o serviço =====
     const resultado = await criarAssinatura({
       email,
       nome,
+      cpf,
       prestadorId,
-      plano: plano || 'mensal',
-      valor: valor || VALOR_MENSAL,
+      cardTokenId: card_token_id,  // ← NOVO
       planId: PLANO_MENSAL_ID
     });
     
@@ -62,25 +72,28 @@ router.post('/criar-assinatura', async (req, res) => {
       prestadorExistente.mercadoPago = prestadorExistente.mercadoPago || {};
       prestadorExistente.mercadoPago.subscriptionId = resultado.subscriptionId;
       prestadorExistente.mercadoPago.customerId = resultado.customerId;
-      prestadorExistente.planoStatus = 'pendente';
-      prestadorExistente.planoAtivo = false;
+      // ===== CORREÇÃO: Status já está 'ativo' porque a assinatura foi autorizada =====
+      prestadorExistente.planoStatus = 'ativo';
+      prestadorExistente.planoAtivo = true;
+      prestadorExistente.assinaturaAtivadaEm = new Date();
       
       // Verificar se o método existe
       if (typeof prestadorExistente.adicionarHistoricoPlano === 'function') {
         prestadorExistente.adicionarHistoricoPlano(
           'assinatura_criada',
-          `Assinatura criada - ID: ${resultado.subscriptionId}`,
+          `Assinatura criada e autorizada - ID: ${resultado.subscriptionId}`,
           { subscriptionId: resultado.subscriptionId }
         );
       }
       await prestadorExistente.save();
     }
     
+    // ===== CORREÇÃO: Retornar subscriptionId, NÃO initPoint =====
     res.json({
       success: true,
       subscriptionId: resultado.subscriptionId,
-      initPoint: resultado.initPoint,
-      message: 'Assinatura criada com sucesso'
+      message: 'Assinatura criada e autorizada com sucesso',
+      status: resultado.status
     });
     
   } catch (error) {
@@ -130,7 +143,7 @@ router.post('/criar-preferencia', async (req, res) => {
       success: true,
       preferenceId: resultado.preferenceId,
       initPoint: resultado.initPoint,
-      sandboxInitPoint: resultado.sandboxInitPoint,
+      sandboxInitPoint: resultado.sandbox_init_point,
       message: 'Preferência criada com sucesso'
     });
     
