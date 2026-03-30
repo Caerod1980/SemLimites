@@ -3156,950 +3156,956 @@ function ResetarSenha(props) {
     );
 }
 
-                           // ========== TELA DE CADASTRO COM PAGAMENTO (FLUXO CORRETO - COM CARD TOKEN) ==========
-        function CadastroPrestador(props) {
-            var onCadastroSucesso = props.onCadastroSucesso;
-            var onVoltar = props.onVoltar;
-            
-            var [categorias, setCategorias] = useState([]);
-            var [servicos, setServicos] = useState([]);
-            var [categoriaSelecionada, setCategoriaSelecionada] = useState('');
-            var [servicosSelecionados, setServicosSelecionados] = useState([]);
-            
-            var [formData, setFormData] = useState({
-                nome: '', 
-                email: '', 
-                senha: '',
-                confirmarSenha: '',
-                tipoPessoa: 'juridica',
-                cpf: '',
-                cnpj: '', 
-                responsavel: '',
-                cidade: '',
-                estado: 'SP',
-                whatsapp: '', 
-                telefone: '', 
-                descricao: '', 
-                tags: ''
+                          // ========== TELA DE CADASTRO COM PAGAMENTO (FLUXO CORRETO - COM CARD TOKEN) ==========
+function CadastroPrestador(props) {
+    var onCadastroSucesso = props.onCadastroSucesso;
+    var onVoltar = props.onVoltar;
+    
+    var [categorias, setCategorias] = useState([]);
+    var [servicos, setServicos] = useState([]);
+    var [categoriaSelecionada, setCategoriaSelecionada] = useState('');
+    var [servicosSelecionados, setServicosSelecionados] = useState([]);
+    
+    var [formData, setFormData] = useState({
+        nome: '', 
+        email: '', 
+        senha: '',
+        confirmarSenha: '',
+        tipoPessoa: 'juridica',
+        cpf: '',
+        cnpj: '', 
+        responsavel: '',
+        cidade: '',
+        estado: 'SP',
+        whatsapp: '', 
+        telefone: '', 
+        descricao: '', 
+        tags: ''
+    });
+    
+    var [etapa, setEtapa] = useState('form');
+    var [verificacaoCNPJ, setVerificacaoCNPJ] = useState(null);
+    var [loading, setLoading] = useState(false);
+    var [erro, setErro] = useState('');
+    
+    // ===== ESTADOS PARA PAGAMENTO COM CARTÃO =====
+    var [aceitouTermos, setAceitouTermos] = useState(false);
+    var [emailVerificado, setEmailVerificado] = useState(false);
+    var [cnpjVerificadoExistente, setCnpjVerificadoExistente] = useState(false);
+    var [dadosPendentes, setDadosPendentes] = useState(null);
+    var [gerandoToken, setGerandoToken] = useState(false);
+
+    var erroElement = null;
+    if (erro) {
+        erroElement = React.createElement('div', { className: "mb-4 p-3 rounded-lg bg-red-50 border border-red-200" },
+            React.createElement('p', { className: "text-sm text-red-600" }, erro)
+        );
+    }
+
+    // ===== VERIFICAÇÕES =====
+    function verificarEmail() {
+        if (!formData.email || formData.email.length < 5) return;
+        
+        setErro('');
+        fetch(API_URL + '/auth/verificar-email?email=' + encodeURIComponent(formData.email))
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.existe) {
+                    setErro('Este e-mail já está cadastrado. Use outro e-mail ou faça login.');
+                    setEmailVerificado(false);
+                } else {
+                    setEmailVerificado(true);
+                }
+            })
+            .catch(function(error) {
+                console.error('Erro ao verificar e-mail:', error);
             });
-            
-            var [etapa, setEtapa] = useState('form');
-            var [verificacaoCNPJ, setVerificacaoCNPJ] = useState(null);
-            var [loading, setLoading] = useState(false);
-            var [erro, setErro] = useState('');
-            
-            // ===== ESTADOS PARA PAGAMENTO COM CARTÃO =====
-            var [aceitouTermos, setAceitouTermos] = useState(false);
-            var [preferenceId, setPreferenceId] = useState(null);
-            var [mp, setMp] = useState(null);
-            var [carregandoMP, setCarregandoMP] = useState(false);
-            var [emailVerificado, setEmailVerificado] = useState(false);
-            var [cnpjVerificadoExistente, setCnpjVerificadoExistente] = useState(false);
-            var [dadosPendentes, setDadosPendentes] = useState(null);
-            var [mostrarFormularioCartao, setMostrarFormularioCartao] = useState(false);
-            var [gerandoToken, setGerandoToken] = useState(false);
+    }
 
-            var erroElement = null;
-            if (erro) {
-                erroElement = React.createElement('div', { className: "mb-4 p-3 rounded-lg bg-red-50 border border-red-200" },
-                    React.createElement('p', { className: "text-sm text-red-600" }, erro)
-                );
-            }
-
-            // ===== VERIFICAÇÕES =====
-            function verificarEmail() {
-                if (!formData.email || formData.email.length < 5) return;
-                
-                setErro('');
-                fetch(API_URL + '/auth/verificar-email?email=' + encodeURIComponent(formData.email))
-                    .then(function(response) { return response.json(); })
-                    .then(function(data) {
-                        if (data.existe) {
-                            setErro('Este e-mail já está cadastrado. Use outro e-mail ou faça login.');
-                            setEmailVerificado(false);
-                        } else {
-                            setEmailVerificado(true);
-                        }
-                    })
-                    .catch(function(error) {
-                        console.error('Erro ao verificar e-mail:', error);
-                    });
-            }
-
-            function verificarCNPJExistente() {
-                if (!formData.cnpj || formData.tipoPessoa !== 'juridica') return;
-                
-                var cnpjNumeros = formData.cnpj.replace(/\D/g, '');
-                if (cnpjNumeros.length !== 14) return;
-                
-                fetch(API_URL + '/auth/verificar-cnpj?cnpj=' + cnpjNumeros)
-                    .then(function(response) { return response.json(); })
-                    .then(function(data) {
-                        if (data.existe) {
-                            setErro('Este CNPJ já está cadastrado no sistema.');
-                            setCnpjVerificadoExistente(false);
-                        } else {
-                            setCnpjVerificadoExistente(true);
-                        }
-                    })
-                    .catch(function(error) {
-                        console.error('Erro ao verificar CNPJ:', error);
-                    });
-            }
-
-            // ===== CARREGAR CATEGORIAS =====
-            useEffect(function() {
-                fetch(API_URL + '/categorias/principais')
-                    .then(function(response) { return response.json(); })
-                    .then(function(data) {
-                        setCategorias(data);
-                    })
-                    .catch(function(err) {
-                        console.error('Erro ao carregar categorias:', err);
-                    });
-            }, []);
-
-            useEffect(function() {
-                if (categoriaSelecionada) {
-                    fetch(API_URL + '/categorias/' + categoriaSelecionada + '/servicos')
-                        .then(function(response) { return response.json(); })
-                        .then(function(data) {
-                            setServicos(data);
-                            setServicosSelecionados([]);
-                        })
-                        .catch(function(err) {
-                            console.error('Erro ao carregar serviços:', err);
-                        });
+    function verificarCNPJExistente() {
+        if (!formData.cnpj || formData.tipoPessoa !== 'juridica') return;
+        
+        var cnpjNumeros = formData.cnpj.replace(/\D/g, '');
+        if (cnpjNumeros.length !== 14) return;
+        
+        fetch(API_URL + '/auth/verificar-cnpj?cnpj=' + cnpjNumeros)
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.existe) {
+                    setErro('Este CNPJ já está cadastrado no sistema.');
+                    setCnpjVerificadoExistente(false);
                 } else {
-                    setServicos([]);
-                    setServicosSelecionados([]);
+                    setCnpjVerificadoExistente(true);
                 }
-            }, [categoriaSelecionada]);
+            })
+            .catch(function(error) {
+                console.error('Erro ao verificar CNPJ:', error);
+            });
+    }
 
-            // ===== FUNÇÃO PARA GERAR CARD TOKEN =====
-            function gerarCardToken() {
-                return new Promise(function(resolve, reject) {
-                    // Buscar chave pública da API
-                    fetch(API_URL + '/mercadopago/public-key')
-                        .then(function(response) { return response.json(); })
-                        .then(function(data) {
-                            if (!data.publicKey) {
-                                reject(new Error('Chave pública não encontrada'));
-                                return;
-                            }
-                            
-                            // Inicializar Mercado Pago
-                            var mpInstance = new window.MercadoPago(data.publicKey);
-                            
-                            // Criar formulário de cartão
-                            var cardForm = mpInstance.cardForm({
-                                amount: '9.90',
-                                iframe: true,
-                                form: {
-                                    id: 'card-form',
-                                    cardNumber: {
-                                        id: 'cardNumber',
-                                        placeholder: 'Número do cartão',
-                                    },
-                                    securityCode: {
-                                        id: 'securityCode',
-                                        placeholder: 'Código de segurança',
-                                    },
-                                    expirationMonth: {
-                                        id: 'expirationMonth',
-                                        placeholder: 'Mês',
-                                    },
-                                    expirationYear: {
-                                        id: 'expirationYear',
-                                        placeholder: 'Ano',
-                                    },
-                                    cardholderName: {
-                                        id: 'cardholderName',
-                                        placeholder: 'Nome no cartão',
-                                    },
-                                    identificationType: {
-                                        id: 'identificationType',
-                                    },
-                                    identificationNumber: {
-                                        id: 'identificationNumber',
-                                        placeholder: 'CPF',
-                                    },
-                                },
-                                callbacks: {
-                                    onFormMounted: function(error) {
-                                        if (error) {
-                                            reject(error);
-                                            return;
-                                        }
-                                        console.log('✅ CardForm montado');
-                                    },
-                                    onSubmit: function(event) {
-                                        event.preventDefault();
-                                        console.log('✅ Token do cartão gerado');
-                                        resolve(event.card_token);
-                                    },
-                                    onError: function(error) {
-                                        console.error('❌ Erro no card form:', error);
-                                        reject(error);
-                                    }
-                                }
-                            });
-                            
-                            // Mostrar o formulário
-                            setMostrarFormularioCartao(true);
-                        })
-                        .catch(function(error) {
-                            reject(error);
-                        });
-                });
-            }
+    // ===== CARREGAR CATEGORIAS =====
+    useEffect(function() {
+        fetch(API_URL + '/categorias/principais')
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                setCategorias(data);
+            })
+            .catch(function(err) {
+                console.error('Erro ao carregar categorias:', err);
+            });
+    }, []);
 
-            // ===== FUNÇÃO PARA CRIAR PRESTADOR APÓS PAGAMENTO =====
-            function criarPrestadorAposPagamento() {
-                console.log('🚀 FUNÇÃO criarPrestadorAposPagamento FOI CHAMADA!');
-                
-                var dadosSalvos = sessionStorage.getItem('cadastroPendente');
-                
-                if (!dadosSalvos) {
-                    console.error('❌ Dados de cadastro não encontrados no sessionStorage');
-                    setErro('Erro ao finalizar cadastro. Entre em contato com o suporte.');
-                    setEtapa('form');
-                    return;
-                }
-                
-                var dados = JSON.parse(dadosSalvos);
-                console.log('📦 Dados recuperados:', { nome: dados.nome, email: dados.email, subscriptionId: dados.subscriptionId });
-                
-                var dadosEnvio = {
-                    nome: dados.nome,
-                    email: dados.email,
-                    senha: dados.senha,
-                    tipo: 'prestador',
-                    tipoPessoa: dados.tipoPessoa,
-                    cidade: dados.cidade,
-                    estado: dados.estado,
-                    whatsapp: dados.whatsapp,
-                    telefone: dados.telefone || '',
-                    descricao: dados.descricao || '',
-                    tags: dados.tags || [],
-                    categoriaPrincipal: dados.categoriaPrincipal,
-                    servicos: dados.servicos,
-                    aceitouTermos: true,
-                    subscriptionId: dados.subscriptionId,
-                    planoStatus: 'ativo',
-                    planoAtivo: true,
-                    assinaturaAtivadaEm: new Date().toISOString()
-                };
-                
-                if (dados.tipoPessoa === 'fisica') {
-                    dadosEnvio.cpf = dados.cpf;
-                } else {
-                    dadosEnvio.cnpj = dados.cnpj;
-                    dadosEnvio.responsavel = dados.responsavel;
-                    if (dados.cnpjVerificado) {
-                        dadosEnvio.cnpjVerificado = true;
-                        dadosEnvio.razaoSocialVerificada = dados.razaoSocialVerificada;
-                    }
-                }
-                
-                console.log('📤 Enviando requisição para /auth/register');
-                
-                fetch(API_URL + '/auth/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(dadosEnvio)
-                })
-                    .then(function(response) { 
-                        if (!response.ok) {
-                            return response.json().then(function(err) { 
-                                throw new Error(err.error || 'Erro no cadastro'); 
-                            });
-                        }
-                        return response.json(); 
-                    })
-                    .then(function(registerData) {
-                        if (registerData.error) {
-                            throw new Error(registerData.error);
-                        }
-                        
-                        console.log('✅ Prestador cadastrado com sucesso!');
-                        console.log('📋 Dados do prestador:', registerData.user);
-                        
-                        localStorage.setItem('token', registerData.token);
-                        localStorage.setItem('user', JSON.stringify(registerData.user));
-                        
-                        sessionStorage.removeItem('cadastroPendente');
-                        sessionStorage.removeItem('subscriptionId');
-                        setDadosPendentes(null);
-                        
-                        setEtapa('sucesso');
-                        setLoading(false);
-                        
-                        setTimeout(function() {
-                            window.location.href = BASE_PATH + '/dashboard';
-                        }, 2000);
-                    })
-                    .catch(function(error) {
-                        console.error('❌ Erro no cadastro:', error);
-                        setErro('Erro ao finalizar cadastro. Entre em contato com o suporte.');
-                        setEtapa('form');
-                    });
-            }
-
-            // ===== FUNÇÕES DE FORMATAÇÃO =====
-            function formatarCPF(valor) {
-                var numeros = valor.replace(/\D/g, '');
-                if (numeros.length <= 11) {
-                    return numeros.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
-                }
-                return valor;
-            }
-
-            function formatarCNPJ(valor) {
-                var numeros = valor.replace(/\D/g, '');
-                if (numeros.length <= 14) {
-                    return numeros.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
-                }
-                return valor;
-            }
-
-            function formatarWhatsApp(valor) {
-                var numeros = valor.replace(/\D/g, '');
-                if (numeros.length <= 11) {
-                    return numeros.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
-                }
-                return valor;
-            }
-
-            function handleChange(e) {
-                var name = e.target.name;
-                var value = e.target.value;
-                
-                if (name === 'cpf') {
-                    setFormData({ ...formData, cpf: formatarCPF(value) });
-                } else if (name === 'cnpj') {
-                    setFormData({ ...formData, cnpj: formatarCNPJ(value) });
-                } else if (name === 'whatsapp') {
-                    setFormData({ ...formData, whatsapp: formatarWhatsApp(value) });
-                } else {
-                    setFormData({ ...formData, [name]: value });
-                }
-            }
-
-            function verificarCNPJ() {
-                var cnpjNumeros = formData.cnpj.replace(/\D/g, '');
-                if (cnpjNumeros.length !== 14) {
-                    setErro('CNPJ inválido. Deve conter 14 dígitos.');
-                    return;
-                }
-
-                setErro('');
-                setVerificacaoCNPJ('verificando');
-
-                fetch(API_URL + '/prestadores/verificar-cnpj', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ cnpj: formData.cnpj })
-                })
-                .then(function(response) { 
-                    if (!response.ok) {
-                        return response.json().then(function(err) {
-                            throw new Error(err.motivo || 'Erro na consulta');
-                        });
-                    }
-                    return response.json(); 
-                })
+    useEffect(function() {
+        if (categoriaSelecionada) {
+            fetch(API_URL + '/categorias/' + categoriaSelecionada + '/servicos')
+                .then(function(response) { return response.json(); })
                 .then(function(data) {
-                    if (data.valido) {
-                        setVerificacaoCNPJ({
-                            status: 'ativo',
-                            razaoSocial: data.empresa.razaoSocial,
-                            cnpj: formData.cnpj
-                        });
-                        setFormData(function(prev) {
-                            return { ...prev, nome: data.empresa.razaoSocial || prev.nome };
-                        });
-                    } else {
-                        setVerificacaoCNPJ({
-                            status: 'inativo',
-                            mensagem: data.motivo || 'CNPJ com situação irregular'
-                        });
+                    setServicos(data);
+                    setServicosSelecionados([]);
+                })
+                .catch(function(err) {
+                    console.error('Erro ao carregar serviços:', err);
+                });
+        } else {
+            setServicos([]);
+            setServicosSelecionados([]);
+        }
+    }, [categoriaSelecionada]);
+
+    // ===== FUNÇÃO PARA GERAR CARD TOKEN COM MODAL =====
+    function gerarCardToken() {
+        return new Promise(function(resolve, reject) {
+            // Buscar chave pública da API
+            fetch(API_URL + '/mercadopago/public-key')
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    if (!data.publicKey) {
+                        reject(new Error('Chave pública não encontrada'));
+                        return;
                     }
+                    
+                    // Inicializar Mercado Pago
+                    var mpInstance = new window.MercadoPago(data.publicKey);
+                    
+                    // Criar modal para o formulário de cartão
+                    var modalDiv = document.createElement('div');
+                    modalDiv.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm';
+                    modalDiv.innerHTML = `
+                        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-fadeIn">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-[#3d7a3d]">Dados do Cartão</h2>
+                                <button id="close-card-modal" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+                            </div>
+                            <p class="text-sm text-[#4a8a4a] mb-6">Informe os dados do cartão para ativar sua assinatura mensal de R$ 9,90.</p>
+                            <form id="card-form" class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">Número do cartão</label>
+                                    <div id="cardNumber" class="w-full px-3 py-2 rounded-lg border border-[#c0dfc0] bg-white"></div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">Mês</label>
+                                        <div id="expirationMonth" class="w-full px-3 py-2 rounded-lg border border-[#c0dfc0] bg-white"></div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">Ano</label>
+                                        <div id="expirationYear" class="w-full px-3 py-2 rounded-lg border border-[#c0dfc0] bg-white"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">Código de segurança</label>
+                                    <div id="securityCode" class="w-full px-3 py-2 rounded-lg border border-[#c0dfc0] bg-white"></div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">Nome no cartão</label>
+                                    <div id="cardholderName" class="w-full px-3 py-2 rounded-lg border border-[#c0dfc0] bg-white"></div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">CPF</label>
+                                    <div id="identificationNumber" class="w-full px-3 py-2 rounded-lg border border-[#c0dfc0] bg-white"></div>
+                                </div>
+                                <input type="hidden" id="identificationType" value="CPF">
+                                <button type="button" id="submit-card" class="w-full px-4 py-3 bg-gradient-to-r from-[#3d7a3d] to-[#60a060] text-white font-semibold rounded-xl hover:shadow-md transition">
+                                    Confirmar Pagamento
+                                </button>
+                            </form>
+                            <p class="text-xs text-slate-400 text-center mt-4">
+                                Seus dados são processados diretamente pelo Mercado Pago.
+                            </p>
+                        </div>
+                    `;
+                    document.body.appendChild(modalDiv);
+                    
+                    // Fechar modal ao clicar no X
+                    document.getElementById('close-card-modal').addEventListener('click', function() {
+                        modalDiv.remove();
+                        reject(new Error('Usuário cancelou o pagamento'));
+                    });
+                    
+                    // Fechar modal ao clicar fora
+                    modalDiv.addEventListener('click', function(e) {
+                        if (e.target === modalDiv) {
+                            modalDiv.remove();
+                            reject(new Error('Usuário cancelou o pagamento'));
+                        }
+                    });
+                    
+                    // Criar card form
+                    var cardForm = mpInstance.cardForm({
+                        amount: '9.90',
+                        iframe: true,
+                        form: {
+                            id: 'card-form',
+                            cardNumber: { id: 'cardNumber' },
+                            securityCode: { id: 'securityCode' },
+                            expirationMonth: { id: 'expirationMonth' },
+                            expirationYear: { id: 'expirationYear' },
+                            cardholderName: { id: 'cardholderName' },
+                            identificationType: { id: 'identificationType' },
+                            identificationNumber: { id: 'identificationNumber' }
+                        },
+                        callbacks: {
+                            onFormMounted: function(error) {
+                                if (error) {
+                                    console.error('❌ Erro ao montar formulário:', error);
+                                    modalDiv.remove();
+                                    reject(error);
+                                } else {
+                                    console.log('✅ CardForm montado');
+                                }
+                            },
+                            onSubmit: function(event) {
+                                event.preventDefault();
+                                console.log('✅ Token do cartão gerado');
+                                var token = event.card_token;
+                                modalDiv.remove();
+                                resolve(token);
+                            },
+                            onError: function(error) {
+                                console.error('❌ Erro no card form:', error);
+                                modalDiv.remove();
+                                reject(error);
+                            }
+                        }
+                    });
+                    
+                    // Configurar botão de submit
+                    document.getElementById('submit-card').addEventListener('click', function() {
+                        var submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                        document.getElementById('card-form').dispatchEvent(submitEvent);
+                    });
+                    
                 })
                 .catch(function(error) {
-                    console.error('Erro ao verificar CNPJ:', error);
-                    setVerificacaoCNPJ({
-                        status: 'erro',
-                        mensagem: error.message || 'Erro ao verificar CNPJ'
+                    reject(error);
+                });
+        });
+    }
+
+    // ===== FUNÇÃO PARA CRIAR PRESTADOR APÓS PAGAMENTO =====
+    function criarPrestadorAposPagamento() {
+        console.log('🚀 FUNÇÃO criarPrestadorAposPagamento FOI CHAMADA!');
+        
+        var dadosSalvos = sessionStorage.getItem('cadastroPendente');
+        
+        if (!dadosSalvos) {
+            console.error('❌ Dados de cadastro não encontrados no sessionStorage');
+            setErro('Erro ao finalizar cadastro. Entre em contato com o suporte.');
+            setEtapa('form');
+            return;
+        }
+        
+        var dados = JSON.parse(dadosSalvos);
+        console.log('📦 Dados recuperados:', { nome: dados.nome, email: dados.email, subscriptionId: dados.subscriptionId });
+        
+        var dadosEnvio = {
+            nome: dados.nome,
+            email: dados.email,
+            senha: dados.senha,
+            tipo: 'prestador',
+            tipoPessoa: dados.tipoPessoa,
+            cidade: dados.cidade,
+            estado: dados.estado,
+            whatsapp: dados.whatsapp,
+            telefone: dados.telefone || '',
+            descricao: dados.descricao || '',
+            tags: dados.tags || [],
+            categoriaPrincipal: dados.categoriaPrincipal,
+            servicos: dados.servicos,
+            aceitouTermos: true,
+            subscriptionId: dados.subscriptionId,
+            planoStatus: 'ativo',
+            planoAtivo: true,
+            assinaturaAtivadaEm: new Date().toISOString()
+        };
+        
+        if (dados.tipoPessoa === 'fisica') {
+            dadosEnvio.cpf = dados.cpf;
+        } else {
+            dadosEnvio.cnpj = dados.cnpj;
+            dadosEnvio.responsavel = dados.responsavel;
+            if (dados.cnpjVerificado) {
+                dadosEnvio.cnpjVerificado = true;
+                dadosEnvio.razaoSocialVerificada = dados.razaoSocialVerificada;
+            }
+        }
+        
+        console.log('📤 Enviando requisição para /auth/register');
+        
+        fetch(API_URL + '/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dadosEnvio)
+        })
+            .then(function(response) { 
+                if (!response.ok) {
+                    return response.json().then(function(err) { 
+                        throw new Error(err.error || 'Erro no cadastro'); 
                     });
+                }
+                return response.json(); 
+            })
+            .then(function(registerData) {
+                if (registerData.error) {
+                    throw new Error(registerData.error);
+                }
+                
+                console.log('✅ Prestador cadastrado com sucesso!');
+                console.log('📋 Dados do prestador:', registerData.user);
+                
+                localStorage.setItem('token', registerData.token);
+                localStorage.setItem('user', JSON.stringify(registerData.user));
+                
+                sessionStorage.removeItem('cadastroPendente');
+                sessionStorage.removeItem('subscriptionId');
+                setDadosPendentes(null);
+                
+                setEtapa('sucesso');
+                setLoading(false);
+                
+                setTimeout(function() {
+                    window.location.href = BASE_PATH + '/dashboard';
+                }, 2000);
+            })
+            .catch(function(error) {
+                console.error('❌ Erro no cadastro:', error);
+                setErro('Erro ao finalizar cadastro. Entre em contato com o suporte.');
+                setEtapa('form');
+                setLoading(false);
+            });
+    }
+
+    // ===== FUNÇÕES DE FORMATAÇÃO =====
+    function formatarCPF(valor) {
+        var numeros = valor.replace(/\D/g, '');
+        if (numeros.length <= 11) {
+            return numeros.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+        }
+        return valor;
+    }
+
+    function formatarCNPJ(valor) {
+        var numeros = valor.replace(/\D/g, '');
+        if (numeros.length <= 14) {
+            return numeros.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+        }
+        return valor;
+    }
+
+    function formatarWhatsApp(valor) {
+        var numeros = valor.replace(/\D/g, '');
+        if (numeros.length <= 11) {
+            return numeros.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+        }
+        return valor;
+    }
+
+    function handleChange(e) {
+        var name = e.target.name;
+        var value = e.target.value;
+        
+        if (name === 'cpf') {
+            setFormData({ ...formData, cpf: formatarCPF(value) });
+        } else if (name === 'cnpj') {
+            setFormData({ ...formData, cnpj: formatarCNPJ(value) });
+        } else if (name === 'whatsapp') {
+            setFormData({ ...formData, whatsapp: formatarWhatsApp(value) });
+        } else {
+            setFormData({ ...formData, [name]: value });
+        }
+    }
+
+    function verificarCNPJ() {
+        var cnpjNumeros = formData.cnpj.replace(/\D/g, '');
+        if (cnpjNumeros.length !== 14) {
+            setErro('CNPJ inválido. Deve conter 14 dígitos.');
+            return;
+        }
+
+        setErro('');
+        setVerificacaoCNPJ('verificando');
+
+        fetch(API_URL + '/prestadores/verificar-cnpj', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cnpj: formData.cnpj })
+        })
+        .then(function(response) { 
+            if (!response.ok) {
+                return response.json().then(function(err) {
+                    throw new Error(err.motivo || 'Erro na consulta');
                 });
             }
+            return response.json(); 
+        })
+        .then(function(data) {
+            if (data.valido) {
+                setVerificacaoCNPJ({
+                    status: 'ativo',
+                    razaoSocial: data.empresa.razaoSocial,
+                    cnpj: formData.cnpj
+                });
+                setFormData(function(prev) {
+                    return { ...prev, nome: data.empresa.razaoSocial || prev.nome };
+                });
+            } else {
+                setVerificacaoCNPJ({
+                    status: 'inativo',
+                    mensagem: data.motivo || 'CNPJ com situação irregular'
+                });
+            }
+        })
+        .catch(function(error) {
+            console.error('Erro ao verificar CNPJ:', error);
+            setVerificacaoCNPJ({
+                status: 'erro',
+                mensagem: error.message || 'Erro ao verificar CNPJ'
+            });
+        });
+    }
 
-            // ===== FUNÇÃO handleSubmit (COM CARD TOKEN) =====
-            async function handleSubmit(e) {
-                e.preventDefault();
-                
-                if (!categoriaSelecionada) {
-                    setErro('Selecione uma categoria principal');
-                    return;
-                }
+    // ===== FUNÇÃO handleSubmit (COM CARD TOKEN) =====
+    async function handleSubmit(e) {
+        e.preventDefault();
+        
+        if (!categoriaSelecionada) {
+            setErro('Selecione uma categoria principal');
+            return;
+        }
 
-                if (servicosSelecionados.length === 0) {
-                    setErro('Selecione pelo menos um serviço');
-                    return;
-                }
-                
-                if (!aceitouTermos) {
-                    setErro('Você precisa aceitar os Termos de Uso para continuar.');
-                    return;
-                }
-                
-                setLoading(true);
-                setErro('');
+        if (servicosSelecionados.length === 0) {
+            setErro('Selecione pelo menos um serviço');
+            return;
+        }
+        
+        if (!aceitouTermos) {
+            setErro('Você precisa aceitar os Termos de Uso para continuar.');
+            return;
+        }
+        
+        setLoading(true);
+        setErro('');
 
-                if (formData.senha.length < 6) {
-                    setErro('A senha deve ter pelo menos 6 caracteres');
-                    setLoading(false);
-                    return;
-                }
-                
-                if (formData.senha !== formData.confirmarSenha) {
-                    setErro('As senhas não coincidem');
-                    setLoading(false);
-                    return;
-                }
-                
-                var whatsappNumeros = formData.whatsapp.replace(/\D/g, '');
-                if (whatsappNumeros.length < 10 || whatsappNumeros.length > 11) {
-                    setErro('WhatsApp inválido. Digite um número com DDD');
-                    setLoading(false);
-                    return;
-                }
+        if (formData.senha.length < 6) {
+            setErro('A senha deve ter pelo menos 6 caracteres');
+            setLoading(false);
+            return;
+        }
+        
+        if (formData.senha !== formData.confirmarSenha) {
+            setErro('As senhas não coincidem');
+            setLoading(false);
+            return;
+        }
+        
+        var whatsappNumeros = formData.whatsapp.replace(/\D/g, '');
+        if (whatsappNumeros.length < 10 || whatsappNumeros.length > 11) {
+            setErro('WhatsApp inválido. Digite um número com DDD');
+            setLoading(false);
+            return;
+        }
 
-                if (formData.tipoPessoa === 'fisica') {
-                    var cpfNumeros = formData.cpf.replace(/\D/g, '');
-                    if (cpfNumeros.length !== 11) {
-                        setErro('CPF inválido');
-                        setLoading(false);
-                        return;
-                    }
-                } else {
-                    var cnpjNumeros = formData.cnpj.replace(/\D/g, '');
-                    if (cnpjNumeros.length !== 14) {
-                        setErro('CNPJ inválido');
-                        setLoading(false);
-                        return;
-                    }
-                }
+        var cpfNumeros = null;
+        var cnpjNumeros = null;
+        
+        if (formData.tipoPessoa === 'fisica') {
+            cpfNumeros = formData.cpf.replace(/\D/g, '');
+            if (cpfNumeros.length !== 11) {
+                setErro('CPF inválido');
+                setLoading(false);
+                return;
+            }
+        } else {
+            cnpjNumeros = formData.cnpj.replace(/\D/g, '');
+            if (cnpjNumeros.length !== 14) {
+                setErro('CNPJ inválido');
+                setLoading(false);
+                return;
+            }
+        }
 
-                var dadosPendentesTemp = {
-                    nome: formData.nome,
+        var dadosPendentesTemp = {
+            nome: formData.nome,
+            email: formData.email,
+            senha: formData.senha,
+            tipoPessoa: formData.tipoPessoa,
+            cidade: formData.cidade,
+            estado: formData.estado,
+            whatsapp: whatsappNumeros,
+            telefone: formData.telefone,
+            descricao: formData.descricao || '',
+            tags: formData.tags.split(',').map(function(t) { return t.trim(); }).filter(function(t) { return t; }),
+            categoriaPrincipal: categoriaSelecionada,
+            servicos: servicosSelecionados
+        };
+
+        if (formData.tipoPessoa === 'fisica') {
+            dadosPendentesTemp.cpf = cpfNumeros;
+        } else {
+            dadosPendentesTemp.cnpj = cnpjNumeros;
+            dadosPendentesTemp.responsavel = formData.responsavel;
+            
+            if (verificacaoCNPJ && verificacaoCNPJ.status === 'ativo') {
+                dadosPendentesTemp.cnpjVerificado = true;
+                dadosPendentesTemp.razaoSocialVerificada = verificacaoCNPJ.razaoSocial;
+            }
+        }
+
+        console.log('📤 Dados de cadastro salvos (aguardando token do cartão)');
+        setEtapa('processando');
+        
+        // Salvar dados temporariamente
+        sessionStorage.setItem('cadastroPendente', JSON.stringify(dadosPendentesTemp));
+        
+        try {
+            // Gerar token do cartão
+            console.log('💳 Solicitando token do cartão...');
+            setGerandoToken(true);
+            
+            var cardToken = await gerarCardToken();
+            
+            setGerandoToken(false);
+            console.log('✅ Token do cartão gerado:', cardToken);
+            
+            // Criar assinatura com o token
+            console.log('📝 Criando assinatura com token...');
+            
+            const response = await fetch(API_URL + '/assinatura/criar-assinatura', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
                     email: formData.email,
-                    senha: formData.senha,
-                    tipoPessoa: formData.tipoPessoa,
-                    cidade: formData.cidade,
-                    estado: formData.estado,
-                    whatsapp: whatsappNumeros,
-                    telefone: formData.telefone,
-                    descricao: formData.descricao || '',
-                    tags: formData.tags.split(',').map(function(t) { return t.trim(); }).filter(function(t) { return t; }),
-                    categoriaPrincipal: categoriaSelecionada,
-                    servicos: servicosSelecionados
-                };
-
-                if (formData.tipoPessoa === 'fisica') {
-                    dadosPendentesTemp.cpf = formData.cpf.replace(/\D/g, '');
-                } else {
-                    dadosPendentesTemp.cnpj = formData.cnpj.replace(/\D/g, '');
-                    dadosPendentesTemp.responsavel = formData.responsavel;
-                    
-                    if (verificacaoCNPJ && verificacaoCNPJ.status === 'ativo') {
-                        dadosPendentesTemp.cnpjVerificado = true;
-                        dadosPendentesTemp.razaoSocialVerificada = verificacaoCNPJ.razaoSocial;
-                    }
-                }
-
-                console.log('📤 Dados de cadastro salvos (aguardando token do cartão)');
-                setEtapa('processando');
-                
-                // Salvar dados temporariamente
-                sessionStorage.setItem('cadastroPendente', JSON.stringify(dadosPendentesTemp));
-                
-                try {
-                    // Gerar token do cartão
-                    console.log('💳 Solicitando token do cartão...');
-                    setGerandoToken(true);
-                    
-                    var cardToken = await gerarCardToken();
-                    
-                    setGerandoToken(false);
-                    console.log('✅ Token do cartão gerado:', cardToken);
-                    
-                    // Criar assinatura com o token
-                    console.log('📝 Criando assinatura com token...');
-                    
-                    const response = await fetch(API_URL + '/assinatura/criar-assinatura', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            email: formData.email,
-                            nome: formData.nome,
-                            cpf: formData.tipoPessoa === 'fisica' ? cpfNumeros : null,
-                            card_token_id: cardToken
-                        })
-                    });
-                    
-                    const assinaturaData = await response.json();
-                    
-                    if (!response.ok || !assinaturaData.success) {
-                        throw new Error(assinaturaData.error || 'Erro ao criar assinatura');
-                    }
-                    
-                    console.log('✅ Assinatura criada com sucesso:', assinaturaData);
-                    
-                    // Salvar subscriptionId
-                    sessionStorage.setItem('subscriptionId', assinaturaData.subscriptionId);
-                    dadosPendentesTemp.subscriptionId = assinaturaData.subscriptionId;
-                    sessionStorage.setItem('cadastroPendente', JSON.stringify(dadosPendentesTemp));
-                    
-                    // Mostrar mensagem de sucesso e criar prestador
-                    alert('✅ Assinatura criada com sucesso! Seu cadastro será ativado imediatamente.');
-                    criarPrestadorAposPagamento();
-                    
-                } catch (error) {
-                    console.error('❌ Erro ao processar pagamento:', error);
-                    setErro(error.message || 'Erro ao processar pagamento. Tente novamente.');
-                    setEtapa('form');
-                    setGerandoToken(false);
-                    setLoading(false);
-                }
+                    nome: formData.nome,
+                    cpf: formData.tipoPessoa === 'fisica' ? cpfNumeros : null,
+                    card_token_id: cardToken
+                })
+            });
+            
+            const assinaturaData = await response.json();
+            
+            if (!response.ok || !assinaturaData.success) {
+                throw new Error(assinaturaData.error || 'Erro ao criar assinatura');
             }
+            
+            console.log('✅ Assinatura criada com sucesso:', assinaturaData);
+            
+            // Salvar subscriptionId
+            sessionStorage.setItem('subscriptionId', assinaturaData.subscriptionId);
+            dadosPendentesTemp.subscriptionId = assinaturaData.subscriptionId;
+            sessionStorage.setItem('cadastroPendente', JSON.stringify(dadosPendentesTemp));
+            
+            // Mostrar mensagem de sucesso e criar prestador
+            alert('✅ Assinatura criada com sucesso! Seu cadastro será ativado imediatamente.');
+            criarPrestadorAposPagamento();
+            
+        } catch (error) {
+            console.error('❌ Erro ao processar pagamento:', error);
+            setErro(error.message || 'Erro ao processar pagamento. Tente novamente.');
+            setEtapa('form');
+            setGerandoToken(false);
+            setLoading(false);
+            // Limpar dados pendentes em caso de erro
+            sessionStorage.removeItem('cadastroPendente');
+            sessionStorage.removeItem('subscriptionId');
+        }
+    }
 
-            // ===== TELA DE SUCESSO =====
-            if (etapa === 'sucesso') {
-                return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-8" },
-                    React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-8 shadow-sm text-center" },
-                        React.createElement('div', { className: "w-20 h-20 mx-auto mb-6 bg-emerald-100 rounded-full flex items-center justify-center" },
-                            React.createElement('svg', { className: "w-10 h-10 text-emerald-600", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M5 13l4 4L19 7" })
-                            )
-                        ),
-                        React.createElement('h2', { className: "text-2xl font-bold text-[#3d7a3d] mb-4" }, "Cadastro realizado com sucesso! 🎉"),
-                        React.createElement('p', { className: "text-[#4a8a4a] mb-6" },
-                            "Sua conta foi criada e sua assinatura foi ativada. Agora você já pode acessar o dashboard e começar a usar o SemLimites."
-                        ),
-                        React.createElement('div', { className: "animate-pulse" }, "Redirecionando para o dashboard...")
+    // ===== TELA DE SUCESSO =====
+    if (etapa === 'sucesso') {
+        return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-8" },
+            React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-8 shadow-sm text-center" },
+                React.createElement('div', { className: "w-20 h-20 mx-auto mb-6 bg-emerald-100 rounded-full flex items-center justify-center" },
+                    React.createElement('svg', { className: "w-10 h-10 text-emerald-600", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M5 13l4 4L19 7" })
                     )
-                );
-            }
+                ),
+                React.createElement('h2', { className: "text-2xl font-bold text-[#3d7a3d] mb-4" }, "Cadastro realizado com sucesso! 🎉"),
+                React.createElement('p', { className: "text-[#4a8a4a] mb-6" },
+                    "Sua conta foi criada e sua assinatura foi ativada. Agora você já pode acessar o dashboard e começar a usar o SemLimites."
+                ),
+                React.createElement('div', { className: "animate-pulse" }, "Redirecionando para o dashboard...")
+            )
+        );
+    }
 
-            // ===== TELA DE PROCESSAMENTO =====
-            if (etapa === 'processando') {
-                return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-8" },
-                    React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-8 shadow-sm text-center" },
-                        React.createElement('div', { className: "w-12 h-12 md:w-16 md:h-16 border-4 border-[#FFD966] border-t-[#FFB347] rounded-full animate-spin mx-auto mb-4" }),
-                        React.createElement('h2', { className: "text-xl font-semibold text-[#3d7a3d] mb-2" }, 
-                            gerandoToken ? 'Preparando formulário de pagamento...' : 'Processando pagamento...'
-                        ),
-                        React.createElement('p', { className: "text-[#4a8a4a]" }, 
-                            gerandoToken ? 'Aguarde enquanto preparamos o formulário seguro para seu cartão.' : 'Aguarde um instante enquanto processamos seu pagamento.'
-                        ),
-                        !gerandoToken && React.createElement('div', { className: "mt-6 p-4 bg-amber-50 rounded-xl border border-amber-200" },
-                            React.createElement('p', { className: "text-sm text-amber-700" }, "Não feche esta página. O processamento pode levar alguns segundos.")
-                        )
-                    )
-                );
-            }
-
-            // ===== TELA DO FORMULÁRIO DE CARTÃO =====
-            if (mostrarFormularioCartao) {
-                return React.createElement('div', { className: "max-w-md mx-auto px-4 py-8" },
-                    React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-6 md:p-8 shadow-sm" },
-                        React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4" }, "Dados do Cartão"),
-                        React.createElement('p', { className: "text-sm text-[#4a8a4a] mb-6" }, "Informe os dados do cartão para ativar sua assinatura mensal de R$ 9,90."),
-                        
-                        React.createElement('form', { id: "card-form", className: "space-y-4" },
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs font-medium mb-1 text-[#3d7a3d]" }, "Número do cartão"),
-                                React.createElement('div', { id: "cardNumber", className: "w-full px-3 py-2 rounded-lg border border-[#c0dfc0]" })
-                            ),
-                            React.createElement('div', { className: "grid grid-cols-2 gap-4" },
-                                React.createElement('div', null,
-                                    React.createElement('label', { className: "block text-xs font-medium mb-1 text-[#3d7a3d]" }, "Mês"),
-                                    React.createElement('div', { id: "expirationMonth", className: "w-full px-3 py-2 rounded-lg border border-[#c0dfc0]" })
-                                ),
-                                React.createElement('div', null,
-                                    React.createElement('label', { className: "block text-xs font-medium mb-1 text-[#3d7a3d]" }, "Ano"),
-                                    React.createElement('div', { id: "expirationYear", className: "w-full px-3 py-2 rounded-lg border border-[#c0dfc0]" })
-                                )
-                            ),
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs font-medium mb-1 text-[#3d7a3d]" }, "Código de segurança"),
-                                React.createElement('div', { id: "securityCode", className: "w-full px-3 py-2 rounded-lg border border-[#c0dfc0]" })
-                            ),
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs font-medium mb-1 text-[#3d7a3d]" }, "Nome no cartão"),
-                                React.createElement('div', { id: "cardholderName", className: "w-full px-3 py-2 rounded-lg border border-[#c0dfc0]" })
-                            ),
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs font-medium mb-1 text-[#3d7a3d]" }, "CPF"),
-                                React.createElement('div', { id: "identificationNumber", className: "w-full px-3 py-2 rounded-lg border border-[#c0dfc0]" })
-                            ),
-                            React.createElement('button', {
-                                type: "button",
-                                onClick: function() {
-                                    var submitEvent = new Event('submit', { bubbles: true, cancelable: true });
-                                    document.getElementById('card-form').dispatchEvent(submitEvent);
-                                },
-                                className: "w-full px-4 py-3 bg-gradient-to-r from-[#3d7a3d] to-[#60a060] text-white font-semibold rounded-xl hover:shadow-md transition"
-                            }, "Confirmar Pagamento")
-                        ),
-                        
-                        React.createElement('p', { className: "text-xs text-slate-400 text-center mt-6" },
-                            "Seus dados de cartão são processados diretamente pelo Mercado Pago e não são armazenados em nossos servidores."
-                        )
-                    )
-                );
-            }
-
-            // ===== FORMULÁRIO DE CADASTRO =====
-            return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-8" },
-                React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-4 md:p-8 shadow-sm" },
-                    React.createElement('div', { className: "flex items-center justify-between mb-6" },
-                        React.createElement('h1', { className: "text-xl md:text-3xl font-bold text-[#3d7a3d]" }, "Cadastro de Prestador"),
-                        React.createElement('button', { 
-                            onClick: onVoltar, 
-                            className: "text-xs md:text-sm text-[#4a8a4a] hover:text-[#2d5a2d]" 
-                        }, "← Voltar")
-                    ),
-
-                    erroElement,
-
-                    React.createElement('form', { onSubmit: handleSubmit, className: "space-y-4" },
-                        // Tipo de Pessoa
-                        React.createElement('div', { className: "mb-4" },
-                            React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-2" }, "Tipo de Cadastro *"),
-                            React.createElement('div', { className: "flex gap-4" },
-                                React.createElement('label', { className: "flex items-center gap-2" },
-                                    React.createElement('input', {
-                                        type: "radio",
-                                        name: "tipoPessoa",
-                                        value: "fisica",
-                                        checked: formData.tipoPessoa === 'fisica',
-                                        onChange: function(e) { setFormData({ ...formData, tipoPessoa: e.target.value }); },
-                                        className: "w-4 h-4 text-[#3d7a3d]"
-                                    }),
-                                    React.createElement('span', { className: "text-xs md:text-sm" }, "Pessoa Física")
-                                ),
-                                React.createElement('label', { className: "flex items-center gap-2" },
-                                    React.createElement('input', {
-                                        type: "radio",
-                                        name: "tipoPessoa",
-                                        value: "juridica",
-                                        checked: formData.tipoPessoa === 'juridica',
-                                        onChange: function(e) { setFormData({ ...formData, tipoPessoa: e.target.value }); },
-                                        className: "w-4 h-4 text-[#3d7a3d]"
-                                    }),
-                                    React.createElement('span', { className: "text-xs md:text-sm" }, "Pessoa Jurídica")
-                                )
-                            )
-                        ),
-
-                        formData.tipoPessoa === 'fisica' ? 
-                            React.createElement('div', { className: "mb-4" },
-                                React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "CPF *"),
-                                React.createElement('input', {
-                                    type: "text",
-                                    name: "cpf",
-                                    value: formData.cpf,
-                                    onChange: handleChange,
-                                    required: true,
-                                    placeholder: "000.000.000-00",
-                                    className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
-                                })
-                            ) : 
-                            React.createElement('div', { className: "space-y-4 mb-4" },
-                                React.createElement('div', null,
-                                    React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "CNPJ *"),
-                                    React.createElement('div', { className: "flex gap-2" },
-                                        React.createElement('input', {
-                                            type: "text",
-                                            name: "cnpj",
-                                            value: formData.cnpj,
-                                            onChange: handleChange,
-                                            onBlur: verificarCNPJExistente,
-                                            required: true,
-                                            placeholder: "00.000.000/0000-00",
-                                            className: "flex-1 px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
-                                        }),
-                                        React.createElement('button', {
-                                            type: "button",
-                                            onClick: verificarCNPJ,
-                                            disabled: formData.cnpj.replace(/\D/g, '').length !== 14,
-                                            className: "px-3 py-2 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white rounded-xl text-xs md:text-sm font-medium disabled:opacity-50"
-                                        }, "Verificar")
-                                    ),
-                                    verificacaoCNPJ === 'verificando' && 
-                                        React.createElement('p', { className: "text-xs text-amber-600 mt-1" }, "Verificando CNPJ..."),
-                                    verificacaoCNPJ && verificacaoCNPJ.status === 'ativo' && 
-                                        React.createElement('p', { className: "text-xs text-emerald-600 mt-1 flex items-center gap-1" },
-                                            React.createElement('svg', { className: "w-4 h-4", fill: "currentColor", viewBox: "0 0 20 20" },
-                                                React.createElement('path', { fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z", clipRule: "evenodd" })
-                                            ),
-                                            "CNPJ verificado"
-                                        ),
-                                    verificacaoCNPJ && verificacaoCNPJ.status === 'inativo' && 
-                                        React.createElement('p', { className: "text-xs text-red-600 mt-1" }, "CNPJ com situação irregular")
-                                ),
-                                React.createElement('div', null,
-                                    React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Responsável *"),
-                                    React.createElement('input', {
-                                        type: "text",
-                                        name: "responsavel",
-                                        value: formData.responsavel,
-                                        onChange: handleChange,
-                                        required: true,
-                                        placeholder: "Nome do responsável",
-                                        className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
-                                    })
-                                )
-                            ),
-
-                        React.createElement('div', { className: "mb-4" },
-                            React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, 
-                                formData.tipoPessoa === 'fisica' ? 'Nome Completo *' : 'Razão Social *'
-                            ),
-                            React.createElement('input', {
-                                type: "text",
-                                name: "nome",
-                                value: formData.nome,
-                                onChange: handleChange,
-                                required: true,
-                                className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
-                            })
-                        ),
-
-                        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-4" },
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "E-mail *"),
-                                React.createElement('input', {
-                                    type: "email",
-                                    name: "email",
-                                    value: formData.email,
-                                    onChange: handleChange,
-                                    onBlur: verificarEmail,
-                                    required: true,
-                                    className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
-                                })
-                            ),
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Senha *"),
-                                React.createElement('input', {
-                                    type: "password",
-                                    name: "senha",
-                                    value: formData.senha,
-                                    onChange: handleChange,
-                                    required: true,
-                                    minLength: 6,
-                                    className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
-                                })
-                            )
-                        ),
-
-                        React.createElement('div', { className: "mb-4" },
-                            React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Confirmar Senha *"),
-                            React.createElement('input', {
-                                type: "password",
-                                name: "confirmarSenha",
-                                value: formData.confirmarSenha,
-                                onChange: handleChange,
-                                required: true,
-                                minLength: 6,
-                                className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
-                            })
-                        ),
-
-                        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-4" },
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Cidade *"),
-                                React.createElement('input', {
-                                    type: "text",
-                                    name: "cidade",
-                                    value: formData.cidade,
-                                    onChange: handleChange,
-                                    required: true,
-                                    className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
-                                })
-                            ),
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Estado *"),
-                                React.createElement('select', {
-                                    name: "estado",
-                                    value: formData.estado,
-                                    onChange: handleChange,
-                                    required: true,
-                                    className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm bg-white"
-                                },
-                                    ESTADOS.map(function(uf) { 
-                                        return React.createElement('option', { key: uf, value: uf }, uf); 
-                                    })
-                                )
-                            )
-                        ),
-
-                        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-4" },
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "WhatsApp *"),
-                                React.createElement('input', {
-                                    type: "text",
-                                    name: "whatsapp",
-                                    value: formData.whatsapp,
-                                    onChange: handleChange,
-                                    required: true,
-                                    placeholder: "(11) 99999-9999",
-                                    className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
-                                })
-                            ),
-                            React.createElement('div', null,
-                                React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Telefone"),
-                                React.createElement('input', {
-                                    type: "text",
-                                    name: "telefone",
-                                    value: formData.telefone,
-                                    onChange: handleChange,
-                                    placeholder: "(11) 3232-1234",
-                                    className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
-                                })
-                            )
-                        ),
-
-                        React.createElement('div', { className: "mb-4" },
-                            React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Categoria Principal *"),
-                            React.createElement('select', {
-                                value: categoriaSelecionada,
-                                onChange: function(e) { 
-                                    setCategoriaSelecionada(e.target.value);
-                                },
-                                required: true,
-                                className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm bg-white"
-                            },
-                                React.createElement('option', { value: "" }, "Selecione uma categoria"),
-                                categorias.map(function(cat) {
-                                    return React.createElement('option', { key: cat._id, value: cat._id }, cat.nome);
-                                })
-                            )
-                        ),
-
-                        categoriaSelecionada && servicos.length > 0 && 
-                        React.createElement('div', { className: "mb-4" },
-                            React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-2" }, 
-                                "Serviços Prestados *",
-                                React.createElement('span', { className: "text-[10px] text-slate-500 ml-2" }, 
-                                    "(selecione um ou mais)"
-                                )
-                            ),
-                            React.createElement('div', { className: "border border-slate-200 rounded-xl p-3 max-h-60 overflow-y-auto" },
-                                servicos.map(function(servico) {
-                                    var isSelected = servicosSelecionados.includes(servico._id);
-                                    return React.createElement('div', {
-                                        key: servico._id,
-                                        onClick: function() {
-                                            var novosSelecionados = [...servicosSelecionados];
-                                            var index = novosSelecionados.indexOf(servico._id);
-                                            if (index === -1) {
-                                                novosSelecionados.push(servico._id);
-                                            } else {
-                                                novosSelecionados.splice(index, 1);
-                                            }
-                                            setServicosSelecionados(novosSelecionados);
-                                        },
-                                        className: "flex items-center gap-2 p-2 hover:bg-slate-50 rounded-lg cursor-pointer border-b border-slate-100 last:border-0"
-                                    },
-                                        React.createElement('input', {
-                                            type: "checkbox",
-                                            checked: isSelected,
-                                            onChange: function() {},
-                                            className: "w-4 h-4 text-[#3d7a3d] rounded"
-                                        }),
-                                        React.createElement('span', { className: "text-sm" }, servico.nome)
-                                    );
-                                })
-                            ),
-                            servicosSelecionados.length > 0 && 
-                            React.createElement('p', { className: "text-xs text-[#3d7a3d] mt-2" },
-                                servicosSelecionados.length + " serviço(s) selecionado(s)"
-                            )
-                        ),
-
-                        React.createElement('div', { className: "mb-4" },
-                            React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Descrição"),
-                            React.createElement('textarea', {
-                                name: "descricao",
-                                value: formData.descricao,
-                                onChange: handleChange,
-                                rows: 4,
-                                placeholder: "Descreva seus serviços, experiência...",
-                                className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
-                            })
-                        ),
-
-                        React.createElement('div', { className: "mb-4" },
-                            React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, 
-                                "Tags",
-                                React.createElement('span', { className: "text-[10px] text-slate-500 ml-2" }, 
-                                    "(separadas por vírgula)"
-                                )
-                            ),
-                            React.createElement('input', {
-                                type: "text",
-                                name: "tags",
-                                value: formData.tags,
-                                onChange: handleChange,
-                                placeholder: "Ex: Emergência, Residencial, Comercial",
-                                className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
-                            })
-                        ),
-
-                        React.createElement('div', { className: "mb-6 p-4 bg-[#f0f7f0] rounded-xl border border-[#c0dfc0]" },
-                            React.createElement('label', { className: "flex items-start gap-3 cursor-pointer" },
-                                React.createElement('input', {
-                                    type: "checkbox",
-                                    checked: aceitouTermos,
-                                    onChange: function(e) { setAceitouTermos(e.target.checked); },
-                                    className: "w-4 h-4 mt-1 text-[#3d7a3d] rounded"
-                                }),
-                                React.createElement('span', { className: "text-xs md:text-sm text-[#2d5a2d]" },
-                                    "Li e concordo com os ", 
-                                    React.createElement('button', {
-                                        type: "button",
-                                        onClick: function(e) { 
-                                            e.preventDefault();
-                                            navigate('/termos');
-                                        },
-                                        className: "text-[#FFB347] underline hover:text-[#F09030]"
-                                    }, "Termos de Uso"),
-                                    " e a ",
-                                    React.createElement('button', {
-                                        type: "button",
-                                        onClick: function(e) { 
-                                            e.preventDefault();
-                                            navigate('/privacidade');
-                                        },
-                                        className: "text-[#FFB347] underline hover:text-[#F09030]"
-                                    }, "Política de Privacidade")
-                                )
-                            )
-                        ),
-
-                        React.createElement('button', {
-                            type: "submit",
-                            disabled: loading || !aceitouTermos,
-                            className: "w-full px-4 md:px-6 py-3 md:py-4 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white font-semibold rounded-xl disabled:opacity-50 hover:shadow-md transition text-sm md:text-base"
-                        }, loading ? 'Processando...' : '✅ Ativar Assinatura (R$ 9,90/mês)')
+    // ===== TELA DE PROCESSAMENTO =====
+    if (etapa === 'processando') {
+        return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-8" },
+            React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-8 shadow-sm text-center" },
+                React.createElement('div', { className: "w-12 h-12 md:w-16 md:h-16 border-4 border-[#FFD966] border-t-[#FFB347] rounded-full animate-spin mx-auto mb-4" }),
+                React.createElement('h2', { className: "text-xl font-semibold text-[#3d7a3d] mb-2" }, 
+                    'Aguardando dados do cartão...'
+                ),
+                React.createElement('p', { className: "text-[#4a8a4a]" }, 
+                    'Uma janela será aberta para você informar os dados do seu cartão.'
+                ),
+                React.createElement('div', { className: "mt-6 p-4 bg-amber-50 rounded-xl border border-amber-200" },
+                    React.createElement('p', { className: "text-sm text-amber-700" }, 
+                        "Não feche esta página. O formulário de pagamento será aberto automaticamente."
                     )
                 )
-            );
-        } 
+            )
+        );
+    }
+
+    // ===== FORMULÁRIO DE CADASTRO =====
+    return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-8" },
+        React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-4 md:p-8 shadow-sm" },
+            React.createElement('div', { className: "flex items-center justify-between mb-6" },
+                React.createElement('h1', { className: "text-xl md:text-3xl font-bold text-[#3d7a3d]" }, "Cadastro de Prestador"),
+                React.createElement('button', { 
+                    onClick: onVoltar, 
+                    className: "text-xs md:text-sm text-[#4a8a4a] hover:text-[#2d5a2d]" 
+                }, "← Voltar")
+            ),
+
+            erroElement,
+
+            React.createElement('form', { onSubmit: handleSubmit, className: "space-y-4" },
+                // Tipo de Pessoa
+                React.createElement('div', { className: "mb-4" },
+                    React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-2" }, "Tipo de Cadastro *"),
+                    React.createElement('div', { className: "flex gap-4" },
+                        React.createElement('label', { className: "flex items-center gap-2" },
+                            React.createElement('input', {
+                                type: "radio",
+                                name: "tipoPessoa",
+                                value: "fisica",
+                                checked: formData.tipoPessoa === 'fisica',
+                                onChange: function(e) { setFormData({ ...formData, tipoPessoa: e.target.value }); },
+                                className: "w-4 h-4 text-[#3d7a3d]"
+                            }),
+                            React.createElement('span', { className: "text-xs md:text-sm" }, "Pessoa Física")
+                        ),
+                        React.createElement('label', { className: "flex items-center gap-2" },
+                            React.createElement('input', {
+                                type: "radio",
+                                name: "tipoPessoa",
+                                value: "juridica",
+                                checked: formData.tipoPessoa === 'juridica',
+                                onChange: function(e) { setFormData({ ...formData, tipoPessoa: e.target.value }); },
+                                className: "w-4 h-4 text-[#3d7a3d]"
+                            }),
+                            React.createElement('span', { className: "text-xs md:text-sm" }, "Pessoa Jurídica")
+                        )
+                    )
+                ),
+
+                formData.tipoPessoa === 'fisica' ? 
+                    React.createElement('div', { className: "mb-4" },
+                        React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "CPF *"),
+                        React.createElement('input', {
+                            type: "text",
+                            name: "cpf",
+                            value: formData.cpf,
+                            onChange: handleChange,
+                            required: true,
+                            placeholder: "000.000.000-00",
+                            className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
+                        })
+                    ) : 
+                    React.createElement('div', { className: "space-y-4 mb-4" },
+                        React.createElement('div', null,
+                            React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "CNPJ *"),
+                            React.createElement('div', { className: "flex gap-2" },
+                                React.createElement('input', {
+                                    type: "text",
+                                    name: "cnpj",
+                                    value: formData.cnpj,
+                                    onChange: handleChange,
+                                    onBlur: verificarCNPJExistente,
+                                    required: true,
+                                    placeholder: "00.000.000/0000-00",
+                                    className: "flex-1 px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
+                                }),
+                                React.createElement('button', {
+                                    type: "button",
+                                    onClick: verificarCNPJ,
+                                    disabled: formData.cnpj.replace(/\D/g, '').length !== 14,
+                                    className: "px-3 py-2 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white rounded-xl text-xs md:text-sm font-medium disabled:opacity-50"
+                                }, "Verificar")
+                            ),
+                            verificacaoCNPJ === 'verificando' && 
+                                React.createElement('p', { className: "text-xs text-amber-600 mt-1" }, "Verificando CNPJ..."),
+                            verificacaoCNPJ && verificacaoCNPJ.status === 'ativo' && 
+                                React.createElement('p', { className: "text-xs text-emerald-600 mt-1 flex items-center gap-1" },
+                                    React.createElement('svg', { className: "w-4 h-4", fill: "currentColor", viewBox: "0 0 20 20" },
+                                        React.createElement('path', { fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z", clipRule: "evenodd" })
+                                    ),
+                                    "CNPJ verificado"
+                                ),
+                            verificacaoCNPJ && verificacaoCNPJ.status === 'inativo' && 
+                                React.createElement('p', { className: "text-xs text-red-600 mt-1" }, "CNPJ com situação irregular")
+                        ),
+                        React.createElement('div', null,
+                            React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Responsável *"),
+                            React.createElement('input', {
+                                type: "text",
+                                name: "responsavel",
+                                value: formData.responsavel,
+                                onChange: handleChange,
+                                required: true,
+                                placeholder: "Nome do responsável",
+                                className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
+                            })
+                        )
+                    ),
+
+                React.createElement('div', { className: "mb-4" },
+                    React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, 
+                        formData.tipoPessoa === 'fisica' ? 'Nome Completo *' : 'Razão Social *'
+                    ),
+                    React.createElement('input', {
+                        type: "text",
+                        name: "nome",
+                        value: formData.nome,
+                        onChange: handleChange,
+                        required: true,
+                        className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
+                    })
+                ),
+
+                React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-4" },
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "E-mail *"),
+                        React.createElement('input', {
+                            type: "email",
+                            name: "email",
+                            value: formData.email,
+                            onChange: handleChange,
+                            onBlur: verificarEmail,
+                            required: true,
+                            className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
+                        })
+                    ),
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Senha *"),
+                        React.createElement('input', {
+                            type: "password",
+                            name: "senha",
+                            value: formData.senha,
+                            onChange: handleChange,
+                            required: true,
+                            minLength: 6,
+                            className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
+                        })
+                    )
+                ),
+
+                React.createElement('div', { className: "mb-4" },
+                    React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Confirmar Senha *"),
+                    React.createElement('input', {
+                        type: "password",
+                        name: "confirmarSenha",
+                        value: formData.confirmarSenha,
+                        onChange: handleChange,
+                        required: true,
+                        minLength: 6,
+                        className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
+                    })
+                ),
+
+                React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-4" },
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Cidade *"),
+                        React.createElement('input', {
+                            type: "text",
+                            name: "cidade",
+                            value: formData.cidade,
+                            onChange: handleChange,
+                            required: true,
+                            className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
+                        })
+                    ),
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Estado *"),
+                        React.createElement('select', {
+                            name: "estado",
+                            value: formData.estado,
+                            onChange: handleChange,
+                            required: true,
+                            className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm bg-white"
+                        },
+                            ESTADOS.map(function(uf) { 
+                                return React.createElement('option', { key: uf, value: uf }, uf); 
+                            })
+                        )
+                    )
+                ),
+
+                React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-4" },
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "WhatsApp *"),
+                        React.createElement('input', {
+                            type: "text",
+                            name: "whatsapp",
+                            value: formData.whatsapp,
+                            onChange: handleChange,
+                            required: true,
+                            placeholder: "(11) 99999-9999",
+                            className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
+                        })
+                    ),
+                    React.createElement('div', null,
+                        React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Telefone"),
+                        React.createElement('input', {
+                            type: "text",
+                            name: "telefone",
+                            value: formData.telefone,
+                            onChange: handleChange,
+                            placeholder: "(11) 3232-1234",
+                            className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
+                        })
+                    )
+                ),
+
+                React.createElement('div', { className: "mb-4" },
+                    React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Categoria Principal *"),
+                    React.createElement('select', {
+                        value: categoriaSelecionada,
+                        onChange: function(e) { 
+                            setCategoriaSelecionada(e.target.value);
+                        },
+                        required: true,
+                        className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm bg-white"
+                    },
+                        React.createElement('option', { value: "" }, "Selecione uma categoria"),
+                        categorias.map(function(cat) {
+                            return React.createElement('option', { key: cat._id, value: cat._id }, cat.nome);
+                        })
+                    )
+                ),
+
+                categoriaSelecionada && servicos.length > 0 && 
+                React.createElement('div', { className: "mb-4" },
+                    React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-2" }, 
+                        "Serviços Prestados *",
+                        React.createElement('span', { className: "text-[10px] text-slate-500 ml-2" }, 
+                            "(selecione um ou mais)"
+                        )
+                    ),
+                    React.createElement('div', { className: "border border-slate-200 rounded-xl p-3 max-h-60 overflow-y-auto" },
+                        servicos.map(function(servico) {
+                            var isSelected = servicosSelecionados.includes(servico._id);
+                            return React.createElement('div', {
+                                key: servico._id,
+                                onClick: function() {
+                                    var novosSelecionados = [...servicosSelecionados];
+                                    var index = novosSelecionados.indexOf(servico._id);
+                                    if (index === -1) {
+                                        novosSelecionados.push(servico._id);
+                                    } else {
+                                        novosSelecionados.splice(index, 1);
+                                    }
+                                    setServicosSelecionados(novosSelecionados);
+                                },
+                                className: "flex items-center gap-2 p-2 hover:bg-slate-50 rounded-lg cursor-pointer border-b border-slate-100 last:border-0"
+                            },
+                                React.createElement('input', {
+                                    type: "checkbox",
+                                    checked: isSelected,
+                                    onChange: function() {},
+                                    className: "w-4 h-4 text-[#3d7a3d] rounded"
+                                }),
+                                React.createElement('span', { className: "text-sm" }, servico.nome)
+                            );
+                        })
+                    ),
+                    servicosSelecionados.length > 0 && 
+                    React.createElement('p', { className: "text-xs text-[#3d7a3d] mt-2" },
+                        servicosSelecionados.length + " serviço(s) selecionado(s)"
+                    )
+                ),
+
+                React.createElement('div', { className: "mb-4" },
+                    React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, "Descrição"),
+                    React.createElement('textarea', {
+                        name: "descricao",
+                        value: formData.descricao,
+                        onChange: handleChange,
+                        rows: 4,
+                        placeholder: "Descreva seus serviços, experiência...",
+                        className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
+                    })
+                ),
+
+                React.createElement('div', { className: "mb-4" },
+                    React.createElement('label', { className: "block text-xs md:text-sm font-medium mb-1" }, 
+                        "Tags",
+                        React.createElement('span', { className: "text-[10px] text-slate-500 ml-2" }, 
+                            "(separadas por vírgula)"
+                        )
+                    ),
+                    React.createElement('input', {
+                        type: "text",
+                        name: "tags",
+                        value: formData.tags,
+                        onChange: handleChange,
+                        placeholder: "Ex: Emergência, Residencial, Comercial",
+                        className: "w-full px-3 md:px-4 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
+                    })
+                ),
+
+                React.createElement('div', { className: "mb-6 p-4 bg-[#f0f7f0] rounded-xl border border-[#c0dfc0]" },
+                    React.createElement('label', { className: "flex items-start gap-3 cursor-pointer" },
+                        React.createElement('input', {
+                            type: "checkbox",
+                            checked: aceitouTermos,
+                            onChange: function(e) { setAceitouTermos(e.target.checked); },
+                            className: "w-4 h-4 mt-1 text-[#3d7a3d] rounded"
+                        }),
+                        React.createElement('span', { className: "text-xs md:text-sm text-[#2d5a2d]" },
+                            "Li e concordo com os ", 
+                            React.createElement('button', {
+                                type: "button",
+                                onClick: function(e) { 
+                                    e.preventDefault();
+                                    navigate('/termos');
+                                },
+                                className: "text-[#FFB347] underline hover:text-[#F09030]"
+                            }, "Termos de Uso"),
+                            " e a ",
+                            React.createElement('button', {
+                                type: "button",
+                                onClick: function(e) { 
+                                    e.preventDefault();
+                                    navigate('/privacidade');
+                                },
+                                className: "text-[#FFB347] underline hover:text-[#F09030]"
+                            }, "Política de Privacidade")
+                        )
+                    )
+                ),
+
+                React.createElement('button', {
+                    type: "submit",
+                    disabled: loading || !aceitouTermos,
+                    className: "w-full px-4 md:px-6 py-3 md:py-4 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white font-semibold rounded-xl disabled:opacity-50 hover:shadow-md transition text-sm md:text-base"
+                }, loading ? 'Processando...' : '✅ Ativar Assinatura (R$ 9,90/mês)')
+            )
+        )
+    );
+}
         
         // ========== DASHBOARD DO PRESTADOR CORRIGIDO ==========
         function DashboardPrestador(props) {
