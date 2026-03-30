@@ -3155,7 +3155,7 @@ function ResetarSenha(props) {
     );
 }
 
-                             // ========== TELA DE CADASTRO COM PAGAMENTO (FLUXO CORRETO) ==========
+                           // ========== TELA DE CADASTRO COM PAGAMENTO (FLUXO CORRETO - COM CARD TOKEN) ==========
         function CadastroPrestador(props) {
             var onCadastroSucesso = props.onCadastroSucesso;
             var onVoltar = props.onVoltar;
@@ -3187,16 +3187,16 @@ function ResetarSenha(props) {
             var [loading, setLoading] = useState(false);
             var [erro, setErro] = useState('');
             
-            // ===== ESTADOS PARA PAGAMENTO =====
+            // ===== ESTADOS PARA PAGAMENTO COM CARTÃO =====
             var [aceitouTermos, setAceitouTermos] = useState(false);
-            var [linkPagamento, setLinkPagamento] = useState(null);
             var [preferenceId, setPreferenceId] = useState(null);
             var [mp, setMp] = useState(null);
             var [carregandoMP, setCarregandoMP] = useState(false);
             var [emailVerificado, setEmailVerificado] = useState(false);
             var [cnpjVerificadoExistente, setCnpjVerificadoExistente] = useState(false);
             var [dadosPendentes, setDadosPendentes] = useState(null);
-            var [monitoramentoAtivo, setMonitoramentoAtivo] = useState(false);
+            var [mostrarFormularioCartao, setMostrarFormularioCartao] = useState(false);
+            var [gerandoToken, setGerandoToken] = useState(false);
 
             var erroElement = null;
             if (erro) {
@@ -3275,204 +3275,82 @@ function ResetarSenha(props) {
                 }
             }, [categoriaSelecionada]);
 
-            // ===== DETECTAR RETORNO DO MERCADO PAGO =====
-            useEffect(function() {
-                console.log('🔍 [Cadastro] Verificando retorno do Mercado Pago...');
-                
-                const urlParams = new URLSearchParams(window.location.search);
-                const retorno = urlParams.get('retorno');
-                
-                console.log('🔍 [Cadastro] Parâmetro retorno:', retorno);
-                
-                if (retorno === 'sucesso') {
-                    console.log('✅ [Cadastro] Retorno do Mercado Pago detectado! Status: sucesso');
-                    
-                    const preferenceIdSalvo = sessionStorage.getItem('preferenceId');
-                    const dadosSalvos = sessionStorage.getItem('cadastroPendente');
-                    
-                    console.log('🔍 [Cadastro] preferenceId salvo:', preferenceIdSalvo ? 'SIM' : 'NÃO');
-                    console.log('🔍 [Cadastro] dadosSalvos:', dadosSalvos ? 'SIM' : 'NÃO');
-                    
-                    if (preferenceIdSalvo && dadosSalvos) {
-                        console.log('📦 [Cadastro] Dados encontrados, iniciando verificação do pagamento...');
-                        // SÓ AQUI INICIA O MONITORAMENTO - APENAS UMA VEZ
-                        iniciarMonitoramentoPagamento();
-                    } else {
-                        console.error('❌ [Cadastro] Nenhum dado encontrado no sessionStorage');
-                        setErro('Erro ao processar retorno. Entre em contato com o suporte.');
-                        setEtapa('form');
-                    }
-                    
-                    // Limpar parâmetros da URL para não executar novamente
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                } else if (retorno === 'erro') {
-                    setErro('Ocorreu um erro no pagamento. Tente novamente.');
-                    setEtapa('form');
-                } else if (retorno === 'pending') {
-                    setErro('Pagamento pendente. Aguarde e tente novamente.');
-                    setEtapa('form');
-                }
-            }, []);
-
-            // ===== INICIALIZAR MERCADO PAGO =====
-            useEffect(function() {
-                if (etapa === 'pagamento' && window.MercadoPago && !mp && !carregandoMP && preferenceId) {
-                    setCarregandoMP(true);
-                    
+            // ===== FUNÇÃO PARA GERAR CARD TOKEN =====
+            function gerarCardToken() {
+                return new Promise(function(resolve, reject) {
+                    // Buscar chave pública da API
                     fetch(API_URL + '/mercadopago/public-key')
-                        .then(function(response) { 
-                            if (!response.ok) {
-                                throw new Error('Erro ao buscar chave pública');
-                            }
-                            return response.json(); 
-                        })
+                        .then(function(response) { return response.json(); })
                         .then(function(data) {
-                            if (data.publicKey) {
-                                console.log('✅ Chave pública obtida, inicializando Mercado Pago');
-                                const mpInstance = new window.MercadoPago(data.publicKey);
-                                setMp(mpInstance);
-                                
-                                setTimeout(function() {
-                                    renderBrickPagamento(mpInstance, preferenceId);
-                                }, 500);
-                            } else {
-                                console.error('❌ Chave pública não encontrada');
-                                setErro('Erro ao configurar pagamento. Use o link alternativo abaixo.');
+                            if (!data.publicKey) {
+                                reject(new Error('Chave pública não encontrada'));
+                                return;
                             }
-                            setCarregandoMP(false);
-                        })
-                        .catch(function(error) {
-                            console.error('❌ Erro ao buscar chave pública:', error);
-                            setErro('Erro ao configurar pagamento. Use o link alternativo abaixo.');
-                            setCarregandoMP(false);
-                        });
-                }
-            }, [etapa, preferenceId, mp, carregandoMP]);
-
-           function renderBrickPagamento(mpInstance, prefId) {
-    const bricksBuilder = mpInstance.bricks();
-    
-    // URL base correta incluindo o subpath
-    const baseUrl = window.location.origin + BASE_PATH;
-    console.log('🔗 URL base para retorno:', baseUrl);
-    
-    const renderComponent = async () => {
-        const container = document.getElementById('paymentBrick_container');
-        if (container) container.innerHTML = '';
-        
-        try {
-            await bricksBuilder.create('wallet', 'paymentBrick_container', {
-                initialization: {
-                    preferenceId: prefId,
-                    redirectMode: 'self'
-                },
-                customization: {
-                    texts: {
-                        action: 'Pagar agora',
-                        valueProp: 'Segurança Mercado Pago'
-                    },
-                    visual: {
-                        buttonBackground: 'default',
-                        borderRadius: '8px'
-                    },
-                    backUrls: {
-                        success: baseUrl + "/cadastro?retorno=sucesso",
-                        failure: baseUrl + "/cadastro?retorno=erro",
-                        pending: baseUrl + "/cadastro?retorno=pending"
-                    }
-                },
-                callbacks: {
-                    onReady: function() {
-                        console.log('✅ Brick de pagamento pronto');
-                    },
-                    onError: function(error) {
-                        console.error('❌ Erro no brick:', error);
-                        setErro('Erro ao carregar pagamento. Use o link alternativo abaixo.');
-                    }
-                }
-            });
-            console.log('✅ Brick renderizado com sucesso');
-        } catch (error) {
-            console.error('❌ Erro ao renderizar brick:', error);
-        }
-    };
-    
-    renderComponent();
-}
-
-            // ===== FUNÇÃO PARA VERIFICAR STATUS DO PAGAMENTO (SÓ APÓS RETORNO) =====
-            function iniciarMonitoramentoPagamento() {
-                // IMPEDIR MÚLTIPLOS MONITORAMENTOS
-                if (monitoramentoAtivo) {
-                    console.log('⚠️ Monitoramento já ativo, ignorando nova tentativa');
-                    return;
-                }
-                
-                const preferenceIdSalvo = sessionStorage.getItem('preferenceId');
-                const dadosSalvos = sessionStorage.getItem('cadastroPendente');
-                
-                if (!preferenceIdSalvo) {
-                    console.error('❌ PreferenceId não encontrado no sessionStorage');
-                    return;
-                }
-                
-                if (!dadosSalvos) {
-                    console.error('❌ Dados de cadastro não encontrados no sessionStorage');
-                    return;
-                }
-                
-                console.log('🔥 MONITORAMENTO ATIVO - INICIADO');
-                setMonitoramentoAtivo(true);
-                
-                // Limpar intervalo anterior se existir
-                if (window.monitoramentoInterval) {
-                    clearInterval(window.monitoramentoInterval);
-                    window.monitoramentoInterval = null;
-                }
-                
-                let tentativas = 0;
-                const maxTentativas = 20;
-                
-                window.monitoramentoInterval = setInterval(function() {
-                    tentativas++;
-                    console.log(`🔄 Verificando status do pagamento (tentativa ${tentativas}/${maxTentativas})...`);
-                    
-                    fetch(API_URL + '/assinatura/status-preferencia/' + preferenceIdSalvo)
-                        .then(function(response) { 
-                            if (!response.ok) {
-                                throw new Error('Erro na requisição: ' + response.status);
-                            }
-                            return response.json(); 
-                        })
-                        .then(function(data) {
-                            console.log('📊 Status do pagamento:', data);
                             
-                            if (data.status === 'approved' || data.pagamentoConfirmado === true) {
-                                console.log('✅ Pagamento confirmado!');
-                                clearInterval(window.monitoramentoInterval);
-                                window.monitoramentoInterval = null;
-                                setMonitoramentoAtivo(false);
-                                criarPrestadorAposPagamento();
-                            } else if (tentativas >= maxTentativas) {
-                                console.log('⏰ Tempo limite excedido. Pagamento não confirmado.');
-                                clearInterval(window.monitoramentoInterval);
-                                window.monitoramentoInterval = null;
-                                setMonitoramentoAtivo(false);
-                                setErro('Tempo limite excedido. Entre em contato com o suporte.');
-                                setEtapa('form');
-                            }
+                            // Inicializar Mercado Pago
+                            var mpInstance = new window.MercadoPago(data.publicKey);
+                            
+                            // Criar formulário de cartão
+                            var cardForm = mpInstance.cardForm({
+                                amount: '9.90',
+                                iframe: true,
+                                form: {
+                                    id: 'card-form',
+                                    cardNumber: {
+                                        id: 'cardNumber',
+                                        placeholder: 'Número do cartão',
+                                    },
+                                    securityCode: {
+                                        id: 'securityCode',
+                                        placeholder: 'Código de segurança',
+                                    },
+                                    expirationMonth: {
+                                        id: 'expirationMonth',
+                                        placeholder: 'Mês',
+                                    },
+                                    expirationYear: {
+                                        id: 'expirationYear',
+                                        placeholder: 'Ano',
+                                    },
+                                    cardholderName: {
+                                        id: 'cardholderName',
+                                        placeholder: 'Nome no cartão',
+                                    },
+                                    identificationType: {
+                                        id: 'identificationType',
+                                    },
+                                    identificationNumber: {
+                                        id: 'identificationNumber',
+                                        placeholder: 'CPF',
+                                    },
+                                },
+                                callbacks: {
+                                    onFormMounted: function(error) {
+                                        if (error) {
+                                            reject(error);
+                                            return;
+                                        }
+                                        console.log('✅ CardForm montado');
+                                    },
+                                    onSubmit: function(event) {
+                                        event.preventDefault();
+                                        console.log('✅ Token do cartão gerado');
+                                        resolve(event.card_token);
+                                    },
+                                    onError: function(error) {
+                                        console.error('❌ Erro no card form:', error);
+                                        reject(error);
+                                    }
+                                }
+                            });
+                            
+                            // Mostrar o formulário
+                            setMostrarFormularioCartao(true);
                         })
                         .catch(function(error) {
-                            console.error('❌ Erro ao verificar status:', error);
-                            if (tentativas >= maxTentativas) {
-                                clearInterval(window.monitoramentoInterval);
-                                window.monitoramentoInterval = null;
-                                setMonitoramentoAtivo(false);
-                                setErro('Erro ao verificar pagamento. Entre em contato com o suporte.');
-                                setEtapa('form');
-                            }
+                            reject(error);
                         });
-                }, 3000);
+                });
             }
 
             // ===== FUNÇÃO PARA CRIAR PRESTADOR APÓS PAGAMENTO =====
@@ -3489,7 +3367,7 @@ function ResetarSenha(props) {
                 }
                 
                 var dados = JSON.parse(dadosSalvos);
-                console.log('📦 Dados recuperados:', { nome: dados.nome, email: dados.email, preferenceId: dados.preferenceId });
+                console.log('📦 Dados recuperados:', { nome: dados.nome, email: dados.email, subscriptionId: dados.subscriptionId });
                 
                 var dadosEnvio = {
                     nome: dados.nome,
@@ -3506,7 +3384,7 @@ function ResetarSenha(props) {
                     categoriaPrincipal: dados.categoriaPrincipal,
                     servicos: dados.servicos,
                     aceitouTermos: true,
-                    preferenceId: dados.preferenceId,
+                    subscriptionId: dados.subscriptionId,
                     planoStatus: 'ativo',
                     planoAtivo: true,
                     assinaturaAtivadaEm: new Date().toISOString()
@@ -3543,14 +3421,14 @@ function ResetarSenha(props) {
                             throw new Error(registerData.error);
                         }
                         
-                        console.log('✅ Prestador cadastrado com sucesso após pagamento!');
+                        console.log('✅ Prestador cadastrado com sucesso!');
                         console.log('📋 Dados do prestador:', registerData.user);
                         
                         localStorage.setItem('token', registerData.token);
                         localStorage.setItem('user', JSON.stringify(registerData.user));
                         
                         sessionStorage.removeItem('cadastroPendente');
-                        sessionStorage.removeItem('preferenceId');
+                        sessionStorage.removeItem('subscriptionId');
                         setDadosPendentes(null);
                         
                         setEtapa('sucesso');
@@ -3561,7 +3439,7 @@ function ResetarSenha(props) {
                         }, 2000);
                     })
                     .catch(function(error) {
-                        console.error('❌ Erro no cadastro pós-pagamento:', error);
+                        console.error('❌ Erro no cadastro:', error);
                         setErro('Erro ao finalizar cadastro. Entre em contato com o suporte.');
                         setEtapa('form');
                     });
@@ -3656,8 +3534,8 @@ function ResetarSenha(props) {
                 });
             }
 
-                        // ===== FUNÇÃO handleSubmit (COM ASSINATURA RECORRENTE) =====
-            function handleSubmit(e) {
+            // ===== FUNÇÃO handleSubmit (COM CARD TOKEN) =====
+            async function handleSubmit(e) {
                 e.preventDefault();
                 
                 if (!categoriaSelecionada) {
@@ -3740,67 +3618,60 @@ function ResetarSenha(props) {
                     }
                 }
 
-                console.log('📤 Dados de cadastro salvos (aguardando pagamento)');
-
+                console.log('📤 Dados de cadastro salvos (aguardando token do cartão)');
                 setEtapa('processando');
                 
-                // ===== CORREÇÃO: USAR ASSINATURA RECORRENTE =====
-                fetch(API_URL + '/assinatura/criar-assinatura', {  // ← ALTERADO!
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: formData.email,
-                        nome: formData.nome
-                        // Não precisa enviar plano/valor
-                    })
-                })
-                    .then(function(response) { 
-                        if (!response.ok) {
-                            return response.json().then(function(err) { 
-                                throw new Error(err.error || 'Erro ao criar assinatura'); 
-                            });
-                        }
-                        return response.json(); 
-                    })
-                    .then(function(assinaturaData) {
-                        if (assinaturaData.success) {
-                            console.log('✅ Assinatura criada:', assinaturaData);
-                            
-                            // Salvar subscriptionId no sessionStorage
-                            sessionStorage.setItem('subscriptionId', assinaturaData.subscriptionId);
-                            sessionStorage.setItem('preferenceId', assinaturaData.subscriptionId); // Para compatibilidade
-                            
-                            var linkParaAbrir = assinaturaData.initPoint;
-                            console.log('🔗 Link de pagamento da assinatura:', linkParaAbrir)
-                            
-                            setLinkPagamento(linkParaAbrir);
-                            setPreferenceId(assinaturaData.subscriptionId);
-                            
-                            dadosPendentesTemp.subscriptionId = assinaturaData.subscriptionId;
-                            dadosPendentesTemp.preferenceId = assinaturaData.subscriptionId;
-                            setDadosPendentes(dadosPendentesTemp);
-                            
-                            sessionStorage.setItem('cadastroPendente', JSON.stringify(dadosPendentesTemp));
-                            
-                            setEtapa('pagamento');
-                            setLoading(false);
-                            
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                            
-                            // Redirecionar para o link de pagamento
-                            setTimeout(function() {
-                                window.location.href = linkParaAbrir;
-                            }, 500);
-                        } else {
-                            throw new Error(assinaturaData.error || 'Erro ao criar assinatura');
-                        }
-                    })
-                    .catch(function(error) {
-                        console.error('❌ Erro ao criar assinatura:', error);
-                        setErro(error.message);
-                        setLoading(false);
-                        setEtapa('form');
+                // Salvar dados temporariamente
+                sessionStorage.setItem('cadastroPendente', JSON.stringify(dadosPendentesTemp));
+                
+                try {
+                    // Gerar token do cartão
+                    console.log('💳 Solicitando token do cartão...');
+                    setGerandoToken(true);
+                    
+                    var cardToken = await gerarCardToken();
+                    
+                    setGerandoToken(false);
+                    console.log('✅ Token do cartão gerado:', cardToken);
+                    
+                    // Criar assinatura com o token
+                    console.log('📝 Criando assinatura com token...');
+                    
+                    const response = await fetch(API_URL + '/assinatura/criar-assinatura', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: formData.email,
+                            nome: formData.nome,
+                            cpf: formData.tipoPessoa === 'fisica' ? cpfNumeros : null,
+                            card_token_id: cardToken
+                        })
                     });
+                    
+                    const assinaturaData = await response.json();
+                    
+                    if (!response.ok || !assinaturaData.success) {
+                        throw new Error(assinaturaData.error || 'Erro ao criar assinatura');
+                    }
+                    
+                    console.log('✅ Assinatura criada com sucesso:', assinaturaData);
+                    
+                    // Salvar subscriptionId
+                    sessionStorage.setItem('subscriptionId', assinaturaData.subscriptionId);
+                    dadosPendentesTemp.subscriptionId = assinaturaData.subscriptionId;
+                    sessionStorage.setItem('cadastroPendente', JSON.stringify(dadosPendentesTemp));
+                    
+                    // Mostrar mensagem de sucesso e criar prestador
+                    alert('✅ Assinatura criada com sucesso! Seu cadastro será ativado imediatamente.');
+                    criarPrestadorAposPagamento();
+                    
+                } catch (error) {
+                    console.error('❌ Erro ao processar pagamento:', error);
+                    setErro(error.message || 'Erro ao processar pagamento. Tente novamente.');
+                    setEtapa('form');
+                    setGerandoToken(false);
+                    setLoading(false);
+                }
             }
 
             // ===== TELA DE SUCESSO =====
@@ -3812,74 +3683,11 @@ function ResetarSenha(props) {
                                 React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M5 13l4 4L19 7" })
                             )
                         ),
-                        React.createElement('h2', { className: "text-2xl font-bold text-[#3d7a3d] mb-4" }, "Pagamento confirmado! 🎉"),
+                        React.createElement('h2', { className: "text-2xl font-bold text-[#3d7a3d] mb-4" }, "Cadastro realizado com sucesso! 🎉"),
                         React.createElement('p', { className: "text-[#4a8a4a] mb-6" },
-                            "Seu pagamento foi processado com sucesso e sua conta foi criada. Agora você já pode acessar o dashboard e começar a usar o SemLimites."
+                            "Sua conta foi criada e sua assinatura foi ativada. Agora você já pode acessar o dashboard e começar a usar o SemLimites."
                         ),
                         React.createElement('div', { className: "animate-pulse" }, "Redirecionando para o dashboard...")
-                    )
-                );
-            }
-
-            // ===== TELA DE PAGAMENTO =====
-            if (etapa === 'pagamento') {
-                return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-8" },
-                    React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-8 shadow-sm" },
-                        React.createElement('div', { className: "text-center mb-8" },
-                            React.createElement('div', { className: "w-20 h-20 mx-auto mb-4 bg-amber-100 rounded-full flex items-center justify-center animate-pulse" },
-                                React.createElement('svg', { className: "w-10 h-10 text-amber-600", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                    React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" })
-                                )
-                            ),
-                            React.createElement('h2', { className: "text-2xl font-bold text-[#3d7a3d] mb-2" }, "Quase lá! 🎉"),
-                            React.createElement('p', { className: "text-[#4a8a4a] mb-2" },
-                                "Para finalizar seu cadastro, realize o pagamento da primeira mensalidade."
-                            ),
-                            React.createElement('p', { className: "text-sm text-amber-600 font-medium bg-amber-50 p-2 rounded-lg" },
-                                "⚠️ Seu cadastro só será ativado após a confirmação do pagamento."
-                            )
-                        ),
-
-                        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 mb-6 border border-[#c0dfc0]" },
-                            React.createElement('div', { className: "flex justify-between items-center mb-2" },
-                                React.createElement('span', { className: "font-medium text-[#2d5a2d]" }, "Plano Mensal"),
-                                React.createElement('span', { className: "text-xl font-bold text-[#3d7a3d]" }, "R$ 9,90")
-                            ),
-                            React.createElement('div', { className: "flex justify-between items-center text-sm" },
-                                React.createElement('span', { className: "text-[#4a8a4a]" }, "Próximas cobranças:"),
-                                React.createElement('span', { className: "font-medium text-[#2d5a2d]" }, "A cada 30 dias")
-                            ),
-                            React.createElement('div', { className: "mt-2 text-xs text-[#4a8a4a] border-t border-[#c0dfc0] pt-2" },
-                                "Cancele quando quiser. Pagamento seguro pelo Mercado Pago."
-                            )
-                        ),
-
-                        React.createElement('div', { 
-                            id: "paymentBrick_container",
-                            className: "min-h-[200px] mb-4"
-                        }),
-
-                        carregandoMP && React.createElement('div', { className: "text-center py-4" },
-                            React.createElement('div', { className: "w-8 h-8 border-4 border-[#FFD966] border-t-[#FFB347] rounded-full animate-spin mx-auto mb-2" }),
-                            React.createElement('p', { className: "text-xs text-[#4a8a4a]" }, "Carregando opções de pagamento...")
-                        ),
-
-                        linkPagamento && React.createElement('div', { className: "text-center mt-6 p-6 bg-amber-50 rounded-xl border-2 border-amber-300" },
-                            React.createElement('p', { className: "text-base text-amber-800 mb-4 font-semibold" },
-                                "👇 Clique no botão abaixo para pagar com Mercado Pago"
-                            ),
-                            React.createElement('a', {
-                                href: linkPagamento,
-                                className: "inline-block px-8 py-4 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white font-bold rounded-xl hover:shadow-lg transition text-lg md:text-xl transform hover:scale-105"
-                            }, "PAGAR AGORA →"),
-                            React.createElement('p', { className: "text-xs text-amber-600 mt-4" },
-                                "Após o pagamento, você será redirecionado automaticamente."
-                            )
-                        ),
-
-                        React.createElement('p', { className: "text-xs text-slate-400 text-center mt-6" },
-                            "Você será redirecionado após o pagamento."
-                        )
                     )
                 );
             }
@@ -3889,8 +3697,66 @@ function ResetarSenha(props) {
                 return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-8" },
                     React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-8 shadow-sm text-center" },
                         React.createElement('div', { className: "w-12 h-12 md:w-16 md:h-16 border-4 border-[#FFD966] border-t-[#FFB347] rounded-full animate-spin mx-auto mb-4" }),
-                        React.createElement('h2', { className: "text-xl font-semibold text-[#3d7a3d] mb-2" }, "Preparando pagamento..."),
-                        React.createElement('p', { className: "text-[#4a8a4a]" }, "Aguarde um instante enquanto preparamos o link de pagamento.")
+                        React.createElement('h2', { className: "text-xl font-semibold text-[#3d7a3d] mb-2" }, 
+                            gerandoToken ? 'Preparando formulário de pagamento...' : 'Processando pagamento...'
+                        ),
+                        React.createElement('p', { className: "text-[#4a8a4a]" }, 
+                            gerandoToken ? 'Aguarde enquanto preparamos o formulário seguro para seu cartão.' : 'Aguarde um instante enquanto processamos seu pagamento.'
+                        ),
+                        !gerandoToken && React.createElement('div', { className: "mt-6 p-4 bg-amber-50 rounded-xl border border-amber-200" },
+                            React.createElement('p', { className: "text-sm text-amber-700" }, "Não feche esta página. O processamento pode levar alguns segundos.")
+                        )
+                    )
+                );
+            }
+
+            // ===== TELA DO FORMULÁRIO DE CARTÃO =====
+            if (mostrarFormularioCartao) {
+                return React.createElement('div', { className: "max-w-md mx-auto px-4 py-8" },
+                    React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-6 md:p-8 shadow-sm" },
+                        React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4" }, "Dados do Cartão"),
+                        React.createElement('p', { className: "text-sm text-[#4a8a4a] mb-6" }, "Informe os dados do cartão para ativar sua assinatura mensal de R$ 9,90."),
+                        
+                        React.createElement('form', { id: "card-form", className: "space-y-4" },
+                            React.createElement('div', null,
+                                React.createElement('label', { className: "block text-xs font-medium mb-1 text-[#3d7a3d]" }, "Número do cartão"),
+                                React.createElement('div', { id: "cardNumber", className: "w-full px-3 py-2 rounded-lg border border-[#c0dfc0]" })
+                            ),
+                            React.createElement('div', { className: "grid grid-cols-2 gap-4" },
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: "block text-xs font-medium mb-1 text-[#3d7a3d]" }, "Mês"),
+                                    React.createElement('div', { id: "expirationMonth", className: "w-full px-3 py-2 rounded-lg border border-[#c0dfc0]" })
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: "block text-xs font-medium mb-1 text-[#3d7a3d]" }, "Ano"),
+                                    React.createElement('div', { id: "expirationYear", className: "w-full px-3 py-2 rounded-lg border border-[#c0dfc0]" })
+                                )
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('label', { className: "block text-xs font-medium mb-1 text-[#3d7a3d]" }, "Código de segurança"),
+                                React.createElement('div', { id: "securityCode", className: "w-full px-3 py-2 rounded-lg border border-[#c0dfc0]" })
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('label', { className: "block text-xs font-medium mb-1 text-[#3d7a3d]" }, "Nome no cartão"),
+                                React.createElement('div', { id: "cardholderName", className: "w-full px-3 py-2 rounded-lg border border-[#c0dfc0]" })
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('label', { className: "block text-xs font-medium mb-1 text-[#3d7a3d]" }, "CPF"),
+                                React.createElement('div', { id: "identificationNumber", className: "w-full px-3 py-2 rounded-lg border border-[#c0dfc0]" })
+                            ),
+                            React.createElement('button', {
+                                type: "button",
+                                onClick: function() {
+                                    var submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                                    document.getElementById('card-form').dispatchEvent(submitEvent);
+                                },
+                                className: "w-full px-4 py-3 bg-gradient-to-r from-[#3d7a3d] to-[#60a060] text-white font-semibold rounded-xl hover:shadow-md transition"
+                            }, "Confirmar Pagamento")
+                        ),
+                        
+                        React.createElement('p', { className: "text-xs text-slate-400 text-center mt-6" },
+                            "Seus dados de cartão são processados diretamente pelo Mercado Pago e não são armazenados em nossos servidores."
+                        )
                     )
                 );
             }
@@ -4228,11 +4094,11 @@ function ResetarSenha(props) {
                             type: "submit",
                             disabled: loading || !aceitouTermos,
                             className: "w-full px-4 md:px-6 py-3 md:py-4 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white font-semibold rounded-xl disabled:opacity-50 hover:shadow-md transition text-sm md:text-base"
-                        }, loading ? 'Processando...' : '✅ Continuar para Pagamento (R$ 9,90)')
+                        }, loading ? 'Processando...' : '✅ Ativar Assinatura (R$ 9,90/mês)')
                     )
                 )
             );
-        }
+        } 
         
         // ========== DASHBOARD DO PRESTADOR CORRIGIDO ==========
         function DashboardPrestador(props) {
