@@ -110,6 +110,7 @@ app.use('/api/categorias', categoriasRoutes);
 
 // 2. Rotas de assinatura (algumas públicas, outras privadas)
 app.use('/api/assinatura', assinaturaRoutes);
+app.use('/api/mercadopago', assinaturaRoutes);
 
 // 3. Middleware de verificação de assinatura (APÓS rotas públicas)
 app.use(verificarAssinatura);
