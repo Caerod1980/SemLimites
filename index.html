@@ -3526,19 +3526,30 @@ function gerarCardToken() {
                                 var cardFormData = cardForm.getCardFormData();
                                 console.log('📥 cardFormData:', cardFormData);
 
-                                var token =
-                                    cardFormData.token ||
-                                    cardFormData.cardToken ||
-                                    cardFormData.card_token_id;
+    var token =
+    cardFormData.token ||
+    cardFormData.cardToken ||
+    cardFormData.card_token_id;
 
-                                if (!token) {
-                                    throw new Error('O Mercado Pago não retornou o token do cartão');
-                                }
+var identificationNumber = (
+    document.getElementById('form-checkout__identificationNumber')?.value || ''
+).replace(/\D/g, '');
 
-                                showSuccess('Token gerado! Processando...');
-                                setTimeout(function() {
-                                    finishResolve(token);
-                                }, 400);
+if (!token) {
+    throw new Error('O Mercado Pago não retornou o token do cartão');
+}
+
+if (identificationNumber.length !== 11) {
+    throw new Error('Informe um CPF válido do titular do cartão');
+}
+
+showSuccess('Token gerado! Processando...');
+setTimeout(function() {
+    finishResolve({
+        token: token,
+        identificationNumber: identificationNumber
+    });
+}, 400);
                             } catch (err) {
                                 console.error('❌ Erro ao obter token do CardForm:', err);
                                 var submitBtn2 = document.getElementById('form-checkout__submit');
@@ -3877,23 +3888,26 @@ function gerarCardToken() {
             console.log('💳 Solicitando token do cartão...');
             setGerandoToken(true);
             
-            var cardToken = await gerarCardToken();
-            
-            setGerandoToken(false);
-            console.log('✅ Token do cartão gerado:', cardToken);
-            
-            console.log('📝 Criando assinatura com token...');
-            
-            const response = await fetch(API_URL + '/assinatura/criar-assinatura', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: formData.email,
-                    nome: formData.nome,
-                    cpf: formData.tipoPessoa === 'fisica' ? cpfNumeros : null,
-                    card_token_id: cardToken
-                })
-            });
+var cardData = await gerarCardToken();
+var cardToken = cardData.token;
+var cpfTitularCartao = cardData.identificationNumber;
+
+setGerandoToken(false);
+console.log('✅ Token do cartão gerado:', cardToken);
+console.log('✅ CPF do titular capturado:', cpfTitularCartao);
+
+console.log('📝 Criando assinatura com token.');
+
+const response = await fetch(API_URL + '/assinatura/criar-assinatura', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        email: formData.email,
+        nome: formData.nome,
+        cpf: cpfTitularCartao,
+        card_token_id: cardToken
+    })
+});
             
             const assinaturaData = await response.json();
             
