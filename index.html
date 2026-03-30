@@ -3272,7 +3272,7 @@ function CadastroPrestador(props) {
         }
     }, [categoriaSelecionada]);
 
-    // ===== FUNÇÃO PARA GERAR CARD TOKEN COM MODAL =====
+   // ===== FUNÇÃO PARA GERAR CARD TOKEN (ALTERNATIVA - MAIS CONFIÁVEL) =====
 function gerarCardToken() {
     return new Promise(function(resolve, reject) {
         // Buscar chave pública da API
@@ -3284,7 +3284,10 @@ function gerarCardToken() {
                     return;
                 }
                 
-                // Criar modal para o formulário de cartão
+                // Inicializar Mercado Pago
+                var mp = new window.MercadoPago(data.publicKey);
+                
+                // Criar modal com inputs HTML normais
                 var modalDiv = document.createElement('div');
                 modalDiv.id = 'mp-card-modal';
                 modalDiv.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm';
@@ -3296,38 +3299,44 @@ function gerarCardToken() {
                             <button id="close-card-modal" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
                         </div>
                         <p class="text-sm text-[#4a8a4a] mb-6">Informe os dados do cartão para ativar sua assinatura mensal de R$ 9,90.</p>
-                        <form id="card-form" class="space-y-4">
+                        <div id="card-form" class="space-y-4">
                             <div>
-                                <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">Número do cartão</label>
-                                <div id="cardNumber" class="card-field"></div>
+                                <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">Número do cartão *</label>
+                                <input type="text" id="cardNumber" placeholder="0000 0000 0000 0000" 
+                                    class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm">
                             </div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">Mês</label>
-                                    <div id="expirationMonth" class="card-field"></div>
+                                    <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">Mês *</label>
+                                    <input type="text" id="expirationMonth" placeholder="MM" maxlength="2" 
+                                        class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">Ano</label>
-                                    <div id="expirationYear" class="card-field"></div>
+                                    <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">Ano *</label>
+                                    <input type="text" id="expirationYear" placeholder="YYYY" maxlength="4" 
+                                        class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm">
                                 </div>
                             </div>
                             <div>
-                                <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">Código de segurança</label>
-                                <div id="securityCode" class="card-field"></div>
+                                <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">Código de segurança *</label>
+                                <input type="text" id="securityCode" placeholder="123" maxlength="4" 
+                                    class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm">
                             </div>
                             <div>
-                                <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">Nome no cartão</label>
-                                <div id="cardholderName" class="card-field"></div>
+                                <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">Nome no cartão *</label>
+                                <input type="text" id="cardholderName" placeholder="NOME COMO ESTÁ NO CARTÃO" 
+                                    class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm">
                             </div>
                             <div>
-                                <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">CPF</label>
-                                <div id="identificationNumber" class="card-field"></div>
+                                <label class="block text-xs font-medium mb-1 text-[#3d7a3d]">CPF *</label>
+                                <input type="text" id="identificationNumber" placeholder="000.000.000-00" 
+                                    class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm">
                             </div>
-                            <input type="hidden" id="identificationType" value="CPF">
+                            <div id="card-error" class="text-red-500 text-xs hidden"></div>
                             <button type="button" id="submit-card" class="w-full px-4 py-3 bg-gradient-to-r from-[#3d7a3d] to-[#60a060] text-white font-semibold rounded-xl hover:shadow-md transition">
                                 Confirmar Pagamento
                             </button>
-                        </form>
+                        </div>
                         <p class="text-xs text-slate-400 text-center mt-4">
                             Seus dados são processados diretamente pelo Mercado Pago.
                         </p>
@@ -3335,36 +3344,10 @@ function gerarCardToken() {
                 `;
                 document.body.appendChild(modalDiv);
                 
-                // Adicionar estilos para os campos do cartão
-                var style = document.createElement('style');
-                style.textContent = `
-                    .card-field {
-                        width: 100%;
-                        min-height: 42px;
-                        border: 1px solid #e2e8f0;
-                        border-radius: 0.75rem;
-                        background-color: #ffffff;
-                        transition: all 0.2s;
-                    }
-                    .card-field:focus-within {
-                        border-color: #3d7a3d;
-                        box-shadow: 0 0 0 2px rgba(61, 122, 61, 0.3);
-                    }
-                    .mp-card-form-iframe {
-                        width: 100%;
-                        border: none;
-                        border-radius: 0.75rem;
-                    }
-                `;
-                document.head.appendChild(style);
-                
                 // Função para fechar o modal
                 function closeModal() {
                     if (modalDiv && modalDiv.parentNode) {
                         modalDiv.remove();
-                    }
-                    if (style && style.parentNode) {
-                        style.remove();
                     }
                 }
                 
@@ -3385,70 +3368,105 @@ function gerarCardToken() {
                     }
                 });
                 
-                // Aguardar um pequeno delay para garantir que o DOM foi renderizado
-                setTimeout(function() {
-                    try {
-                        // Inicializar Mercado Pago
-                        var mpInstance = new window.MercadoPago(data.publicKey);
+                // Função para mostrar erro
+                function showError(message) {
+                    var errorDiv = document.getElementById('card-error');
+                    if (errorDiv) {
+                        errorDiv.textContent = message;
+                        errorDiv.classList.remove('hidden');
+                        setTimeout(function() {
+                            errorDiv.classList.add('hidden');
+                        }, 5000);
+                    }
+                }
+                
+                // Configurar botão de submit
+                var submitBtn = document.getElementById('submit-card');
+                if (submitBtn) {
+                    submitBtn.addEventListener('click', function() {
+                        // Limpar espaços e caracteres especiais
+                        var cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '').replace(/-/g, '');
+                        var expirationMonth = document.getElementById('expirationMonth').value.trim();
+                        var expirationYear = document.getElementById('expirationYear').value.trim();
+                        var securityCode = document.getElementById('securityCode').value.trim();
+                        var cardholderName = document.getElementById('cardholderName').value.trim().toUpperCase();
+                        var identificationNumber = document.getElementById('identificationNumber').value.replace(/\D/g, '');
                         
-                        // Criar card form
-                        var cardForm = mpInstance.cardForm({
-                            amount: '9.90',
-                            iframe: true,
-                            form: {
-                                id: 'card-form',
-                                cardNumber: { id: 'cardNumber' },
-                                securityCode: { id: 'securityCode' },
-                                expirationMonth: { id: 'expirationMonth' },
-                                expirationYear: { id: 'expirationYear' },
-                                cardholderName: { id: 'cardholderName' },
-                                identificationType: { id: 'identificationType' },
-                                identificationNumber: { id: 'identificationNumber' }
-                            },
-                            callbacks: {
-                                onFormMounted: function(error) {
-                                    if (error) {
-                                        console.error('❌ Erro ao montar formulário:', error);
-                                        closeModal();
-                                        reject(error);
-                                    } else {
-                                        console.log('✅ CardForm montado com sucesso');
-                                    }
-                                },
-                                onSubmit: function(event) {
-                                    event.preventDefault();
-                                    console.log('✅ Token do cartão gerado');
-                                    var token = event.card_token;
-                                    closeModal();
-                                    resolve(token);
-                                },
-                                onError: function(error) {
-                                    console.error('❌ Erro no card form:', error);
-                                    closeModal();
-                                    reject(error);
-                                }
-                            }
-                        });
-                        
-                        // Configurar botão de submit
-                        var submitBtn = document.getElementById('submit-card');
-                        if (submitBtn) {
-                            submitBtn.addEventListener('click', function() {
-                                var submitEvent = new Event('submit', { bubbles: true, cancelable: true });
-                                var formElement = document.getElementById('card-form');
-                                if (formElement) {
-                                    formElement.dispatchEvent(submitEvent);
-                                }
-                            });
+                        // Validações básicas
+                        if (!cardNumber) {
+                            showError('Digite o número do cartão');
+                            return;
+                        }
+                        if (cardNumber.length < 13 || cardNumber.length > 19) {
+                            showError('Número do cartão inválido');
+                            return;
+                        }
+                        if (!expirationMonth || expirationMonth.length !== 2) {
+                            showError('Mês de validade inválido (use MM)');
+                            return;
+                        }
+                        if (!expirationYear || expirationYear.length !== 4) {
+                            showError('Ano de validade inválido (use YYYY)');
+                            return;
+                        }
+                        if (!securityCode || securityCode.length < 3) {
+                            showError('Código de segurança inválido');
+                            return;
+                        }
+                        if (!cardholderName) {
+                            showError('Digite o nome no cartão');
+                            return;
+                        }
+                        if (!identificationNumber || identificationNumber.length !== 11) {
+                            showError('CPF inválido (digite 11 números)');
+                            return;
                         }
                         
-                    } catch (err) {
-                        console.error('❌ Erro ao inicializar CardForm:', err);
-                        closeModal();
-                        reject(err);
-                    }
-                }, 100); // Pequeno delay para garantir que o DOM está pronto
-                
+                        // Desabilitar botão durante o processamento
+                        var button = document.getElementById('submit-card');
+                        var originalText = button.textContent;
+                        button.disabled = true;
+                        button.textContent = 'Processando...';
+                        button.classList.add('opacity-50');
+                        
+                        // Criar objeto com dados do cartão
+                        var cardData = {
+                            cardNumber: cardNumber,
+                            expirationMonth: expirationMonth,
+                            expirationYear: expirationYear,
+                            securityCode: securityCode,
+                            cardholderName: cardholderName,
+                            identificationType: 'CPF',
+                            identificationNumber: identificationNumber
+                        };
+                        
+                        console.log('📤 Enviando dados para tokenização:', {
+                            ...cardData,
+                            cardNumber: '***'
+                        });
+                        
+                        // Gerar token do cartão
+                        mp.createCardToken(cardData, function(status, response) {
+                            console.log('📥 Resposta do Mercado Pago:', { status, response });
+                            
+                            // Reativar botão
+                            button.disabled = false;
+                            button.textContent = originalText;
+                            button.classList.remove('opacity-50');
+                            
+                            if (status === 200 && response.id) {
+                                console.log('✅ Token gerado com sucesso:', response.id);
+                                closeModal();
+                                resolve(response.id);
+                            } else {
+                                var errorMsg = response.cause?.[0]?.description || response.message || 'Erro ao gerar token do cartão';
+                                console.error('❌ Erro ao gerar token:', errorMsg);
+                                showError(errorMsg);
+                                reject(new Error(errorMsg));
+                            }
+                        });
+                    });
+                }
             })
             .catch(function(error) {
                 console.error('❌ Erro ao buscar chave pública:', error);
