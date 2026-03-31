@@ -2244,104 +2244,231 @@ function Avatar(props) {
 
             return React.createElement('div', { className: "space-y-3" }, servicosElements);
         }
-        // ========== COMPONENTE DE STATUS DE ASSINATURA COM BOTÃO PAGAR ==========
-function StatusAssinatura({ prestador, onRenovar }) {
+       // ========== COMPONENTE DE STATUS DE ASSINATURA COM BOTÃO PAGAR ==========
+function StatusAssinatura(props) {
+    var prestador = props.prestador;
+    var onRenovar = props.onRenovar;
     var [status, setStatus] = useState(null);
     var [loading, setLoading] = useState(true);
+    var [erro, setErro] = useState('');
     var [renovando, setRenovando] = useState(false);
     var [subscriptionId, setSubscriptionId] = useState(null);
-    
+
     // URL do plano de assinatura (para pagamentos avulsos)
     var PLANO_LINK = 'https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=baa2b8aa788b47ce977c6e5659201c05';
-    
-    useEffect(function() {
-        carregarStatus();
-    }, []);
-    
+
     function carregarStatus() {
+        if (!prestador || !prestador._id) {
+            setErro('Prestador não encontrado');
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
+        setErro('');
+
         fetch(API_URL + '/assinatura/status-prestador/' + prestador._id, {
-            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            }
         })
-            .then(function(response) { return response.json(); })
+            .then(function(response) {
+                if (!response.ok) {
+                    return response.json().then(function(err) {
+                        throw new Error(err.error || 'Erro ao carregar status da assinatura');
+                    });
+                }
+                return response.json();
+            })
             .then(function(data) {
                 if (data.success) {
-                    setStatus(data.planoStatus);
+                    setStatus(data.planoStatus || 'pendente');
                     setSubscriptionId(data.subscriptionId);
+                } else {
+                    setStatus('pendente');
                 }
                 setLoading(false);
             })
             .catch(function(error) {
-                console.error('Erro ao carregar status:', error);
+                console.error('❌ Erro ao carregar status da assinatura:', error);
+                setErro(error.message || 'Erro ao carregar status da assinatura');
                 setLoading(false);
             });
     }
-    
-    function handlePagarAgora() {
+
+    useEffect(function() {
+        carregarStatus();
+    }, [prestador && prestador._id]);
+
+    function abrirRegularizacao() {
         setRenovando(true);
-        // Abre o link do Mercado Pago para pagamento
         window.open(PLANO_LINK, '_blank');
         setRenovando(false);
         alert('🔗 Link de pagamento aberto em nova aba.\n\nApós o pagamento, sua assinatura será ativada automaticamente.');
+        
+        if (onRenovar && typeof onRenovar === 'function') {
+            setTimeout(function() {
+                carregarStatus();
+            }, 3000);
+        }
     }
-    
+
+    function getStatusConfig(statusAtual) {
+        if (statusAtual === 'ativo') {
+            return {
+                badgeClass: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                icon: '✅',
+                titulo: 'Plano Ativo',
+                descricao: 'Sua assinatura está ativa. Você tem acesso completo à plataforma.',
+                mostrarBotao: false,
+                botaoTexto: ''
+            };
+        }
+
+        if (statusAtual === 'pendente') {
+            return {
+                badgeClass: 'bg-amber-100 text-amber-700 border-amber-200',
+                icon: '⏳',
+                titulo: 'Aguardando Pagamento',
+                descricao: 'Seu cadastro será ativado após a confirmação do pagamento. Clique no botão para pagar agora.',
+                mostrarBotao: true,
+                botaoTexto: '💳 Pagar Agora'
+            };
+        }
+
+        if (statusAtual === 'cancelado') {
+            return {
+                badgeClass: 'bg-red-100 text-red-700 border-red-200',
+                icon: '⚠️',
+                titulo: 'Assinatura Cancelada',
+                descricao: 'Sua assinatura foi cancelada. Reative no Mercado Pago para voltar a aparecer nas buscas.',
+                mostrarBotao: true,
+                botaoTexto: '💳 Reativar Assinatura'
+            };
+        }
+
+        if (statusAtual === 'expirado') {
+            return {
+                badgeClass: 'bg-orange-100 text-orange-700 border-orange-200',
+                icon: '⚠️',
+                titulo: 'Plano Inativo',
+                descricao: 'Sua assinatura está inativa. Clique no botão para renovar e continuar usando a plataforma.',
+                mostrarBotao: true,
+                botaoTexto: '💳 Renovar Agora'
+            };
+        }
+
+        return {
+            badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
+            icon: '❓',
+            titulo: 'Status da Assinatura',
+            descricao: 'Não foi possível identificar o status atual da assinatura.',
+            mostrarBotao: true,
+            botaoTexto: 'Verificar novamente'
+        };
+    }
+
     if (loading) {
-        return React.createElement('div', { className: "bg-slate-50 rounded-xl p-4 border border-slate-200 mb-4 animate-pulse" },
-            React.createElement('div', { className: "h-16 bg-slate-100 rounded-lg" })
-        );
-    }
-    
-    if (status === 'ativo') {
-        return React.createElement('div', { className: "bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-4" },
-            React.createElement('div', { className: "flex items-center gap-3" },
-                React.createElement('div', { className: "w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center" },
-                    React.createElement('span', { className: "text-xl" }, "✅")
-                ),
-                React.createElement('div', { className: "flex-1" },
-                    React.createElement('h3', { className: "font-semibold text-emerald-800" }, "Plano Ativo"),
-                    React.createElement('p', { className: "text-sm text-emerald-600" }, "Sua assinatura está ativa. Você tem acesso completo à plataforma.")
+        return React.createElement('div', {
+            className: "bg-white rounded-2xl border border-slate-200 p-4 shadow-sm mb-4"
+        },
+            React.createElement('div', {
+                className: "flex items-center gap-3"
+            },
+                React.createElement('div', {
+                    className: "w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center animate-pulse"
+                }),
+                React.createElement('div', {
+                    className: "flex-1"
+                },
+                    React.createElement('div', {
+                        className: "h-4 bg-slate-100 rounded w-3/4 mb-2 animate-pulse"
+                    }),
+                    React.createElement('div', {
+                        className: "h-3 bg-slate-100 rounded w-1/2 animate-pulse"
+                    })
                 )
             )
         );
     }
-    
-    if (status === 'pendente') {
-        return React.createElement('div', { className: "bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4" },
-            React.createElement('div', { className: "flex flex-col sm:flex-row items-center gap-3" },
-                React.createElement('div', { className: "w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center" },
-                    React.createElement('span', { className: "text-xl" }, "⏳")
-                ),
-                React.createElement('div', { className: "flex-1" },
-                    React.createElement('h3', { className: "font-semibold text-amber-800" }, "Aguardando Pagamento"),
-                    React.createElement('p', { className: "text-sm text-amber-600" }, "Seu cadastro será ativado após a confirmação do pagamento. Clique no botão para pagar agora.")
-                ),
-                React.createElement('button', {
-                    onClick: handlePagarAgora,
-                    disabled: renovando,
-                    className: "px-4 py-2 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white rounded-lg text-sm font-medium hover:shadow-md transition whitespace-nowrap"
-                }, renovando ? 'Processando...' : '💳 Pagar Agora')
-            )
-        );
-    }
-    
-    if (status === 'expirado' || status === 'cancelado') {
-        return React.createElement('div', { className: "bg-red-50 border border-red-200 rounded-xl p-4 mb-4" },
-            React.createElement('div', { className: "flex flex-col sm:flex-row items-center gap-3" },
-                React.createElement('div', { className: "w-10 h-10 rounded-full bg-red-100 flex items-center justify-center" },
+
+    if (erro) {
+        return React.createElement('div', {
+            className: "bg-white rounded-2xl border border-red-200 p-4 shadow-sm mb-4"
+        },
+            React.createElement('div', {
+                className: "flex items-center gap-3"
+            },
+                React.createElement('div', {
+                    className: "w-10 h-10 rounded-full bg-red-100 flex items-center justify-center"
+                },
                     React.createElement('span', { className: "text-xl" }, "⚠️")
                 ),
-                React.createElement('div', { className: "flex-1" },
-                    React.createElement('h3', { className: "font-semibold text-red-800" }, "Plano Inativo"),
-                    React.createElement('p', { className: "text-sm text-red-600" }, "Sua assinatura está inativa. Clique no botão para renovar e continuar usando a plataforma.")
-                ),
-                React.createElement('button', {
-                    onClick: handlePagarAgora,
-                    disabled: renovando,
-                    className: "px-4 py-2 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white rounded-lg text-sm font-medium hover:shadow-md transition whitespace-nowrap"
-                }, renovando ? 'Processando...' : '💳 Renovar Agora')
-            )
+                React.createElement('div', {
+                    className: "flex-1"
+                },
+                    React.createElement('h3', {
+                        className: "font-semibold text-red-800"
+                    }, "Erro ao carregar status"),
+                    React.createElement('p', {
+                        className: "text-sm text-red-600"
+                    }, erro)
+                )
+            ),
+            React.createElement('button', {
+                onClick: carregarStatus,
+                className: "mt-3 px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-sm font-medium hover:bg-slate-200 transition w-full sm:w-auto"
+            }, "Tentar novamente")
         );
     }
+
+    var config = getStatusConfig(status);
+
+    return React.createElement('div', {
+        className: "bg-white rounded-2xl border border-slate-200 p-4 shadow-sm mb-4"
+    },
+        React.createElement('div', {
+            className: "flex flex-col sm:flex-row items-center gap-3 mb-3"
+        },
+            React.createElement('div', {
+                className: "w-10 h-10 rounded-full flex items-center justify-center " + config.badgeClass.replace('text-', 'bg-').replace('border-', '')
+            },
+                React.createElement('span', { className: "text-xl" }, config.icon)
+            ),
+            React.createElement('div', {
+                className: "flex-1 text-center sm:text-left"
+            },
+                React.createElement('div', {
+                    className: "flex items-center justify-center sm:justify-start gap-2 flex-wrap"
+                },
+                    React.createElement('h3', {
+                        className: "font-semibold text-slate-800"
+                    }, config.titulo),
+                    React.createElement('span', {
+                        className: "inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-semibold " + config.badgeClass
+                    }, status || 'desconhecido')
+                ),
+                React.createElement('p', {
+                    className: "text-sm text-slate-600 mt-1"
+                }, config.descricao)
+            )
+        ),
+
+        config.mostrarBotao && React.createElement('div', {
+            className: "mt-4 flex flex-col sm:flex-row gap-2 justify-center sm:justify-start"
+        },
+            React.createElement('button', {
+                onClick: abrirRegularizacao,
+                disabled: renovando,
+                className: "px-4 py-2 rounded-xl bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white text-sm font-semibold hover:shadow-md transition disabled:opacity-50"
+            }, renovando ? 'Processando...' : config.botaoTexto),
+            React.createElement('button', {
+                onClick: carregarStatus,
+                className: "px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-sm font-medium hover:bg-slate-200 transition"
+            }, "Atualizar status")
+        )
+    );
+}
     
     return null;
 }
