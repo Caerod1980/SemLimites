@@ -188,10 +188,12 @@ export async function buscarStatusAssinatura(subscriptionId) {
 
 /**
  * Cancela uma assinatura recorrente
+ * @param {string} subscriptionId - ID da assinatura (preapproval)
+ * @returns {Promise<Object>} Resultado do cancelamento
  */
 export async function cancelarAssinaturaRecorrente(subscriptionId) {
   try {
-    console.log(`🔄 [${AMBIENTE}] Cancelando assinatura: ${subscriptionId}`);
+    console.log(`🔄 [${AMBIENTE}] Cancelando assinatura recorrente: ${subscriptionId}`);
     
     const url = `https://api.mercadopago.com/preapproval/${subscriptionId}`;
     
@@ -220,7 +222,7 @@ export async function cancelarAssinaturaRecorrente(subscriptionId) {
     };
     
   } catch (error) {
-    console.error('❌ Erro ao cancelar assinatura:', error);
+    console.error('❌ Erro ao cancelar assinatura recorrente:', error);
     return { 
       success: false, 
       error: error.message 
@@ -425,6 +427,8 @@ export async function buscarStatusPagamento(paymentId) {
 
 /**
  * Cancela assinatura/pagamento (mantido para compatibilidade)
+ * ATENÇÃO: Esta função é para pagamentos únicos. Para assinaturas recorrentes,
+ * use cancelarAssinaturaRecorrente()
  */
 export async function cancelarAssinatura(paymentId) {
   try {
