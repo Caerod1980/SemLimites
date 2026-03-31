@@ -194,27 +194,31 @@ router.post('/register', async (req, res) => {
   try {
     console.log('📥 Dados recebidos no registro:', req.body);
     
-    const { 
-      email, 
-      senha, 
-      tipo,
-      tipoPessoa,
-      nome,
-      cpf,
-      responsavel,
-      cnpj,
-      categoriaPrincipal,
-      servicos,
-      cidade,
-      estado,
-      descricao,
-      whatsapp,
-      telefone,
-      tags,
-      verificado,
-      dadosCNPJ,
-      dataVerificacaoCNPJ
-    } = req.body;
+   const { 
+  email, 
+  senha, 
+  tipo,
+  tipoPessoa,
+  nome,
+  cpf,
+  responsavel,
+  cnpj,
+  categoriaPrincipal,
+  servicos,
+  cidade,
+  estado,
+  descricao,
+  whatsapp,
+  telefone,
+  tags,
+  verificado,
+  dadosCNPJ,
+  dataVerificacaoCNPJ,
+  subscriptionId,
+  planoStatus,
+  planoAtivo,
+  assinaturaAtivadaEm
+} = req.body;
     
     // Validações básicas
     if (!email || !senha || !tipo) {
@@ -307,27 +311,38 @@ router.post('/register', async (req, res) => {
 
       // Criar o prestador com todos os campos
       const prestadorData = {
-        nome,
-        slug: slugFinal,
-        email,
-        tipoPessoa: tipoPessoa || 'juridica',
-        categoriaPrincipal: categoriaPrincipal,
-        servicos: servicos || [],
-        categoria: req.body.categoria || null,
-        cidade,
-        estado,
-        descricao: descricao || `Profissional em ${cidade}`,
-        whatsapp: whatsapp ? whatsapp.replace(/\D/g, '') : null,
-        telefone: telefone ? telefone.replace(/\D/g, '') : null,
-        tags: tagsArray,
-        verificado: verificado || false,
-        dadosCNPJ: dadosCNPJ || null,
-        dataVerificacaoCNPJ: dataVerificacaoCNPJ || null,
-        estrelas: 0,
-        avaliacoes: 0,
-        totalCurtidas: 0
-      };
+  nome,
+  slug: slugFinal,
+  email,
+  tipoPessoa: tipoPessoa || 'juridica',
+  categoriaPrincipal,
+  servicos: servicos || [],
+  categoria: req.body.categoria || null,
+  cidade,
+  estado,
+  descricao: descricao || `Profissional em ${cidade}`,
+  whatsapp: whatsapp ? whatsapp.replace(/\D/g, '') : null,
+  telefone: telefone ? telefone.replace(/\D/g, '') : null,
+  tags: tagsArray,
+  verificado: verificado || false,
+  dadosCNPJ: dadosCNPJ || null,
+  dataVerificacaoCNPJ: dataVerificacaoCNPJ || null,
 
+  estrelas: 0,
+  avaliacoes: 0,
+  totalCurtidas: 0,
+
+  planoStatus: planoStatus || 'pendente',
+  planoAtivo: planoAtivo === true,
+  planoId: subscriptionId || null,
+  planoExpiracao: planoAtivo === true
+    ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    : null,
+
+  mercadoPago: subscriptionId ? {
+    subscriptionId: subscriptionId
+  } : {}
+};
       // Adicionar campos específicos
       if (tipoPessoa === 'fisica') {
         prestadorData.cpf = cpf.replace(/[^\d]/g, '');
