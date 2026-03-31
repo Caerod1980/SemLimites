@@ -311,10 +311,11 @@ export async function processarNotificacao(notificacao) {
 
     // ===== EVENTOS DE ASSINATURA =====
     if (
-      tipoNotificacao === 'subscription' ||
-      tipoNotificacao === 'preapproval' ||
-      tipoNotificacao === 'subscription_authorized_payment'
-    ) {
+       tipoNotificacao === 'subscription' ||
+       tipoNotificacao === 'preapproval' ||
+       tipoNotificacao === 'subscription_authorized_payment' ||
+       tipoNotificacao === 'subscription_preapproval'
+       ){
       let subscriptionId = data?.id || null;
 
       if (!subscriptionId && resource && typeof resource === 'string') {
