@@ -304,152 +304,99 @@ export async function criarPreferenciaPublica({ email, nome, plano = 'mensal', v
 export async function processarNotificacao(notificacao) {
   try {
     console.log(`📩 [${AMBIENTE}] Processando notificação`);
-    console.log('📦 Tipo:', notificacao.type);
-    console.log('📦 Action:', notificacao.action);
-    
+    console.log('📦 Payload:', JSON.stringify(notificacao, null, 2));
+
     const { action, data, type, topic, resource } = notificacao;
     const tipoNotificacao = type || topic;
-    
-    // ===== PROCESSAR PLANO DE ASSINATURA =====
-    if (tipoNotificacao === 'subscription' || tipoNotificacao === 'subscription_authorized_payment') {
-      console.log('🔄 Processando evento de assinatura');
-      
-      let subscriptionId = data?.id;
-      
-      if (!subscriptionId && resource) {
+
+    // ===== EVENTOS DE ASSINATURA =====
+    if (
+      tipoNotificacao === 'subscription' ||
+      tipoNotificacao === 'preapproval' ||
+      tipoNotificacao === 'subscription_authorized_payment'
+    ) {
+      let subscriptionId = data?.id || null;
+
+      if (!subscriptionId && resource && typeof resource === 'string') {
         const match = resource.match(/\/([^/]+)$/);
         if (match) subscriptionId = match[1];
       }
-      
-      if (subscriptionId) {
-        const statusAssinatura = await buscarStatusAssinatura(subscriptionId);
-        
+
+      if (!subscriptionId) {
         return {
-          success: true,
+          success: false,
           type: 'subscription',
-          subscriptionId: subscriptionId,
-          action: action,
-          status: statusAssinatura.status,
-          nextPaymentDate: statusAssinatura.nextPaymentDate
+          error: 'subscriptionId não encontrado no webhook'
         };
       }
+
+      const statusAssinatura = await buscarStatusAssinatura(subscriptionId);
+
+      if (!statusAssinatura.success) {
+        return {
+          success: false,
+          type: 'subscription',
+          subscriptionId,
+          error: statusAssinatura.error || 'Erro ao buscar assinatura no Mercado Pago'
+        };
+      }
+
+      const status = statusAssinatura.status;
+      const dados = statusAssinatura.data || {};
+
+      console.log(`📊 Assinatura ${subscriptionId} com status: ${status}`);
+
+      return {
+        success: true,
+        type: 'subscription',
+        subscriptionId,
+        action: action || tipoNotificacao,
+        status,
+        nextPaymentDate: statusAssinatura.nextPaymentDate,
+        lastPaymentDate: statusAssinatura.lastPaymentDate,
+        paymentMethodId: statusAssinatura.paymentMethodId,
+        externalReference: statusAssinatura.externalReference,
+        payerEmail: dados.payer_email || null,
+        raw: dados
+      };
     }
-    
-    // ===== PROCESSAR PAGAMENTO (único) =====
+
+    // ===== EVENTOS DE PAGAMENTO ÚNICO =====
     if (tipoNotificacao !== 'payment') {
       console.log(`⏭️ Tipo ignorado: ${tipoNotificacao}`);
       return { success: true, message: 'Tipo ignorado' };
     }
-    
-    let paymentId = data?.id;
-    let preferenceId = null;
-    let emailPagador = null;
-    let nomePagador = null;
-    
-    // Extrair dados da URL resource
-    if (resource && typeof resource === 'string') {
-      const prefMatch = resource.match(/pref_id=([^&]+)/);
-      if (prefMatch) {
-        preferenceId = prefMatch[1];
-      }
-      
-      if (!paymentId) {
-        const paymentMatch = resource.match(/\/(\d+)$/);
-        if (paymentMatch) {
-          paymentId = paymentMatch[1];
-        }
+
+    let paymentId = data?.id || null;
+
+    if (!paymentId && resource && typeof resource === 'string') {
+      const paymentMatch = resource.match(/\/(\d+)$/);
+      if (paymentMatch) {
+        paymentId = paymentMatch[1];
       }
     }
-    
+
     if (!paymentId) {
-      console.error('❌ paymentId não encontrado');
       return { success: false, error: 'paymentId não encontrado' };
     }
-    
-    console.log(`💰 Buscando pagamento: ${paymentId}`);
-    
-    let paymentData;
-    let pagamentoAprovado = false;
-    
-    try {
-      paymentData = await payment.get({ id: paymentId });
-      pagamentoAprovado = paymentData.status === 'approved';
-      emailPagador = paymentData.payer?.email;
-      nomePagador = paymentData.metadata?.nome || paymentData.payer?.name;
-      preferenceId = paymentData.metadata?.preference_id || paymentData.order?.id || preferenceId;
-      
-      console.log(`📊 Status: ${paymentData.status} | Email: ${emailPagador}`);
-    } catch (error) {
-      console.error(`⚠️ Pagamento ${paymentId} não encontrado via API:`, error.message);
-      
-      if (!IS_PRODUCTION) {
-        console.log(`ℹ️ Modo sandbox: considerando pagamento ${paymentId} como aprovado`);
-        pagamentoAprovado = true;
-      } else {
-        console.log(`❌ Pagamento não encontrado em produção - rejeitando`);
-        return { success: false, error: 'Pagamento não encontrado' };
-      }
-      
-      if (notificacao.data?.id) paymentId = notificacao.data.id;
-      if (notificacao.originalBody?.payer?.email) emailPagador = notificacao.originalBody.payer.email;
-    }
-    
-    if (!pagamentoAprovado) {
-      console.log(`⏸️ Pagamento não aprovado: ${paymentId}`);
-      return { success: true, message: 'Pagamento pendente', pagamentoConfirmado: false };
-    }
-    
-    console.log(`✅ Pagamento ${paymentId} confirmado!`);
-    
-    const Prestador = (await import('../models/Prestador.js')).default;
-    
-    let prestadorExistente = null;
-    
-    if (preferenceId) {
-      prestadorExistente = await Prestador.findOne({ preferenceId });
-    }
-    
-    if (!prestadorExistente && emailPagador) {
-      prestadorExistente = await Prestador.findOne({ email: emailPagador });
-    }
-    
-    if (prestadorExistente) {
-      console.log(`✅ Prestador encontrado: ${prestadorExistente._id}`);
-      
-      prestadorExistente.planoStatus = 'ativo';
-      prestadorExistente.planoAtivo = true;
-      prestadorExistente.assinaturaAtivadaEm = new Date();
-      prestadorExistente.pagamentoConfirmado = true;
-      if (preferenceId) prestadorExistente.preferenceId = preferenceId;
-      await prestadorExistente.save();
-      
-      console.log(`🎉 Prestador ${prestadorExistente.nome} ativado!`);
-      
-      return {
-        success: true,
-        prestadorId: prestadorExistente._id,
-        status: 'ativado',
-        paymentId: paymentId,
-        message: 'Prestador ativado com sucesso'
-      };
-    }
-    
-    console.log('ℹ️ Pagamento confirmado - aguardando criação do prestador');
-    
+
+    const paymentData = await payment.get({ id: paymentId });
+
     return {
       success: true,
-      pagamentoConfirmado: true,
-      paymentId: paymentId,
-      status: 'approved',
-      email: emailPagador,
-      nome: nomePagador,
-      preferenceId: preferenceId,
-      message: 'Pagamento confirmado, aguardando criação do prestador'
+      type: 'payment',
+      paymentId,
+      status: paymentData.status,
+      emailPagador: paymentData.payer?.email || null,
+      nomePagador: paymentData.metadata?.nome || paymentData.payer?.name || null,
+      preferenceId: paymentData.metadata?.preference_id || paymentData.order?.id || null
     };
-    
   } catch (error) {
     console.error('❌ Erro ao processar notificação:', error);
-    return { success: false, error: error.message };
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
