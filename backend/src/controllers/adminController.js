@@ -1,6 +1,8 @@
 // controllers/adminController.js - VERSÃO CORRIGIDA (ES Module)
+import Prestador from '../models/Prestador.js';
 import User from '../models/User.js';
 import Servico from '../models/Servico.js';
+import { cancelarAssinaturaRecorrente } from '../services/mercadopago.js';
 
 // ========== ESTATÍSTICAS GERAIS ==========
 export const getStats = async (req, res) => {
@@ -96,34 +98,59 @@ export const excluirPrestador = async (req, res) => {
 
     try {
         const { id } = req.params;
-        
-        const prestador = await User.findById(id).session(session);
-        
-        if (!prestador || prestador.tipo !== 'prestador') {
+
+        const user = await User.findById(id).session(session);
+
+        if (!user || user.tipo !== 'prestador') {
             await session.abortTransaction();
             session.endSession();
             return res.status(404).json({ error: 'Prestador não encontrado' });
         }
 
-        // Buscar e excluir todos os serviços do prestador
-        const servicos = await Servico.find({ prestadorId: id }).session(session);
-        if (servicos.length > 0) {
-            await Servico.deleteMany({ prestadorId: id }).session(session);
+        if (!user.prestadorId) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(404).json({ error: 'Prestador não vinculado ao usuário' });
         }
 
-        // Excluir o usuário
-        await User.findByIdAndDelete(id).session(session);
+        const prestador = await Prestador.findById(user.prestadorId).session(session);
+
+        if (!prestador) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(404).json({ error: 'Documento do prestador não encontrado' });
+        }
 
         let assinaturaCancelada = false;
-        // Se tiver assinaturaId, cancelar no Mercado Pago
-        if (prestador.assinaturaId) {
-            try {
-                // TODO: Implementar cancelamento no Mercado Pago
-                assinaturaCancelada = true;
-            } catch (mpError) {
-                console.error('Erro ao cancelar assinatura:', mpError);
+        const subscriptionId = prestador?.mercadoPago?.subscriptionId || prestador?.planoId;
+
+        if (subscriptionId) {
+            console.log(`🔄 [ADMIN] Cancelando assinatura: ${subscriptionId}`);
+
+            const resultado = await cancelarAssinaturaRecorrente(subscriptionId);
+
+            if (!resultado || !resultado.success) {
+                await session.abortTransaction();
+                session.endSession();
+
+                return res.status(400).json({
+                    success: false,
+                    error: 'Não foi possível cancelar a assinatura no Mercado Pago. Exclusão abortada.'
+                });
             }
+
+            console.log('✅ [ADMIN] Assinatura cancelada com sucesso');
+            assinaturaCancelada = true;
         }
+
+        const servicos = await Servico.find({ prestadorId: prestador._id }).session(session);
+
+        if (servicos.length > 0) {
+            await Servico.deleteMany({ prestadorId: prestador._id }).session(session);
+        }
+
+        await Prestador.findByIdAndDelete(prestador._id).session(session);
+        await User.findByIdAndDelete(user._id).session(session);
 
         await session.commitTransaction();
         session.endSession();
@@ -141,7 +168,6 @@ export const excluirPrestador = async (req, res) => {
         res.status(500).json({ error: 'Erro ao excluir prestador' });
     }
 };
-
 // ========== BUSCAR CLIENTE ==========
 export const buscarCliente = async (req, res) => {
     try {
