@@ -337,81 +337,162 @@ router.post('/cancelar-assinatura', authMiddleware, async (req, res) => {
 router.post('/webhooks/mercadopago', async (req, res) => {
   try {
     console.log('📨 Webhook recebido');
-    console.log('📦 Tipo:', req.body.type);
+    console.log('📦 Tipo:', req.body.type || req.body.topic);
     console.log('📦 Action:', req.body.action);
-    
-    const resultado = await processarNotificacao(req.body);
-    
-    // Se for evento de assinatura
-    if (resultado.type === 'subscription') {
-      console.log(`🔄 Processando evento de assinatura: ${resultado.action}`);
-      
-      const prestador = await Prestador.findOne({ 
-        'mercadoPago.subscriptionId': resultado.subscriptionId 
-      });
-      
-      if (prestador) {
-        const statusAnterior = prestador.planoStatus;
-        
-        if (resultado.action === 'subscription_authorized_payment') {
-          // Pagamento de assinatura aprovado
-          prestador.planoAtivo = true;
-          prestador.planoStatus = 'ativo';
-          prestador.planoExpiracao = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-          
-          prestador.mercadoPago = prestador.mercadoPago || {};
-          prestador.mercadoPago.lastPayment = {
-            date: new Date(),
-            amount: resultado.valor || VALOR_MENSAL,
-            status: 'approved',
-            paymentId: resultado.paymentId
-          };
-          
-          if (typeof prestador.adicionarHistoricoPlano === 'function') {
-            prestador.adicionarHistoricoPlano(
-              'pagamento_aprovado',
-              `Pagamento de assinatura aprovado - ID: ${resultado.paymentId}`,
-              { paymentId: resultado.paymentId, valor: resultado.valor }
-            );
-          }
-          
-          console.log(`✅ Pagamento de assinatura aprovado: ${prestador._id}`);
-          
-        } else if (resultado.action === 'subscription_cancelled') {
-          prestador.planoAtivo = false;
-          prestador.planoStatus = 'cancelado';
-          if (typeof prestador.adicionarHistoricoPlano === 'function') {
-            prestador.adicionarHistoricoPlano(
-              'assinatura_cancelada',
-              `Assinatura cancelada via webhook - ID: ${resultado.subscriptionId}`
-            );
-          }
-          console.log(`❌ Assinatura cancelada: ${prestador._id}`);
-          
-        } else if (resultado.action === 'subscription_failed_payment') {
-          if (typeof prestador.adicionarHistoricoPlano === 'function') {
-            prestador.adicionarHistoricoPlano(
-              'pagamento_falhou',
-              `Pagamento de assinatura falhou - ID: ${resultado.paymentId}`
-            );
-          }
-          console.log(`⚠️ Pagamento falhou para: ${prestador._id}`);
-        }
-        
-        await prestador.save();
-        console.log(`📊 Status alterado: ${statusAnterior} -> ${prestador.planoStatus}`);
-      }
-    }
-    
-    // Sempre retornar 200 para o Mercado Pago
+    console.log('📦 Body completo:', JSON.stringify(req.body, null, 2));
+
+    // Sempre responder 200 rapidamente para o Mercado Pago
     res.status(200).json({ message: 'OK' });
-    
+
+    const resultado = await processarNotificacao(req.body);
+
+    if (!resultado || !resultado.success) {
+      console.error('❌ Falha ao processar webhook:', resultado?.error || 'Resultado inválido');
+      return;
+    }
+
+    // ===== EVENTOS DE ASSINATURA =====
+    if (resultado.type === 'subscription') {
+      console.log(`🔄 Processando assinatura ${resultado.subscriptionId} com status ${resultado.status}`);
+
+      let prestador = await Prestador.findOne({
+        'mercadoPago.subscriptionId': resultado.subscriptionId
+      });
+
+      // Fallback 1: tentar localizar pelo external_reference
+      if (!prestador && resultado.externalReference) {
+        const match = String(resultado.externalReference).match(/^prestador_([^_]+)_/);
+        if (match && match[1] && match[1] !== 'novo') {
+          prestador = await Prestador.findById(match[1]);
+        }
+      }
+
+      // Fallback 2: tentar localizar pelo email do pagador
+      if (!prestador && resultado.payerEmail) {
+        prestador = await Prestador.findOne({ email: resultado.payerEmail });
+      }
+
+      if (!prestador) {
+        console.warn(`⚠️ Nenhum prestador encontrado para a assinatura ${resultado.subscriptionId}`);
+        return;
+      }
+
+      const statusAnterior = prestador.planoStatus;
+
+      prestador.mercadoPago = prestador.mercadoPago || {};
+      prestador.mercadoPago.subscriptionId = resultado.subscriptionId;
+      prestador.planoId = resultado.subscriptionId;
+
+      if (resultado.status === 'authorized') {
+        prestador.planoAtivo = true;
+        prestador.planoStatus = 'ativo';
+        prestador.planoExpiracao = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+        prestador.mercadoPago.lastPayment = {
+          date: new Date(),
+          amount: VALOR_MENSAL,
+          status: 'approved',
+          paymentId: null
+        };
+
+        if (typeof prestador.adicionarHistoricoPlano === 'function') {
+          prestador.adicionarHistoricoPlano(
+            'pagamento_aprovado',
+            `Assinatura autorizada/renovada automaticamente - ID: ${resultado.subscriptionId}`,
+            { valor: VALOR_MENSAL }
+          );
+        }
+
+        console.log(`✅ Plano ativado/renovado para: ${prestador._id}`);
+
+      } else if (resultado.status === 'paused' || resultado.status === 'pending') {
+        prestador.planoAtivo = false;
+        prestador.planoStatus = 'pendente';
+
+        if (typeof prestador.adicionarHistoricoPlano === 'function') {
+          prestador.adicionarHistoricoPlano(
+            'pagamento_pendente',
+            `Assinatura pendente/pausada - ID: ${resultado.subscriptionId}`
+          );
+        }
+
+        console.log(`⏳ Plano pendente/pausado para: ${prestador._id}`);
+
+      } else if (resultado.status === 'cancelled') {
+        prestador.planoAtivo = false;
+        prestador.planoStatus = 'cancelado';
+
+        if (typeof prestador.adicionarHistoricoPlano === 'function') {
+          prestador.adicionarHistoricoPlano(
+            'assinatura_cancelada',
+            `Assinatura cancelada via webhook - ID: ${resultado.subscriptionId}`
+          );
+        }
+
+        console.log(`❌ Assinatura cancelada para: ${prestador._id}`);
+
+      } else {
+        console.log(`ℹ️ Status de assinatura não tratado explicitamente: ${resultado.status}`);
+      }
+
+      await prestador.save();
+      console.log(`📊 Status alterado: ${statusAnterior} -> ${prestador.planoStatus}`);
+      return;
+    }
+
+    // ===== EVENTOS DE PAGAMENTO ÚNICO =====
+    if (resultado.type === 'payment') {
+      console.log(`💰 Processando pagamento ${resultado.paymentId} com status ${resultado.status}`);
+
+      if (resultado.status !== 'approved') {
+        console.log(`⏭️ Pagamento não aprovado, ignorando: ${resultado.status}`);
+        return;
+      }
+
+      let prestador = null;
+
+      if (resultado.emailPagador) {
+        prestador = await Prestador.findOne({ email: resultado.emailPagador });
+      }
+
+      if (!prestador) {
+        console.warn(`⚠️ Prestador não encontrado para pagamento aprovado: ${resultado.emailPagador}`);
+        return;
+      }
+
+      const statusAnterior = prestador.planoStatus;
+
+      prestador.planoAtivo = true;
+      prestador.planoStatus = 'ativo';
+      prestador.planoExpiracao = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+      prestador.mercadoPago = prestador.mercadoPago || {};
+      prestador.mercadoPago.lastPayment = {
+        date: new Date(),
+        amount: VALOR_MENSAL,
+        status: 'approved',
+        paymentId: resultado.paymentId
+      };
+
+      if (typeof prestador.adicionarHistoricoPlano === 'function') {
+        prestador.adicionarHistoricoPlano(
+          'pagamento_aprovado',
+          `Pagamento único aprovado - ID: ${resultado.paymentId}`,
+          { paymentId: resultado.paymentId, valor: VALOR_MENSAL }
+        );
+      }
+
+      await prestador.save();
+      console.log(`📊 Status alterado: ${statusAnterior} -> ${prestador.planoStatus}`);
+      return;
+    }
+
+    console.log('ℹ️ Webhook recebido sem tipo tratado.');
+
   } catch (error) {
     console.error('❌ Erro no webhook:', error);
-    res.status(200).json({ message: 'OK' });
   }
 });
-
 // ========== ROTAS DE CONSULTA ==========
 
 /**
