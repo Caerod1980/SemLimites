@@ -4,7 +4,7 @@ import Prestador from '../models/Prestador.js';
 import User from '../models/User.js';
 import Servico from '../models/Servico.js';
 import { consultarCNPJ } from '../services/receitaFederal.js';
-import { cancelarAssinatura } from '../services/mercadopago.js';
+import { cancelarAssinaturaRecorrente } from '../services/mercadopago.js';
 
 const router = express.Router();
 
@@ -421,24 +421,26 @@ router.delete('/perfil', autenticar, async (req, res) => {
 
     let assinaturaCancelada = false;
     
-    // Cancelar assinatura no Mercado Pago (usando subscriptionId ou planoId)
+    // Cancelar assinatura no Mercado Pago (usando subscriptionId)
     const subscriptionId = prestador.mercadoPago?.subscriptionId || prestador.planoId;
     
+    // ===== CORREÇÃO DE SEGURANÇA: BLOCO CORRETO =====
     if (subscriptionId) {
-      try {
-        console.log(`🔄 Cancelando assinatura no Mercado Pago: ${subscriptionId}`);
-        
-        const resultado = await cancelarAssinatura(subscriptionId);
-        
-        if (resultado.success) {
-          console.log(`✅ Assinatura cancelada com sucesso no Mercado Pago`);
-          assinaturaCancelada = true;
-        } else {
-          console.error(`❌ Erro ao cancelar assinatura no Mercado Pago:`, resultado.error);
-        }
-      } catch (mpError) {
-        console.error('❌ Erro ao chamar API do Mercado Pago:', mpError);
+      console.log(`🔄 Cancelando assinatura no Mercado Pago: ${subscriptionId}`);
+
+      const resultado = await cancelarAssinaturaRecorrente(subscriptionId);
+
+      if (!resultado || !resultado.success) {
+        console.error('❌ Falha ao cancelar assinatura no Mercado Pago:', resultado?.error);
+
+        return res.status(400).json({
+          success: false,
+          error: 'Não foi possível cancelar a assinatura. Exclusão abortada.'
+        });
       }
+
+      console.log('✅ Assinatura cancelada com sucesso');
+      assinaturaCancelada = true;
     } else {
       console.log('ℹ️ Prestador não possui assinatura ativa');
     }
