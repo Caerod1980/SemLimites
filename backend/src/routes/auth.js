@@ -194,39 +194,41 @@ router.post('/register', async (req, res) => {
   try {
     console.log('📥 Dados recebidos no registro:', req.body);
     
-   const { 
-  email, 
-  senha, 
-  tipo,
-  tipoPessoa,
-  nome,
-  cpf,
-  responsavel,
-  cnpj,
-  categoriaPrincipal,
-  servicos,
-  cidade,
-  estado,
-  descricao,
-  whatsapp,
-  telefone,
-  tags,
-  verificado,
-  dadosCNPJ,
-  dataVerificacaoCNPJ,
-  subscriptionId,
-  planoStatus,
-  planoAtivo,
-  assinaturaAtivadaEm
-} = req.body;
+    const { 
+      email, 
+      senha, 
+      tipo,
+      tipoPessoa,
+      nome,
+      cpf,
+      responsavel,
+      cnpj,
+      categoriaPrincipal,
+      servicos,
+      cidade,
+      estado,
+      descricao,
+      whatsapp,
+      telefone,
+      tags,
+      verificado,
+      dadosCNPJ,
+      dataVerificacaoCNPJ,
+      subscriptionId,
+      planoStatus,
+      planoAtivo,
+      assinaturaAtivadaEm
+    } = req.body;
+
+    const emailNormalizado = String(email || '').trim().toLowerCase();
     
     // Validações básicas
-    if (!email || !senha || !tipo) {
+    if (!emailNormalizado || !senha || !tipo) {
       return res.status(400).json({ error: 'E-mail, senha e tipo são obrigatórios' });
     }
 
     // Verificar se já existe usuário com este e-mail
-    const existe = await User.findOne({ email });
+    const existe = await User.findOne({ email: emailNormalizado });
     if (existe) {
       return res.status(400).json({ error: 'E-mail já cadastrado' });
     }
@@ -238,28 +240,24 @@ router.post('/register', async (req, res) => {
     
     // Se for prestador, criar o registro
     if (tipo === 'prestador') {
-      // Validar campos obrigatórios do prestador
       if (!nome || !cidade || !estado) {
         return res.status(400).json({ 
           error: 'Nome, cidade e estado são obrigatórios para prestador' 
         });
       }
 
-      // Validar categoria
       if (!categoriaPrincipal && !req.body.categoria) {
         return res.status(400).json({ 
           error: 'Categoria é obrigatória para prestador' 
         });
       }
 
-      // Validar serviços
       if (!servicos || servicos.length === 0) {
         return res.status(400).json({ 
           error: 'Pelo menos um serviço é obrigatório' 
         });
       }
 
-      // Validação específica por tipo de pessoa
       if (tipoPessoa === 'fisica') {
         if (!cpf) {
           return res.status(400).json({ error: 'CPF é obrigatório para pessoa física' });
@@ -285,12 +283,10 @@ router.post('/register', async (req, res) => {
         }
       }
 
-      // Validar WhatsApp
       if (!whatsapp) {
         return res.status(400).json({ error: 'WhatsApp é obrigatório' });
       }
 
-      // Criar slug
       const slug = nome
         .toLowerCase()
         .normalize('NFD')
@@ -298,7 +294,6 @@ router.post('/register', async (req, res) => {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '');
 
-      // Verificar se slug já existe e gerar único
       let slugFinal = slug;
       let contador = 1;
       while (await Prestador.findOne({ slug: slugFinal })) {
@@ -306,44 +301,44 @@ router.post('/register', async (req, res) => {
         contador++;
       }
 
-      // Processar tags
-      const tagsArray = tags ? (Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim()).filter(t => t)) : [];
+      const tagsArray = tags
+        ? (Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim()).filter(t => t))
+        : [];
 
-      // Criar o prestador com todos os campos
       const prestadorData = {
-  nome,
-  slug: slugFinal,
-  email,
-  tipoPessoa: tipoPessoa || 'juridica',
-  categoriaPrincipal,
-  servicos: servicos || [],
-  categoria: req.body.categoria || null,
-  cidade,
-  estado,
-  descricao: descricao || `Profissional em ${cidade}`,
-  whatsapp: whatsapp ? whatsapp.replace(/\D/g, '') : null,
-  telefone: telefone ? telefone.replace(/\D/g, '') : null,
-  tags: tagsArray,
-  verificado: verificado || false,
-  dadosCNPJ: dadosCNPJ || null,
-  dataVerificacaoCNPJ: dataVerificacaoCNPJ || null,
+        nome,
+        slug: slugFinal,
+        email: emailNormalizado,
+        tipoPessoa: tipoPessoa || 'juridica',
+        categoriaPrincipal,
+        servicos: servicos || [],
+        categoria: req.body.categoria || null,
+        cidade,
+        estado,
+        descricao: descricao || `Profissional em ${cidade}`,
+        whatsapp: whatsapp ? whatsapp.replace(/\D/g, '') : null,
+        telefone: telefone ? telefone.replace(/\D/g, '') : null,
+        tags: tagsArray,
+        verificado: verificado || false,
+        dadosCNPJ: dadosCNPJ || null,
+        dataVerificacaoCNPJ: dataVerificacaoCNPJ || null,
 
-  estrelas: 0,
-  avaliacoes: 0,
-  totalCurtidas: 0,
+        estrelas: 0,
+        avaliacoes: 0,
+        totalCurtidas: 0,
 
-  planoStatus: planoStatus || 'pendente',
-  planoAtivo: planoAtivo === true,
-  planoId: subscriptionId || null,
-  planoExpiracao: planoAtivo === true
-    ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-    : null,
+        planoStatus: planoStatus || 'pendente',
+        planoAtivo: planoAtivo === true,
+        planoId: subscriptionId || null,
+        planoExpiracao: planoAtivo === true
+          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          : null,
 
-  mercadoPago: subscriptionId ? {
-    subscriptionId: subscriptionId
-  } : {}
-};
-      // Adicionar campos específicos
+        mercadoPago: subscriptionId ? {
+          subscriptionId: subscriptionId
+        } : {}
+      };
+
       if (tipoPessoa === 'fisica') {
         prestadorData.cpf = cpf.replace(/[^\d]/g, '');
         prestadorData.cnpj = null;
@@ -353,14 +348,13 @@ router.post('/register', async (req, res) => {
       }
 
       const prestador = await Prestador.create(prestadorData);
-      
       prestadorId = prestador._id;
+
       console.log(`✅ Prestador ${tipoPessoa} criado:`, prestadorId);
     }
 
-    // Criar usuário
     const user = await User.create({
-      email,
+      email: emailNormalizado,
       senha: senhaHash,
       tipo,
       prestadorId
@@ -368,7 +362,6 @@ router.post('/register', async (req, res) => {
 
     console.log('✅ Usuário criado:', user._id);
 
-    // Gerar token JWT
     const token = jwt.sign(
       { 
         userId: user._id, 
@@ -418,23 +411,24 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, senha, tipo } = req.body;
+    const emailNormalizado = String(email || '').trim().toLowerCase();
     
-    console.log('🔐 Tentativa de login:', { email, tipo });
+    console.log('🔐 Tentativa de login:', { email: emailNormalizado, tipo });
     
-    if (!email || !senha || !tipo) {
+    if (!emailNormalizado || !senha || !tipo) {
       return res.status(400).json({ error: 'E-mail, senha e tipo são obrigatórios' });
     }
 
-    const user = await User.findOne({ email, tipo });
+    const user = await User.findOne({ email: emailNormalizado, tipo });
     
     if (!user) {
-      console.log('❌ Usuário não encontrado:', email);
+      console.log('❌ Usuário não encontrado:', emailNormalizado);
       return res.status(401).json({ error: 'Usuário não encontrado' });
     }
 
     const senhaValida = await bcrypt.compare(senha, user.senha);
     if (!senhaValida) {
-      console.log('❌ Senha incorreta para:', email);
+      console.log('❌ Senha incorreta para:', emailNormalizado);
       return res.status(401).json({ error: 'Senha incorreta' });
     }
 
@@ -471,7 +465,6 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ error: 'Erro interno no servidor' });
   }
 });
-
 // ========== VALIDAR TOKEN ==========
 router.get('/me', async (req, res) => {
   try {
@@ -510,12 +503,13 @@ router.get('/me', async (req, res) => {
 router.get('/verificar-email', async (req, res) => {
   try {
     const { email } = req.query;
+    const emailNormalizado = String(email || '').trim().toLowerCase();
     
-    if (!email) {
+    if (!emailNormalizado) {
       return res.status(400).json({ error: 'Email é obrigatório' });
     }
     
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: emailNormalizado });
     
     res.json({ existe: !!user });
     
@@ -543,6 +537,95 @@ router.get('/verificar-cnpj', async (req, res) => {
   } catch (error) {
     console.error('Erro ao verificar CNPJ:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// ========== PRE-CHECK PARA CADASTRO DE PRESTADOR ==========
+/**
+ * @route   POST /api/auth/precheck-cadastro-prestador
+ * @desc    Verifica se o e-mail pode seguir para o fluxo de assinatura + cadastro de prestador
+ * @access  Public
+ */
+router.post('/precheck-cadastro-prestador', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({
+        success: false,
+        error: 'E-mail válido é obrigatório'
+      });
+    }
+
+    const emailNormalizado = String(email).trim().toLowerCase();
+
+    const user = await User.findOne({ email: emailNormalizado });
+    const prestador = await Prestador.findOne({ email: emailNormalizado });
+
+    // 1. Não existe nada -> pode seguir
+    if (!user && !prestador) {
+      return res.json({
+        success: true,
+        podeProsseguir: true,
+        status: 'ok_para_seguir',
+        message: 'E-mail disponível para cadastro de prestador'
+      });
+    }
+
+    // 2. Existe prestador -> já pertence a prestador
+    if (prestador) {
+      return res.json({
+        success: true,
+        podeProsseguir: false,
+        status: 'email_ja_pertence_a_prestador',
+        message: 'Este e-mail já pertence a um prestador cadastrado'
+      });
+    }
+
+    // 3. Existe user cliente sem prestador -> pertence a cliente
+    if (user && user.tipo === 'cliente' && !user.prestadorId) {
+      return res.json({
+        success: true,
+        podeProsseguir: false,
+        status: 'email_ja_pertence_a_cliente',
+        message: 'Este e-mail já está cadastrado como cliente'
+      });
+    }
+
+    // 4. Existe user prestador sem prestadorId -> cadastro incompleto
+    if (user && user.tipo === 'prestador' && !user.prestadorId) {
+      return res.json({
+        success: true,
+        podeProsseguir: false,
+        status: 'cadastro_incompleto',
+        message: 'Existe um cadastro de prestador incompleto para este e-mail'
+      });
+    }
+
+    // 5. Existe user prestador com prestadorId -> já pertence a prestador
+    if (user && user.tipo === 'prestador' && user.prestadorId) {
+      return res.json({
+        success: true,
+        podeProsseguir: false,
+        status: 'email_ja_pertence_a_prestador',
+        message: 'Este e-mail já pertence a um prestador cadastrado'
+      });
+    }
+
+    // 6. Qualquer outro caso estranho
+    return res.json({
+      success: true,
+      podeProsseguir: false,
+      status: 'cadastro_inconsistente',
+      message: 'Há uma inconsistência cadastral neste e-mail. Contate o suporte.'
+    });
+
+  } catch (error) {
+    console.error('❌ Erro no precheck de cadastro de prestador:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erro ao verificar disponibilidade do e-mail'
+    });
   }
 });
 
