@@ -638,15 +638,16 @@ router.post('/precheck-cadastro-prestador', async (req, res) => {
  */
 router.post('/esqueci-senha', async (req, res) => {
   try {
-    const { email } = req.body;
-    
-    if (!email) {
-      return res.status(400).json({ error: 'E-mail é obrigatório' });
-    }
+   const { email } = req.body;
+const emailNormalizado = String(email || '').trim().toLowerCase();
 
-    console.log('🔑 Solicitação de recuperação para:', email);
+if (!emailNormalizado) {
+  return res.status(400).json({ error: 'E-mail é obrigatório' });
+}
 
-    const user = await User.findOne({ email });
+console.log('🔑 Solicitação de recuperação para:', emailNormalizado);
+
+const user = await User.findOne({ email: emailNormalizado });
     
     if (!user) {
       console.log('❌ Usuário não encontrado (mas não informamos)');
