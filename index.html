@@ -3918,148 +3918,185 @@ setTimeout(function() {
 
     // ===== FUNÇÃO handleSubmit =====
     async function handleSubmit(e) {
-        e.preventDefault();
-        
-        if (!categoriaSelecionada) {
-            setErro('Selecione uma categoria principal');
-            return;
-        }
+    e.preventDefault();
+    
+    if (!categoriaSelecionada) {
+        setErro('Selecione uma categoria principal');
+        return;
+    }
 
-        if (servicosSelecionados.length === 0) {
-            setErro('Selecione pelo menos um serviço');
-            return;
-        }
-        
-        if (!aceitouTermos) {
-            setErro('Você precisa aceitar os Termos de Uso para continuar.');
-            return;
-        }
-        
-        setLoading(true);
-        setErro('');
+    if (servicosSelecionados.length === 0) {
+        setErro('Selecione pelo menos um serviço');
+        return;
+    }
+    
+    if (!aceitouTermos) {
+        setErro('Você precisa aceitar os Termos de Uso para continuar.');
+        return;
+    }
+    
+    setLoading(true);
+    setErro('');
 
-        if (formData.senha.length < 6) {
-            setErro('A senha deve ter pelo menos 6 caracteres');
+    if (formData.senha.length < 6) {
+        setErro('A senha deve ter pelo menos 6 caracteres');
+        setLoading(false);
+        return;
+    }
+    
+    if (formData.senha !== formData.confirmarSenha) {
+        setErro('As senhas não coincidem');
+        setLoading(false);
+        return;
+    }
+    
+    var whatsappNumeros = formData.whatsapp.replace(/\D/g, '');
+    if (whatsappNumeros.length < 10 || whatsappNumeros.length > 11) {
+        setErro('WhatsApp inválido. Digite um número com DDD');
+        setLoading(false);
+        return;
+    }
+
+    var cpfNumeros = null;
+    var cnpjNumeros = null;
+    
+    if (formData.tipoPessoa === 'fisica') {
+        cpfNumeros = formData.cpf.replace(/\D/g, '');
+        if (cpfNumeros.length !== 11) {
+            setErro('CPF inválido');
             setLoading(false);
             return;
         }
-        
-        if (formData.senha !== formData.confirmarSenha) {
-            setErro('As senhas não coincidem');
+    } else {
+        cnpjNumeros = formData.cnpj.replace(/\D/g, '');
+        if (cnpjNumeros.length !== 14) {
+            setErro('CNPJ inválido');
             setLoading(false);
             return;
-        }
-        
-        var whatsappNumeros = formData.whatsapp.replace(/\D/g, '');
-        if (whatsappNumeros.length < 10 || whatsappNumeros.length > 11) {
-            setErro('WhatsApp inválido. Digite um número com DDD');
-            setLoading(false);
-            return;
-        }
-
-        var cpfNumeros = null;
-        var cnpjNumeros = null;
-        
-        if (formData.tipoPessoa === 'fisica') {
-            cpfNumeros = formData.cpf.replace(/\D/g, '');
-            if (cpfNumeros.length !== 11) {
-                setErro('CPF inválido');
-                setLoading(false);
-                return;
-            }
-        } else {
-            cnpjNumeros = formData.cnpj.replace(/\D/g, '');
-            if (cnpjNumeros.length !== 14) {
-                setErro('CNPJ inválido');
-                setLoading(false);
-                return;
-            }
-        }
-
-        var dadosPendentesTemp = {
-            nome: formData.nome,
-            email: formData.email,
-            senha: formData.senha,
-            tipoPessoa: formData.tipoPessoa,
-            cidade: formData.cidade,
-            estado: formData.estado,
-            whatsapp: whatsappNumeros,
-            telefone: formData.telefone,
-            descricao: formData.descricao || '',
-            tags: formData.tags.split(',').map(function(t) { return t.trim(); }).filter(function(t) { return t; }),
-            categoriaPrincipal: categoriaSelecionada,
-            servicos: servicosSelecionados
-        };
-
-        if (formData.tipoPessoa === 'fisica') {
-            dadosPendentesTemp.cpf = cpfNumeros;
-        } else {
-            dadosPendentesTemp.cnpj = cnpjNumeros;
-            dadosPendentesTemp.responsavel = formData.responsavel;
-            
-            if (verificacaoCNPJ && verificacaoCNPJ.status === 'ativo') {
-                dadosPendentesTemp.cnpjVerificado = true;
-                dadosPendentesTemp.razaoSocialVerificada = verificacaoCNPJ.razaoSocial;
-            }
-        }
-
-        console.log('📤 Dados de cadastro salvos (aguardando token do cartão)');
-        setEtapa('processando');
-        
-        // Salvar dados temporariamente
-        sessionStorage.setItem('cadastroPendente', JSON.stringify(dadosPendentesTemp));
-        
-        try {
-            console.log('💳 Solicitando token do cartão...');
-            setGerandoToken(true);
-            
-var cardData = await gerarCardToken();
-var cardToken = cardData.token;
-var cpfTitularCartao = cardData.identificationNumber;
-
-setGerandoToken(false);
-console.log('✅ Token do cartão gerado:', cardToken);
-console.log('✅ CPF do titular capturado:', cpfTitularCartao);
-
-console.log('📝 Criando assinatura com token.');
-
-const response = await fetch(API_URL + '/assinatura/criar-assinatura', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-        email: formData.email,
-        nome: formData.nome,
-        cpf: cpfTitularCartao,
-        card_token_id: cardToken
-    })
-});
-            
-            const assinaturaData = await response.json();
-            
-            if (!response.ok || !assinaturaData.success) {
-                throw new Error(assinaturaData.error || 'Erro ao criar assinatura');
-            }
-            
-            console.log('✅ Assinatura criada com sucesso:', assinaturaData);
-            
-            sessionStorage.setItem('subscriptionId', assinaturaData.subscriptionId);
-            dadosPendentesTemp.subscriptionId = assinaturaData.subscriptionId;
-            sessionStorage.setItem('cadastroPendente', JSON.stringify(dadosPendentesTemp));
-            
-            alert('✅ Assinatura criada com sucesso! Seu cadastro será ativado imediatamente.');
-            criarPrestadorAposPagamento();
-            
-        } catch (error) {
-            console.error('❌ Erro ao processar pagamento:', error);
-            setErro(error.message || 'Erro ao processar pagamento. Tente novamente.');
-            setEtapa('form');
-            setGerandoToken(false);
-            setLoading(false);
-            sessionStorage.removeItem('cadastroPendente');
-            sessionStorage.removeItem('subscriptionId');
         }
     }
 
+    // =========================
+    // 🔍 PRECHECK DO E-MAIL
+    // =========================
+    try {
+        console.log('🔍 Validando e-mail antes da assinatura...');
+
+        const precheckResponse = await fetch(API_URL + '/auth/precheck-cadastro-prestador', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: formData.email })
+        });
+
+        const precheckData = await precheckResponse.json();
+
+        if (!precheckResponse.ok || !precheckData.success) {
+            throw new Error(precheckData.error || 'Erro ao validar e-mail');
+        }
+
+        if (!precheckData.podeProsseguir) {
+            switch (precheckData.status) {
+                case 'email_ja_pertence_a_cliente':
+                    throw new Error('Este e-mail já está cadastrado como cliente. Use outro e-mail para criar um perfil de prestador.');
+                case 'email_ja_pertence_a_prestador':
+                    throw new Error('Este e-mail já pertence a um prestador cadastrado.');
+                case 'cadastro_incompleto':
+                    throw new Error('Existe um cadastro incompleto para este e-mail. Entre em contato com o suporte.');
+                default:
+                    throw new Error(precheckData.message || 'Não foi possível continuar com o cadastro');
+            }
+        }
+
+        console.log('✅ E-mail validado com sucesso');
+    } catch (precheckError) {
+        console.error('❌ Erro no precheck:', precheckError);
+        setErro(precheckError.message || 'Erro ao validar e-mail');
+        setLoading(false);
+        return;
+    }
+
+    var dadosPendentesTemp = {
+        nome: formData.nome,
+        email: formData.email,
+        senha: formData.senha,
+        tipoPessoa: formData.tipoPessoa,
+        cidade: formData.cidade,
+        estado: formData.estado,
+        whatsapp: whatsappNumeros,
+        telefone: formData.telefone,
+        descricao: formData.descricao || '',
+        tags: formData.tags.split(',').map(function(t) { return t.trim(); }).filter(function(t) { return t; }),
+        categoriaPrincipal: categoriaSelecionada,
+        servicos: servicosSelecionados
+    };
+
+    if (formData.tipoPessoa === 'fisica') {
+        dadosPendentesTemp.cpf = cpfNumeros;
+    } else {
+        dadosPendentesTemp.cnpj = cnpjNumeros;
+        dadosPendentesTemp.responsavel = formData.responsavel;
+        
+        if (verificacaoCNPJ && verificacaoCNPJ.status === 'ativo') {
+            dadosPendentesTemp.cnpjVerificado = true;
+            dadosPendentesTemp.razaoSocialVerificada = verificacaoCNPJ.razaoSocial;
+        }
+    }
+
+    console.log('📤 Dados de cadastro salvos (aguardando token do cartão)');
+    setEtapa('processando');
+    
+    sessionStorage.setItem('cadastroPendente', JSON.stringify(dadosPendentesTemp));
+    
+    try {
+        console.log('💳 Solicitando token do cartão...');
+        setGerandoToken(true);
+        
+        var cardData = await gerarCardToken();
+        var cardToken = cardData.token;
+        var cpfTitularCartao = cardData.identificationNumber;
+
+        setGerandoToken(false);
+        console.log('✅ Token do cartão gerado:', cardToken);
+        console.log('✅ CPF do titular capturado:', cpfTitularCartao);
+
+        console.log('📝 Criando assinatura com token.');
+
+        const response = await fetch(API_URL + '/assinatura/criar-assinatura', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: formData.email,
+                nome: formData.nome,
+                cpf: cpfTitularCartao,
+                card_token_id: cardToken
+            })
+        });
+        
+        const assinaturaData = await response.json();
+        
+        if (!response.ok || !assinaturaData.success) {
+            throw new Error(assinaturaData.error || 'Erro ao criar assinatura');
+        }
+        
+        console.log('✅ Assinatura criada com sucesso:', assinaturaData);
+        
+        sessionStorage.setItem('subscriptionId', assinaturaData.subscriptionId);
+        dadosPendentesTemp.subscriptionId = assinaturaData.subscriptionId;
+        sessionStorage.setItem('cadastroPendente', JSON.stringify(dadosPendentesTemp));
+        
+        alert('✅ Assinatura criada com sucesso! Seu cadastro será ativado imediatamente.');
+        criarPrestadorAposPagamento();
+        
+    } catch (error) {
+        console.error('❌ Erro ao processar pagamento:', error);
+        setErro(error.message || 'Erro ao processar pagamento. Tente novamente.');
+        setEtapa('form');
+        setGerandoToken(false);
+        setLoading(false);
+        sessionStorage.removeItem('cadastroPendente');
+        sessionStorage.removeItem('subscriptionId');
+    }
+}
     // ===== TELA DE SUCESSO =====
     if (etapa === 'sucesso') {
         return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-8" },
