@@ -66,7 +66,7 @@ const authMiddleware = async (req, res, next) => {
       
       // Verificar outras rotas permitidas
       const isAuthRoute = req.path.includes('/auth');
-      const isAssinaturaRoute = req.path.includes('/assinatura');
+      const isAssinaturaRoute = req.originalUrl.includes('/assinatura');
       const isPerfilRoute = req.path.includes('/prestadores/perfil');
       const isHealthRoute = req.path === '/health';
       
