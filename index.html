@@ -3281,10 +3281,11 @@ function ResetarSenha(props) {
     );
 }
 
-                         // ========== TELA DE CADASTRO COM PAGAMENTO (FLUXO CORRETO - COM CARD TOKEN) ==========
+                      // ========== TELA DE CADASTRO COM PAGAMENTO (FLUXO CORRETO - COM CARD TOKEN E PIX) ==========
 function CadastroPrestador(props) {
     var onCadastroSucesso = props.onCadastroSucesso;
     var onVoltar = props.onVoltar;
+    var onNavigate = props.onNavigate; // CORREÇÃO 1: Receber onNavigate das props
     
     var [categorias, setCategorias] = useState([]);
     var [servicos, setServicos] = useState([]);
@@ -3319,6 +3320,9 @@ function CadastroPrestador(props) {
     var [cnpjVerificadoExistente, setCnpjVerificadoExistente] = useState(false);
     var [dadosPendentes, setDadosPendentes] = useState(null);
     var [gerandoToken, setGerandoToken] = useState(false);
+    
+    // ===== NOVO ESTADO PARA MÉTODO DE PAGAMENTO =====
+    var [metodoPagamento, setMetodoPagamento] = useState('cartao');
 
     var erroElement = null;
     if (erro) {
@@ -3398,249 +3402,292 @@ function CadastroPrestador(props) {
     }, [categoriaSelecionada]);
 
     // ===== FUNÇÃO PARA GERAR CARD TOKEN (VERSÃO CORRIGIDA COM TRATAMENTO DE RESPOSTA) =====
-function gerarCardToken() {
-    return new Promise(function(resolve, reject) {
-        fetch(API_URL + '/mercadopago/public-key')
-            .then(function(response) {
-                if (!response.ok) {
-                    throw new Error('Erro ao buscar chave pública do Mercado Pago');
-                }
-                return response.json();
-            })
-            .then(function(data) {
-                if (!data.publicKey) {
-                    throw new Error('Chave pública não encontrada');
-                }
-
-                if (!window.MercadoPago) {
-                    throw new Error('SDK do Mercado Pago não carregado');
-                }
-
-                var mp = new window.MercadoPago(data.publicKey, {
-                    locale: 'pt-BR'
-                });
-
-                var modalDiv = document.createElement('div');
-                modalDiv.id = 'mp-card-modal';
-                modalDiv.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm';
-                modalDiv.style.overflowY = 'auto';
-                modalDiv.innerHTML = `
-                    <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-4 sm:p-5 animate-fadeIn" style="max-height: 88vh; overflow-y: auto;">
-    <div class="flex justify-between items-center mb-3">
-        <h2 class="text-lg font-bold text-[#3d7a3d]">Dados do Cartão</h2>
-        <button id="close-card-modal" class="text-slate-400 hover:text-slate-600 text-xl leading-none" type="button">&times;</button>
-    </div>
-
-    <p class="text-xs sm:text-sm text-[#4a8a4a] mb-4">
-        Informe os dados do cartão para ativar sua assinatura mensal de R$ 9,90.
-    </p>
-
-    <form id="form-checkout" class="space-y-3">
-        <div>
-            <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">Número do cartão *</label>
-            <div id="form-checkout__cardNumber" class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white flex items-center"></div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-            <div>
-                <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">Validade *</label>
-                <div id="form-checkout__expirationDate" class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white flex items-center"></div>
-            </div>
-            <div>
-                <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">Código *</label>
-                <div id="form-checkout__securityCode" class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white flex items-center"></div>
-            </div>
-        </div>
-
-        <div>
-            <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">Nome no cartão *</label>
-            <input
-                type="text"
-                id="form-checkout__cardholderName"
-                class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
-                placeholder="NOME COMO ESTÁ NO CARTÃO"
-            />
-        </div>
-
-        <div>
-            <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">E-mail *</label>
-            <input
-                type="email"
-                id="form-checkout__cardholderEmail"
-                class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
-                placeholder="seuemail@exemplo.com"
-                value="${(formData && formData.email) ? String(formData.email).replace(/"/g, '&quot;') : ''}"
-            />
-        </div>
-
-        <div>
-            <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">CPF *</label>
-            <input
-                type="text"
-                id="form-checkout__identificationNumber"
-                class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
-                placeholder="000.000.000-00"
-            />
-        </div>
-
-        <div>
-            <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">Banco emissor</label>
-            <select
-                id="form-checkout__issuer"
-                class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
-            ></select>
-        </div>
-
-        <div>
-            <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">Parcelas</label>
-            <select
-                id="form-checkout__installments"
-                class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
-            ></select>
-        </div>
-
-        <input type="hidden" id="form-checkout__paymentMethodId" />
-        <input type="hidden" id="form-checkout__identificationType" value="CPF" />
-
-        <div id="card-error" class="text-red-500 text-xs hidden bg-red-50 p-2 rounded-lg"></div>
-        <div id="card-success" class="text-emerald-600 text-xs hidden bg-emerald-50 p-2 rounded-lg"></div>
-
-        <button
-            type="submit"
-            id="form-checkout__submit"
-            class="w-full h-10 px-4 bg-gradient-to-r from-[#3d7a3d] to-[#60a060] text-white text-sm font-semibold rounded-xl hover:shadow-md transition"
-        >
-            Confirmar Pagamento
-        </button>
-    </form>
-
-    <p class="text-[11px] text-slate-400 text-center mt-3">
-        Seus dados são processados diretamente pelo Mercado Pago.
-    </p>
-</div>
-                `;
-                document.body.appendChild(modalDiv);
-
-                var settled = false;
-                var cardForm = null;
-
-                function closeModal() {
-                    try {
-                        if (cardForm && typeof cardForm.unmount === 'function') {
-                            cardForm.unmount();
-                        }
-                    } catch (e) {
-                        console.warn('Aviso ao desmontar CardForm:', e);
+    function gerarCardToken() {
+        return new Promise(function(resolve, reject) {
+            fetch(API_URL + '/mercadopago/public-key')
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('Erro ao buscar chave pública do Mercado Pago');
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (!data.publicKey) {
+                        throw new Error('Chave pública não encontrada');
                     }
 
-                    if (modalDiv && modalDiv.parentNode) {
-                        modalDiv.remove();
+                    if (!window.MercadoPago) {
+                        throw new Error('SDK do Mercado Pago não carregado');
                     }
-                }
 
-                function finishResolve(value) {
-                    if (settled) return;
-                    settled = true;
-                    closeModal();
-                    resolve(value);
-                }
-
-                function finishReject(error) {
-                    if (settled) return;
-                    settled = true;
-                    closeModal();
-                    reject(error);
-                }
-
-                function showError(message) {
-                    var errorDiv = document.getElementById('card-error');
-                    var successDiv = document.getElementById('card-success');
-                    if (successDiv) successDiv.classList.add('hidden');
-                    if (errorDiv) {
-                        errorDiv.textContent = message;
-                        errorDiv.classList.remove('hidden');
-                    }
-                }
-
-                function showSuccess(message) {
-                    var successDiv = document.getElementById('card-success');
-                    var errorDiv = document.getElementById('card-error');
-                    if (errorDiv) errorDiv.classList.add('hidden');
-                    if (successDiv) {
-                        successDiv.textContent = message;
-                        successDiv.classList.remove('hidden');
-                    }
-                }
-
-                var closeBtn = document.getElementById('close-card-modal');
-                if (closeBtn) {
-                    closeBtn.addEventListener('click', function() {
-                        finishReject(new Error('Usuário cancelou o pagamento'));
+                    var mp = new window.MercadoPago(data.publicKey, {
+                        locale: 'pt-BR'
                     });
-                }
 
-                modalDiv.addEventListener('click', function(e) {
-                    if (e.target === modalDiv) {
-                        finishReject(new Error('Usuário cancelou o pagamento'));
-                    }
-                });
+                    var modalDiv = document.createElement('div');
+                    modalDiv.id = 'mp-card-modal';
+                    modalDiv.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm';
+                    modalDiv.style.overflowY = 'auto';
+                    modalDiv.innerHTML = `
+                        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-4 sm:p-5 animate-fadeIn" style="max-height: 88vh; overflow-y: auto;">
+                            <div class="flex justify-between items-center mb-3">
+                                <h2 class="text-lg font-bold text-[#3d7a3d]">Dados do Cartão</h2>
+                                <button id="close-card-modal" class="text-slate-400 hover:text-slate-600 text-xl leading-none" type="button">&times;</button>
+                            </div>
 
-                cardForm = mp.cardForm({
-                    amount: "9.90",
-                    iframe: true,
-                    form: {
-                        id: "form-checkout",
-                        cardNumber: {
-                            id: "form-checkout__cardNumber",
-                            placeholder: "Número do cartão"
-                        },
-                        expirationDate: {
-                            id: "form-checkout__expirationDate",
-                            placeholder: "MM/AA"
-                        },
-                        securityCode: {
-                            id: "form-checkout__securityCode",
-                            placeholder: "CVV"
-                        },
-                        cardholderName: {
-                            id: "form-checkout__cardholderName",
-                            placeholder: "Titular do cartão"
-                        },
-                        cardholderEmail: {
-                            id: "form-checkout__cardholderEmail",
-                            placeholder: "E-mail"
-                        },
-                        installments: {
-                            id: "form-checkout__installments",
-                            placeholder: "Parcelas"
-                        },
-                        identificationType: {
-                            id: "form-checkout__identificationType",
-                            placeholder: "Tipo de documento"
-                        },
-                        identificationNumber: {
-                            id: "form-checkout__identificationNumber",
-                            placeholder: "CPF"
-                        },
-                        issuer: {
-                            id: "form-checkout__issuer",
-                            placeholder: "Banco emissor"
-                        }
-                    },
-                    callbacks: {
-                        onFormMounted: function(error) {
-                            if (error) {
-                                console.error('❌ Erro ao montar CardForm:', error);
-                                showError('Erro ao carregar formulário do cartão');
-                                return;
+                            <p class="text-xs sm:text-sm text-[#4a8a4a] mb-4">
+                                Informe os dados do cartão para ativar sua assinatura mensal de R$ 9,90.
+                            </p>
+
+                            <form id="form-checkout" class="space-y-3">
+                                <div>
+                                    <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">Número do cartão *</label>
+                                    <div id="form-checkout__cardNumber" class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white flex items-center"></div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">Validade *</label>
+                                        <div id="form-checkout__expirationDate" class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white flex items-center"></div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">Código *</label>
+                                        <div id="form-checkout__securityCode" class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white flex items-center"></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">Nome no cartão *</label>
+                                    <input
+                                        type="text"
+                                        id="form-checkout__cardholderName"
+                                        class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
+                                        placeholder="NOME COMO ESTÁ NO CARTÃO"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">E-mail *</label>
+                                    <input
+                                        type="email"
+                                        id="form-checkout__cardholderEmail"
+                                        class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
+                                        placeholder="seuemail@exemplo.com"
+                                        value="${(formData && formData.email) ? String(formData.email).replace(/"/g, '&quot;') : ''}"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">CPF *</label>
+                                    <input
+                                        type="text"
+                                        id="form-checkout__identificationNumber"
+                                        class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
+                                        placeholder="000.000.000-00"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">Banco emissor</label>
+                                    <select
+                                        id="form-checkout__issuer"
+                                        class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
+                                    ></select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-[11px] sm:text-xs font-semibold mb-1 text-[#3d7a3d]">Parcelas</label>
+                                    <select
+                                        id="form-checkout__installments"
+                                        class="w-full h-10 px-3 rounded-xl border border-slate-200 bg-white focus:border-[#3d7a3d] focus:ring-2 focus:ring-[#60a060]/30 outline-none transition-all text-sm"
+                                    ></select>
+                                </div>
+
+                                <input type="hidden" id="form-checkout__paymentMethodId" />
+                                <input type="hidden" id="form-checkout__identificationType" value="CPF" />
+
+                                <div id="card-error" class="text-red-500 text-xs hidden bg-red-50 p-2 rounded-lg"></div>
+                                <div id="card-success" class="text-emerald-600 text-xs hidden bg-emerald-50 p-2 rounded-lg"></div>
+
+                                <button
+                                    type="submit"
+                                    id="form-checkout__submit"
+                                    class="w-full h-10 px-4 bg-gradient-to-r from-[#3d7a3d] to-[#60a060] text-white text-sm font-semibold rounded-xl hover:shadow-md transition"
+                                >
+                                    Confirmar Pagamento
+                                </button>
+                            </form>
+
+                            <p class="text-[11px] text-slate-400 text-center mt-3">
+                                Seus dados são processados diretamente pelo Mercado Pago.
+                            </p>
+                        </div>
+                    `;
+                    document.body.appendChild(modalDiv);
+
+                    var settled = false;
+                    var cardForm = null;
+
+                    function closeModal() {
+                        try {
+                            if (cardForm && typeof cardForm.unmount === 'function') {
+                                cardForm.unmount();
                             }
-                            console.log('✅ CardForm montado com sucesso');
+                        } catch (e) {
+                            console.warn('Aviso ao desmontar CardForm:', e);
+                        }
+
+                        if (modalDiv && modalDiv.parentNode) {
+                            modalDiv.remove();
+                        }
+                    }
+
+                    function finishResolve(value) {
+                        if (settled) return;
+                        settled = true;
+                        closeModal();
+                        resolve(value);
+                    }
+
+                    function finishReject(error) {
+                        if (settled) return;
+                        settled = true;
+                        closeModal();
+                        reject(error);
+                    }
+
+                    function showError(message) {
+                        var errorDiv = document.getElementById('card-error');
+                        var successDiv = document.getElementById('card-success');
+                        if (successDiv) successDiv.classList.add('hidden');
+                        if (errorDiv) {
+                            errorDiv.textContent = message;
+                            errorDiv.classList.remove('hidden');
+                        }
+                    }
+
+                    function showSuccess(message) {
+                        var successDiv = document.getElementById('card-success');
+                        var errorDiv = document.getElementById('card-error');
+                        if (errorDiv) errorDiv.classList.add('hidden');
+                        if (successDiv) {
+                            successDiv.textContent = message;
+                            successDiv.classList.remove('hidden');
+                        }
+                    }
+
+                    var closeBtn = document.getElementById('close-card-modal');
+                    if (closeBtn) {
+                        closeBtn.addEventListener('click', function() {
+                            finishReject(new Error('Usuário cancelou o pagamento'));
+                        });
+                    }
+
+                    modalDiv.addEventListener('click', function(e) {
+                        if (e.target === modalDiv) {
+                            finishReject(new Error('Usuário cancelou o pagamento'));
+                        }
+                    });
+
+                    cardForm = mp.cardForm({
+                        amount: "9.90",
+                        iframe: true,
+                        form: {
+                            id: "form-checkout",
+                            cardNumber: {
+                                id: "form-checkout__cardNumber",
+                                placeholder: "Número do cartão"
+                            },
+                            expirationDate: {
+                                id: "form-checkout__expirationDate",
+                                placeholder: "MM/AA"
+                            },
+                            securityCode: {
+                                id: "form-checkout__securityCode",
+                                placeholder: "CVV"
+                            },
+                            cardholderName: {
+                                id: "form-checkout__cardholderName",
+                                placeholder: "Titular do cartão"
+                            },
+                            cardholderEmail: {
+                                id: "form-checkout__cardholderEmail",
+                                placeholder: "E-mail"
+                            },
+                            installments: {
+                                id: "form-checkout__installments",
+                                placeholder: "Parcelas"
+                            },
+                            identificationType: {
+                                id: "form-checkout__identificationType",
+                                placeholder: "Tipo de documento"
+                            },
+                            identificationNumber: {
+                                id: "form-checkout__identificationNumber",
+                                placeholder: "CPF"
+                            },
+                            issuer: {
+                                id: "form-checkout__issuer",
+                                placeholder: "Banco emissor"
+                            }
                         },
+                        callbacks: {
+                            onFormMounted: function(error) {
+                                if (error) {
+                                    console.error('❌ Erro ao montar CardForm:', error);
+                                    showError('Erro ao carregar formulário do cartão');
+                                    return;
+                                }
+                                console.log('✅ CardForm montado com sucesso');
+                            },
 
-                        onSubmit: function(event) {
-                            event.preventDefault();
+                            onSubmit: function(event) {
+                                event.preventDefault();
 
-                            try {
+                                try {
+                                    var submitBtn = document.getElementById('form-checkout__submit');
+                                    if (submitBtn) {
+                                        submitBtn.disabled = true;
+                                        submitBtn.textContent = 'Processando...';
+                                        submitBtn.classList.add('opacity-50');
+                                    }
+
+                                    var cardFormData = cardForm.getCardFormData();
+                                    console.log('📥 cardFormData:', cardFormData);
+
+                                    var token = cardFormData.token || cardFormData.cardToken || cardFormData.card_token_id;
+
+                                    var identificationNumber = (document.getElementById('form-checkout__identificationNumber')?.value || '').replace(/\D/g, '');
+
+                                    if (!token) {
+                                        throw new Error('O Mercado Pago não retornou o token do cartão');
+                                    }
+
+                                    if (identificationNumber.length !== 11) {
+                                        throw new Error('Informe um CPF válido do titular do cartão');
+                                    }
+
+                                    showSuccess('Token gerado! Processando...');
+                                    setTimeout(function() {
+                                        finishResolve({
+                                            token: token,
+                                            identificationNumber: identificationNumber
+                                        });
+                                    }, 400);
+                                } catch (err) {
+                                    console.error('❌ Erro ao obter token do CardForm:', err);
+                                    var submitBtn2 = document.getElementById('form-checkout__submit');
+                                    if (submitBtn2) {
+                                        submitBtn2.disabled = false;
+                                        submitBtn2.textContent = 'Confirmar Pagamento';
+                                        submitBtn2.classList.remove('opacity-50');
+                                    }
+                                    showError(err.message || 'Erro ao gerar token do cartão');
+                                }
+                            },
+
+                            onFetching: function(resource) {
+                                console.log('🔄 CardForm buscando recurso:', resource);
                                 var submitBtn = document.getElementById('form-checkout__submit');
                                 if (submitBtn) {
                                     submitBtn.disabled = true;
@@ -3648,94 +3695,47 @@ function gerarCardToken() {
                                     submitBtn.classList.add('opacity-50');
                                 }
 
-                                var cardFormData = cardForm.getCardFormData();
-                                console.log('📥 cardFormData:', cardFormData);
+                                return function() {
+                                    var submitBtnDone = document.getElementById('form-checkout__submit');
+                                    if (submitBtnDone && !settled) {
+                                        submitBtnDone.disabled = false;
+                                        submitBtnDone.textContent = 'Confirmar Pagamento';
+                                        submitBtnDone.classList.remove('opacity-50');
+                                    }
+                                };
+                            },
 
-    var token =
-    cardFormData.token ||
-    cardFormData.cardToken ||
-    cardFormData.card_token_id;
+                            onError: function(errors) {
+                                console.error('❌ Erro no CardForm:', errors);
 
-var identificationNumber = (
-    document.getElementById('form-checkout__identificationNumber')?.value || ''
-).replace(/\D/g, '');
-
-if (!token) {
-    throw new Error('O Mercado Pago não retornou o token do cartão');
-}
-
-if (identificationNumber.length !== 11) {
-    throw new Error('Informe um CPF válido do titular do cartão');
-}
-
-showSuccess('Token gerado! Processando...');
-setTimeout(function() {
-    finishResolve({
-        token: token,
-        identificationNumber: identificationNumber
-    });
-}, 400);
-                            } catch (err) {
-                                console.error('❌ Erro ao obter token do CardForm:', err);
-                                var submitBtn2 = document.getElementById('form-checkout__submit');
-                                if (submitBtn2) {
-                                    submitBtn2.disabled = false;
-                                    submitBtn2.textContent = 'Confirmar Pagamento';
-                                    submitBtn2.classList.remove('opacity-50');
+                                var submitBtn = document.getElementById('form-checkout__submit');
+                                if (submitBtn) {
+                                    submitBtn.disabled = false;
+                                    submitBtn.textContent = 'Confirmar Pagamento';
+                                    submitBtn.classList.remove('opacity-50');
                                 }
-                                showError(err.message || 'Erro ao gerar token do cartão');
-                            }
-                        },
 
-                        onFetching: function(resource) {
-                            console.log('🔄 CardForm buscando recurso:', resource);
-                            var submitBtn = document.getElementById('form-checkout__submit');
-                            if (submitBtn) {
-                                submitBtn.disabled = true;
-                                submitBtn.textContent = 'Processando...';
-                                submitBtn.classList.add('opacity-50');
-                            }
-
-                            return function() {
-                                var submitBtnDone = document.getElementById('form-checkout__submit');
-                                if (submitBtnDone && !settled) {
-                                    submitBtnDone.disabled = false;
-                                    submitBtnDone.textContent = 'Confirmar Pagamento';
-                                    submitBtnDone.classList.remove('opacity-50');
+                                var message = 'Erro ao processar cartão';
+                                if (Array.isArray(errors) && errors.length > 0) {
+                                    var first = errors[0];
+                                    message = first.message || first.description || message;
+                                } else if (errors && errors.message) {
+                                    message = errors.message;
                                 }
-                            };
-                        },
 
-                        onError: function(errors) {
-                            console.error('❌ Erro no CardForm:', errors);
-
-                            var submitBtn = document.getElementById('form-checkout__submit');
-                            if (submitBtn) {
-                                submitBtn.disabled = false;
-                                submitBtn.textContent = 'Confirmar Pagamento';
-                                submitBtn.classList.remove('opacity-50');
+                                showError(message);
                             }
-
-                            var message = 'Erro ao processar cartão';
-                            if (Array.isArray(errors) && errors.length > 0) {
-                                var first = errors[0];
-                                message = first.message || first.description || message;
-                            } else if (errors && errors.message) {
-                                message = errors.message;
-                            }
-
-                            showError(message);
                         }
-                    }
+                    });
+                })
+                .catch(function(error) {
+                    console.error('❌ Erro ao iniciar geração do token:', error);
+                    reject(error);
                 });
-            })
-            .catch(function(error) {
-                console.error('❌ Erro ao iniciar geração do token:', error);
-                reject(error);
-            });
-    });
-}
-    // ===== FUNÇÃO PARA CRIAR PRESTADOR APÓS PAGAMENTO =====
+        });
+    }
+
+    // ===== FUNÇÃO PARA CRIAR PRESTADOR APÓS PAGAMENTO (AJUSTADA PARA CARTÃO E PIX) =====
     function criarPrestadorAposPagamento() {
         console.log('🚀 FUNÇÃO criarPrestadorAposPagamento FOI CHAMADA!');
         
@@ -3749,7 +3749,13 @@ setTimeout(function() {
         }
         
         var dados = JSON.parse(dadosSalvos);
-        console.log('📦 Dados recuperados:', { nome: dados.nome, email: dados.email, subscriptionId: dados.subscriptionId });
+        console.log('📦 Dados recuperados:', { 
+            nome: dados.nome, 
+            email: dados.email, 
+            subscriptionId: dados.subscriptionId,
+            tipoPlano: dados.tipoPlano,
+            formaPagamentoAtual: dados.formaPagamentoAtual
+        });
         
         var dadosEnvio = {
             nome: dados.nome,
@@ -3766,10 +3772,12 @@ setTimeout(function() {
             categoriaPrincipal: dados.categoriaPrincipal,
             servicos: dados.servicos,
             aceitouTermos: true,
-            subscriptionId: dados.subscriptionId,
-            planoStatus: 'ativo',
-            planoAtivo: true,
-            assinaturaAtivadaEm: new Date().toISOString()
+            subscriptionId: dados.subscriptionId || null,
+            planoStatus: dados.planoStatus || (dados.tipoPlano === 'manual' ? 'pendente' : 'ativo'),
+            planoAtivo: typeof dados.planoAtivo === 'boolean' ? dados.planoAtivo : (dados.tipoPlano === 'manual' ? false : true),
+            tipoPlano: dados.tipoPlano || 'automatico',
+            formaPagamentoAtual: dados.formaPagamentoAtual || 'cartao',
+            assinaturaAtivadaEm: dados.tipoPlano === 'manual' ? null : new Date().toISOString()
         };
         
         if (dados.tipoPessoa === 'fisica') {
@@ -3785,7 +3793,7 @@ setTimeout(function() {
         
         console.log('📤 Enviando requisição para /auth/register');
         
-        fetch(API_URL + '/auth/register', {
+        return fetch(API_URL + '/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dadosEnvio)
@@ -3812,18 +3820,14 @@ setTimeout(function() {
                 sessionStorage.removeItem('subscriptionId');
                 setDadosPendentes(null);
                 
-                setEtapa('sucesso');
-                setLoading(false);
-                
-                setTimeout(function() {
-                    window.location.href = BASE_PATH + '/dashboard';
-                }, 2000);
+                return registerData;
             })
             .catch(function(error) {
                 console.error('❌ Erro no cadastro:', error);
                 setErro('Erro ao finalizar cadastro. Entre em contato com o suporte.');
                 setEtapa('form');
                 setLoading(false);
+                throw error;
             });
     }
 
@@ -3916,187 +3920,251 @@ setTimeout(function() {
         });
     }
 
-    // ===== FUNÇÃO handleSubmit =====
+    // ===== FUNÇÃO handleSubmit (COM CARD TOKEN E PIX) =====
     async function handleSubmit(e) {
-    e.preventDefault();
-    
-    if (!categoriaSelecionada) {
-        setErro('Selecione uma categoria principal');
-        return;
-    }
+        e.preventDefault();
+        
+        if (!categoriaSelecionada) {
+            setErro('Selecione uma categoria principal');
+            return;
+        }
 
-    if (servicosSelecionados.length === 0) {
-        setErro('Selecione pelo menos um serviço');
-        return;
-    }
-    
-    if (!aceitouTermos) {
-        setErro('Você precisa aceitar os Termos de Uso para continuar.');
-        return;
-    }
-    
-    setLoading(true);
-    setErro('');
+        if (servicosSelecionados.length === 0) {
+            setErro('Selecione pelo menos um serviço');
+            return;
+        }
+        
+        if (!aceitouTermos) {
+            setErro('Você precisa aceitar os Termos de Uso para continuar.');
+            return;
+        }
+        
+        setLoading(true);
+        setErro('');
 
-    if (formData.senha.length < 6) {
-        setErro('A senha deve ter pelo menos 6 caracteres');
-        setLoading(false);
-        return;
-    }
-    
-    if (formData.senha !== formData.confirmarSenha) {
-        setErro('As senhas não coincidem');
-        setLoading(false);
-        return;
-    }
-    
-    var whatsappNumeros = formData.whatsapp.replace(/\D/g, '');
-    if (whatsappNumeros.length < 10 || whatsappNumeros.length > 11) {
-        setErro('WhatsApp inválido. Digite um número com DDD');
-        setLoading(false);
-        return;
-    }
-
-    var cpfNumeros = null;
-    var cnpjNumeros = null;
-    
-    if (formData.tipoPessoa === 'fisica') {
-        cpfNumeros = formData.cpf.replace(/\D/g, '');
-        if (cpfNumeros.length !== 11) {
-            setErro('CPF inválido');
+        if (formData.senha.length < 6) {
+            setErro('A senha deve ter pelo menos 6 caracteres');
             setLoading(false);
             return;
         }
-    } else {
-        cnpjNumeros = formData.cnpj.replace(/\D/g, '');
-        if (cnpjNumeros.length !== 14) {
-            setErro('CNPJ inválido');
+        
+        if (formData.senha !== formData.confirmarSenha) {
+            setErro('As senhas não coincidem');
             setLoading(false);
             return;
         }
-    }
-
-    // =========================
-    // 🔍 PRECHECK DO E-MAIL
-    // =========================
-    try {
-        console.log('🔍 Validando e-mail antes da assinatura...');
-
-        const precheckResponse = await fetch(API_URL + '/auth/precheck-cadastro-prestador', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: formData.email })
-        });
-
-        const precheckData = await precheckResponse.json();
-
-        if (!precheckResponse.ok || !precheckData.success) {
-            throw new Error(precheckData.error || 'Erro ao validar e-mail');
+        
+        var whatsappNumeros = formData.whatsapp.replace(/\D/g, '');
+        if (whatsappNumeros.length < 10 || whatsappNumeros.length > 11) {
+            setErro('WhatsApp inválido. Digite um número com DDD');
+            setLoading(false);
+            return;
         }
 
-        if (!precheckData.podeProsseguir) {
-            switch (precheckData.status) {
-                case 'email_ja_pertence_a_cliente':
-                    throw new Error('Este e-mail já está cadastrado como cliente. Use outro e-mail para criar um perfil de prestador.');
-                case 'email_ja_pertence_a_prestador':
-                    throw new Error('Este e-mail já pertence a um prestador cadastrado.');
-                case 'cadastro_incompleto':
-                    throw new Error('Existe um cadastro incompleto para este e-mail. Entre em contato com o suporte.');
-                default:
-                    throw new Error(precheckData.message || 'Não foi possível continuar com o cadastro');
+        var cpfNumeros = null;
+        var cnpjNumeros = null;
+        
+        if (formData.tipoPessoa === 'fisica') {
+            cpfNumeros = formData.cpf.replace(/\D/g, '');
+            if (cpfNumeros.length !== 11) {
+                setErro('CPF inválido');
+                setLoading(false);
+                return;
+            }
+        } else {
+            cnpjNumeros = formData.cnpj.replace(/\D/g, '');
+            if (cnpjNumeros.length !== 14) {
+                setErro('CNPJ inválido');
+                setLoading(false);
+                return;
             }
         }
 
-        console.log('✅ E-mail validado com sucesso');
-    } catch (precheckError) {
-        console.error('❌ Erro no precheck:', precheckError);
-        setErro(precheckError.message || 'Erro ao validar e-mail');
-        setLoading(false);
-        return;
-    }
+        // =========================
+        // 🔍 PRECHECK DO E-MAIL
+        // =========================
+        try {
+            console.log('🔍 Validando e-mail antes da assinatura...');
 
-    var dadosPendentesTemp = {
-        nome: formData.nome,
-        email: formData.email,
-        senha: formData.senha,
-        tipoPessoa: formData.tipoPessoa,
-        cidade: formData.cidade,
-        estado: formData.estado,
-        whatsapp: whatsappNumeros,
-        telefone: formData.telefone,
-        descricao: formData.descricao || '',
-        tags: formData.tags.split(',').map(function(t) { return t.trim(); }).filter(function(t) { return t; }),
-        categoriaPrincipal: categoriaSelecionada,
-        servicos: servicosSelecionados
-    };
+            const precheckResponse = await fetch(API_URL + '/auth/precheck-cadastro-prestador', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: formData.email })
+            });
 
-    if (formData.tipoPessoa === 'fisica') {
-        dadosPendentesTemp.cpf = cpfNumeros;
-    } else {
-        dadosPendentesTemp.cnpj = cnpjNumeros;
-        dadosPendentesTemp.responsavel = formData.responsavel;
-        
-        if (verificacaoCNPJ && verificacaoCNPJ.status === 'ativo') {
-            dadosPendentesTemp.cnpjVerificado = true;
-            dadosPendentesTemp.razaoSocialVerificada = verificacaoCNPJ.razaoSocial;
+            const precheckData = await precheckResponse.json();
+
+            if (!precheckResponse.ok || !precheckData.success) {
+                throw new Error(precheckData.error || 'Erro ao validar e-mail');
+            }
+
+            if (!precheckData.podeProsseguir) {
+                switch (precheckData.status) {
+                    case 'email_ja_pertence_a_cliente':
+                        throw new Error('Este e-mail já está cadastrado como cliente. Use outro e-mail para criar um perfil de prestador.');
+                    case 'email_ja_pertence_a_prestador':
+                        throw new Error('Este e-mail já pertence a um prestador cadastrado.');
+                    case 'cadastro_incompleto':
+                        throw new Error('Existe um cadastro incompleto para este e-mail. Entre em contato com o suporte.');
+                    default:
+                        throw new Error(precheckData.message || 'Não foi possível continuar com o cadastro');
+                }
+            }
+
+            console.log('✅ E-mail validado com sucesso');
+        } catch (precheckError) {
+            console.error('❌ Erro no precheck:', precheckError);
+            setErro(precheckError.message || 'Erro ao validar e-mail');
+            setLoading(false);
+            return;
         }
-    }
 
-    console.log('📤 Dados de cadastro salvos (aguardando token do cartão)');
-    setEtapa('processando');
-    
-    sessionStorage.setItem('cadastroPendente', JSON.stringify(dadosPendentesTemp));
-    
-    try {
-        console.log('💳 Solicitando token do cartão...');
-        setGerandoToken(true);
-        
-        var cardData = await gerarCardToken();
-        var cardToken = cardData.token;
-        var cpfTitularCartao = cardData.identificationNumber;
+        var dadosPendentesTemp = {
+            nome: formData.nome,
+            email: formData.email,
+            senha: formData.senha,
+            tipoPessoa: formData.tipoPessoa,
+            cidade: formData.cidade,
+            estado: formData.estado,
+            whatsapp: whatsappNumeros,
+            telefone: formData.telefone,
+            descricao: formData.descricao || '',
+            tags: formData.tags.split(',').map(function(t) { return t.trim(); }).filter(function(t) { return t; }),
+            categoriaPrincipal: categoriaSelecionada,
+            servicos: servicosSelecionados
+        };
 
-        setGerandoToken(false);
-        console.log('✅ Token do cartão gerado:', cardToken);
-        console.log('✅ CPF do titular capturado:', cpfTitularCartao);
-
-        console.log('📝 Criando assinatura com token.');
-
-        const response = await fetch(API_URL + '/assinatura/criar-assinatura', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                email: formData.email,
-                nome: formData.nome,
-                cpf: cpfTitularCartao,
-                card_token_id: cardToken
-            })
-        });
-        
-        const assinaturaData = await response.json();
-        
-        if (!response.ok || !assinaturaData.success) {
-            throw new Error(assinaturaData.error || 'Erro ao criar assinatura');
+        if (formData.tipoPessoa === 'fisica') {
+            dadosPendentesTemp.cpf = cpfNumeros;
+        } else {
+            dadosPendentesTemp.cnpj = cnpjNumeros;
+            dadosPendentesTemp.responsavel = formData.responsavel;
+            
+            if (verificacaoCNPJ && verificacaoCNPJ.status === 'ativo') {
+                dadosPendentesTemp.cnpjVerificado = true;
+                dadosPendentesTemp.razaoSocialVerificada = verificacaoCNPJ.razaoSocial;
+            }
         }
-        
-        console.log('✅ Assinatura criada com sucesso:', assinaturaData);
-        
-        sessionStorage.setItem('subscriptionId', assinaturaData.subscriptionId);
-        dadosPendentesTemp.subscriptionId = assinaturaData.subscriptionId;
+
+        // ===== ADICIONAR INFORMAÇÕES DO PLANO =====
+        dadosPendentesTemp.tipoPlano = metodoPagamento === 'pix' ? 'manual' : 'automatico';
+        dadosPendentesTemp.formaPagamentoAtual = metodoPagamento === 'pix' ? 'pix' : 'cartao';
+
+        if (metodoPagamento === 'pix') {
+            dadosPendentesTemp.planoStatus = 'pendente';
+            dadosPendentesTemp.planoAtivo = false;
+        }
+
+        console.log('📤 Dados de cadastro salvos (aguardando pagamento)');
+        setEtapa('processando');
+
         sessionStorage.setItem('cadastroPendente', JSON.stringify(dadosPendentesTemp));
-        
-        alert('✅ Assinatura criada com sucesso! Seu cadastro será ativado imediatamente.');
-        criarPrestadorAposPagamento();
-        
-    } catch (error) {
-        console.error('❌ Erro ao processar pagamento:', error);
-        setErro(error.message || 'Erro ao processar pagamento. Tente novamente.');
-        setEtapa('form');
-        setGerandoToken(false);
-        setLoading(false);
-        sessionStorage.removeItem('cadastroPendente');
-        sessionStorage.removeItem('subscriptionId');
+
+        try {
+            if (metodoPagamento === 'cartao') {
+                console.log('💳 Solicitando token do cartão...');
+                setGerandoToken(true);
+
+                var cardData = await gerarCardToken();
+                var cardToken = cardData.token;
+                var cpfTitularCartao = cardData.identificationNumber;
+
+                setGerandoToken(false);
+                console.log('✅ Token do cartão gerado:', cardToken);
+                console.log('✅ CPF do titular capturado:', cpfTitularCartao);
+
+                const response = await fetch(API_URL + '/assinatura/criar-assinatura', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: formData.email,
+                        nome: formData.nome,
+                        cpf: cpfTitularCartao,
+                        card_token_id: cardToken
+                    })
+                });
+
+                const assinaturaData = await response.json();
+
+                if (!response.ok || !assinaturaData.success) {
+                    throw new Error(assinaturaData.error || 'Erro ao criar assinatura');
+                }
+
+                console.log('✅ Assinatura criada com sucesso:', assinaturaData);
+
+                sessionStorage.setItem('subscriptionId', assinaturaData.subscriptionId);
+                dadosPendentesTemp.subscriptionId = assinaturaData.subscriptionId;
+                sessionStorage.setItem('cadastroPendente', JSON.stringify(dadosPendentesTemp));
+
+                alert('✅ Assinatura criada com sucesso! Seu cadastro será ativado imediatamente.');
+                await criarPrestadorAposPagamento();
+                setEtapa('sucesso');
+                setLoading(false);
+                
+                setTimeout(function() {
+                    window.location.href = BASE_PATH + '/dashboard';
+                }, 2000);
+                return;
+            }
+
+            if (metodoPagamento === 'pix') {
+                console.log('📲 Fluxo PIX selecionado. Criando prestador em modo pendente.');
+
+                var registerData = await criarPrestadorAposPagamento();
+
+                var userSalvo = JSON.parse(localStorage.getItem('user') || '{}');
+                var prestadorIdCriado = userSalvo.prestadorId || userSalvo.id || registerData.user?.id || registerData.user?._id;
+
+                if (!prestadorIdCriado) {
+                    throw new Error('Prestador criado, mas não foi possível identificar o ID para gerar o PIX.');
+                }
+
+                console.log('🆔 Prestador ID para PIX:', prestadorIdCriado);
+
+                const pixResponse = await fetch(API_URL + '/assinatura/criar-pix', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({
+                        prestadorId: prestadorIdCriado
+                    })
+                });
+
+                const pixData = await pixResponse.json();
+
+                if (!pixResponse.ok || !pixData.success) {
+                    throw new Error(pixData.error || 'Erro ao gerar cobrança PIX');
+                }
+
+                console.log('✅ Cobrança PIX gerada:', pixData);
+
+                alert('📲 Cobrança PIX gerada com sucesso! Você será redirecionado para concluir o pagamento.');
+
+                if (pixData.initPoint) {
+                    window.open(pixData.initPoint, '_blank');
+                }
+
+                setEtapa('sucesso');
+                setLoading(false);
+                
+                setTimeout(function() {
+                    window.location.href = BASE_PATH + '/dashboard';
+                }, 3000);
+                return;
+            }
+
+        } catch (error) {
+            console.error('❌ Erro ao processar pagamento:', error);
+            setErro(error.message || 'Erro ao processar pagamento. Tente novamente.');
+            setEtapa('form');
+            setGerandoToken(false);
+            setLoading(false);
+            sessionStorage.removeItem('subscriptionId');
+        }
     }
-}
+
     // ===== TELA DE SUCESSO =====
     if (etapa === 'sucesso') {
         return React.createElement('div', { className: "max-w-3xl mx-auto px-4 py-8" },
@@ -4107,9 +4175,13 @@ setTimeout(function() {
                     )
                 ),
                 React.createElement('h2', { className: "text-2xl font-bold text-[#3d7a3d] mb-4" }, "Cadastro realizado com sucesso! 🎉"),
-                React.createElement('p', { className: "text-[#4a8a4a] mb-6" },
-                    "Sua conta foi criada e sua assinatura foi ativada. Agora você já pode acessar o dashboard e começar a usar o SemLimites."
-                ),
+                metodoPagamento === 'pix' 
+                    ? React.createElement('p', { className: "text-[#4a8a4a] mb-6" },
+                        "Sua conta foi criada e o QR Code PIX foi aberto em uma nova janela. Após a confirmação do pagamento, seu plano será ativado."
+                    )
+                    : React.createElement('p', { className: "text-[#4a8a4a] mb-6" },
+                        "Sua conta foi criada e sua assinatura foi ativada. Agora você já pode acessar o dashboard e começar a usar o SemLimites."
+                    ),
                 React.createElement('div', { className: "animate-pulse" }, "Redirecionando para o dashboard...")
             )
         );
@@ -4121,10 +4193,12 @@ setTimeout(function() {
             React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-8 shadow-sm text-center" },
                 React.createElement('div', { className: "w-12 h-12 md:w-16 md:h-16 border-4 border-[#FFD966] border-t-[#FFB347] rounded-full animate-spin mx-auto mb-4" }),
                 React.createElement('h2', { className: "text-xl font-semibold text-[#3d7a3d] mb-2" }, 
-                    'Aguardando dados do cartão...'
+                    metodoPagamento === 'pix' ? 'Preparando pagamento PIX...' : 'Aguardando dados do cartão...'
                 ),
                 React.createElement('p', { className: "text-[#4a8a4a]" }, 
-                    'Uma janela será aberta para você informar os dados do seu cartão.'
+                    metodoPagamento === 'pix' 
+                        ? 'Uma nova janela será aberta com o QR Code para pagamento.'
+                        : 'Uma janela será aberta para você informar os dados do seu cartão.'
                 ),
                 React.createElement('div', { className: "mt-6 p-4 bg-amber-50 rounded-xl border border-amber-200" },
                     React.createElement('p', { className: "text-sm text-amber-700" }, 
@@ -4433,6 +4507,69 @@ setTimeout(function() {
                     })
                 ),
 
+                // ===== BLOCO DE ESCOLHA DE PAGAMENTO =====
+                React.createElement('div', { className: "mt-6 bg-white rounded-2xl border border-slate-200 p-4 md:p-5 shadow-sm" },
+                    React.createElement('h3', { className: "text-base md:text-lg font-semibold text-slate-800 mb-3" }, "Forma de pagamento"),
+
+                    React.createElement('div', { className: "space-y-3" },
+                        React.createElement('label', {
+                            className: cls(
+                                "flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition",
+                                metodoPagamento === 'cartao'
+                                    ? "border-emerald-300 bg-emerald-50"
+                                    : "border-slate-200 bg-white hover:border-slate-300"
+                            )
+                        },
+                            React.createElement('input', {
+                                type: "radio",
+                                name: "metodoPagamento",
+                                value: "cartao",
+                                checked: metodoPagamento === 'cartao',
+                                onChange: function() { setMetodoPagamento('cartao'); },
+                                className: "mt-1"
+                            }),
+                            React.createElement('div', null,
+                                React.createElement('div', { className: "font-semibold text-slate-800" }, "💳 Plano automático no cartão"),
+                                React.createElement('p', { className: "text-sm text-slate-600 mt-1" },
+                                    "Renovação automática mensal. Use somente cartão de crédito."
+                                ),
+                                React.createElement('div', { className: "mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-800" },
+                                    React.createElement('p', { className: "font-medium mb-1" }, "Importante para aumentar a aprovação:"),
+                                    React.createElement('ul', { className: "list-disc pl-5 space-y-1" },
+                                        React.createElement('li', null, "Cadastro + cartão + CPF devem ser da mesma pessoa."),
+                                        React.createElement('li', null, "Use cartão de crédito habilitado para compras online."),
+                                        React.createElement('li', null, "Cartões de débito, virtuais recém-criados ou com limite garantido podem ser recusados.")
+                                    )
+                                )
+                            )
+                        ),
+
+                        React.createElement('label', {
+                            className: cls(
+                                "flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition",
+                                metodoPagamento === 'pix'
+                                    ? "border-sky-300 bg-sky-50"
+                                    : "border-slate-200 bg-white hover:border-slate-300"
+                            )
+                        },
+                            React.createElement('input', {
+                                type: "radio",
+                                name: "metodoPagamento",
+                                value: "pix",
+                                checked: metodoPagamento === 'pix',
+                                onChange: function() { setMetodoPagamento('pix'); },
+                                className: "mt-1"
+                            }),
+                            React.createElement('div', null,
+                                React.createElement('div', { className: "font-semibold text-slate-800" }, "📲 Plano manual por PIX"),
+                                React.createElement('p', { className: "text-sm text-slate-600 mt-1" },
+                                    "Pagamento mensal manual. Ideal para quem não quer depender do cartão."
+                                )
+                            )
+                        )
+                    )
+                ),
+
                 React.createElement('div', { className: "mb-6 p-4 bg-[#f0f7f0] rounded-xl border border-[#c0dfc0]" },
                     React.createElement('label', { className: "flex items-start gap-3 cursor-pointer" },
                         React.createElement('input', {
@@ -4447,7 +4584,9 @@ setTimeout(function() {
                                 type: "button",
                                 onClick: function(e) { 
                                     e.preventDefault();
-                                    navigate('/termos');
+                                    if (onNavigate) {
+                                        onNavigate('/termos');  // CORREÇÃO 2: Usar onNavigate
+                                    }
                                 },
                                 className: "text-[#FFB347] underline hover:text-[#F09030]"
                             }, "Termos de Uso"),
@@ -4456,7 +4595,9 @@ setTimeout(function() {
                                 type: "button",
                                 onClick: function(e) { 
                                     e.preventDefault();
-                                    navigate('/privacidade');
+                                    if (onNavigate) {
+                                        onNavigate('/privacidade');  // CORREÇÃO 2: Usar onNavigate
+                                    }
                                 },
                                 className: "text-[#FFB347] underline hover:text-[#F09030]"
                             }, "Política de Privacidade")
@@ -4468,7 +4609,12 @@ setTimeout(function() {
                     type: "submit",
                     disabled: loading || !aceitouTermos,
                     className: "w-full px-4 md:px-6 py-3 md:py-4 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white font-semibold rounded-xl disabled:opacity-50 hover:shadow-md transition text-sm md:text-base"
-                }, loading ? 'Processando...' : '✅ Ativar Assinatura (R$ 9,90/mês)')
+                }, 
+                    // CORREÇÃO 3: Texto do botão dinâmico baseado no método de pagamento
+                    loading ? 'Processando...' : (metodoPagamento === 'pix' 
+                        ? '📲 Gerar cobrança PIX (R$ 9,90/mês)'
+                        : '✅ Ativar Assinatura (R$ 9,90/mês)')
+                )
             )
         )
     );
