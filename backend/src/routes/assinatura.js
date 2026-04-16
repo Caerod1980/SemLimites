@@ -233,7 +233,7 @@ router.post('/criar-preferencia', async (req, res) => {
       success: true,
       preferenceId: resultado.preferenceId,
       initPoint: resultado.initPoint,
-      sandboxInitPoint: resultado.sandbox_init_point,
+      sandboxInitPoint: resultado.sandboxInitPoint,
       message: 'Preferência criada com sucesso'
     });
     
@@ -385,7 +385,7 @@ router.post('/cancelar-assinatura', authMiddleware, async (req, res) => {
     }
     
     // Cancelar no Mercado Pago
-    const resultado = await cancelarAssinatura(subscriptionId);
+    const resultado = await cancelarAssinaturaRecorrente(subscriptionId);
     
     if (resultado.success) {
       // Atualizar localmente
@@ -681,15 +681,18 @@ router.get('/status-prestador/:prestadorId', authMiddleware, async (req, res) =>
       });
     }
     
-    res.json({
-      success: true,
-      planoStatus: prestador.planoStatus || 'inativo',
-      planoAtivo: prestador.planoAtivo || false,
-      planoExpiracao: prestador.planoExpiracao,
-      subscriptionId: prestador.mercadoPago?.subscriptionId,
-      lastPayment: prestador.mercadoPago?.lastPayment,
-      historico: prestador.planoHistorico || []
-    });
+  res.json({
+  success: true,
+  planoStatus: prestador.planoStatus || 'inativo',
+  planoAtivo: prestador.planoAtivo || false,
+  planoExpiracao: prestador.planoExpiracao,
+  subscriptionId: prestador.mercadoPago?.subscriptionId,
+  lastPayment: prestador.mercadoPago?.lastPayment,
+  tipoPlano: prestador.tipoPlano || 'automatico',
+  formaPagamentoAtual: prestador.formaPagamentoAtual || 'cartao',
+  lastPix: prestador.mercadoPago?.lastPix || null,
+  historico: prestador.planoHistorico || []
+});
     
   } catch (error) {
     console.error('❌ Erro ao buscar status do prestador:', error);
