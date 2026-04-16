@@ -1,11 +1,13 @@
 // /src/routes/assinatura.js
 import express from 'express';
-import { 
+import {
   criarAssinaturaRecorrente as criarAssinatura,
-  criarPreferenciaPublica, 
-  buscarStatusAssinatura, 
+  criarPreferenciaPublica,
+  criarPagamentoPixManual,
+  buscarStatusAssinatura,
   cancelarAssinatura,
-  processarNotificacao 
+  cancelarAssinaturaRecorrente,
+  processarNotificacao
 } from '../services/mercadopago.js';
 import authMiddleware from '../middlewares/auth.js';
 import Prestador from '../models/Prestador.js';
@@ -104,7 +106,95 @@ router.post('/criar-assinatura', async (req, res) => {
     });
   }
 });
+/**
+ * @route   POST /api/assinatura/criar-pix
+ * @desc    Criar cobrança PIX manual para plano mensal
+ * @access  Private
+ */
+router.post('/criar-pix', authMiddleware, async (req, res) => {
+  try {
+    const { prestadorId } = req.body;
 
+    if (!prestadorId) {
+      return res.status(400).json({
+        success: false,
+        error: 'prestadorId é obrigatório'
+      });
+    }
+
+    const prestador = await Prestador.findById(prestadorId);
+
+    if (!prestador) {
+      return res.status(404).json({
+        success: false,
+        error: 'Prestador não encontrado'
+      });
+    }
+
+    const autorizado =
+      req.usuario.prestadorId?.toString() === prestadorId ||
+      req.usuario.id?.toString() === prestadorId ||
+      req.usuario.tipo === 'admin';
+
+    if (!autorizado) {
+      return res.status(403).json({
+        success: false,
+        error: 'Acesso negado'
+      });
+    }
+
+    const resultado = await criarPagamentoPixManual({
+      email: prestador.email,
+      nome: prestador.nome,
+      prestadorId: prestador._id.toString(),
+      valor: VALOR_MENSAL
+    });
+
+    if (!resultado.success) {
+      return res.status(500).json({
+        success: false,
+        error: resultado.error,
+        details: resultado.details
+      });
+    }
+
+    prestador.mercadoPago = prestador.mercadoPago || {};
+    prestador.mercadoPago.lastPix = {
+      paymentId: null,
+      preferenceId: resultado.preferenceId,
+      qrCode: null,
+      qrCodeBase64: null,
+      ticketUrl: resultado.initPoint || null,
+      status: 'pending',
+      createdAt: new Date()
+    };
+
+    if (typeof prestador.adicionarHistoricoPlano === 'function') {
+      prestador.adicionarHistoricoPlano(
+        'pix_gerado',
+        `Cobrança PIX manual gerada - Preference ID: ${resultado.preferenceId}`,
+        { valor: VALOR_MENSAL }
+      );
+    }
+
+    await prestador.save();
+
+    return res.json({
+      success: true,
+      tipo: 'pix_manual',
+      preferenceId: resultado.preferenceId,
+      initPoint: resultado.initPoint,
+      sandboxInitPoint: resultado.sandboxInitPoint,
+      message: 'Cobrança PIX gerada com sucesso'
+    });
+  } catch (error) {
+    console.error('❌ Erro ao criar PIX manual:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 /**
  * @route   POST /api/assinatura/criar-preferencia
  * @desc    Criar uma preferência de pagamento (pagamento único)
@@ -440,50 +530,115 @@ router.post('/webhooks/mercadopago', async (req, res) => {
       return;
     }
 
-    // ===== EVENTOS DE PAGAMENTO ÚNICO =====
-    if (resultado.type === 'payment') {
-      console.log(`💰 Processando pagamento ${resultado.paymentId} com status ${resultado.status}`);
-
-      if (resultado.status !== 'approved') {
-        console.log(`⏭️ Pagamento não aprovado, ignorando: ${resultado.status}`);
-        return;
-      }
+      // ===== EVENTOS DE PIX MANUAL =====
+    if (resultado.type === 'pix_manual') {
+      console.log(`💰 Processando PIX manual ${resultado.paymentId} com status ${resultado.status}`);
 
       let prestador = null;
 
-      if (resultado.emailPagador) {
-        prestador = await Prestador.findOne({ email: resultado.emailPagador });
+      if (resultado.prestadorId) {
+        prestador = await Prestador.findById(resultado.prestadorId);
+      }
+
+      if (!prestador && resultado.payerEmail) {
+        prestador = await Prestador.findOne({ email: resultado.payerEmail });
       }
 
       if (!prestador) {
-        console.warn(`⚠️ Prestador não encontrado para pagamento aprovado: ${resultado.emailPagador}`);
+        console.warn(`⚠️ Prestador não encontrado para PIX manual: ${resultado.payerEmail || resultado.prestadorId}`);
         return;
       }
 
       const statusAnterior = prestador.planoStatus;
-
-      prestador.planoAtivo = true;
-      prestador.planoStatus = 'ativo';
-      prestador.planoExpiracao = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-
       prestador.mercadoPago = prestador.mercadoPago || {};
-      prestador.mercadoPago.lastPayment = {
-        date: new Date(),
-        amount: VALOR_MENSAL,
-        status: 'approved',
-        paymentId: resultado.paymentId
-      };
+      prestador.mercadoPago.lastPix = prestador.mercadoPago.lastPix || {};
 
-      if (typeof prestador.adicionarHistoricoPlano === 'function') {
-        prestador.adicionarHistoricoPlano(
-          'pagamento_aprovado',
-          `Pagamento único aprovado - ID: ${resultado.paymentId}`,
-          { paymentId: resultado.paymentId, valor: VALOR_MENSAL }
-        );
+      prestador.mercadoPago.lastPix.paymentId = resultado.paymentId;
+      prestador.mercadoPago.lastPix.status = resultado.status;
+
+      if (resultado.status === 'approved') {
+        // se havia assinatura automática antiga, cancelar para evitar nova cobrança
+       if (prestador.mercadoPago.subscriptionId) {
+  const subscriptionAntiga = prestador.mercadoPago.subscriptionId;
+
+  const cancelamento = await cancelarAssinaturaRecorrente(subscriptionAntiga);
+
+  if (cancelamento.success) {
+    prestador.mercadoPago.subscriptionId = null;
+
+    if (typeof prestador.adicionarHistoricoPlano === 'function') {
+      prestador.adicionarHistoricoPlano(
+        'assinatura_cancelada_por_migracao_pix',
+        `Assinatura automática cancelada após pagamento via PIX - ID: ${subscriptionAntiga}`
+      );
+    }
+  } else {
+    console.warn(`⚠️ Não foi possível cancelar assinatura automática antiga: ${subscriptionAntiga}`);
+  }
+}
+
+        prestador.ativarPlano({
+          paymentId: resultado.paymentId,
+          preferenceId: prestador.mercadoPago.lastPix.preferenceId || null,
+          valor: VALOR_MENSAL,
+          tipoPlano: 'manual',
+          formaPagamentoAtual: 'pix'
+        });
+
+        prestador.mercadoPago.lastPix.status = 'approved';
+
+        if (typeof prestador.adicionarHistoricoPlano === 'function') {
+          prestador.adicionarHistoricoPlano(
+            'pix_aprovado',
+            `Pagamento PIX aprovado - ID: ${resultado.paymentId}`,
+            { paymentId: resultado.paymentId, valor: VALOR_MENSAL }
+          );
+        }
+
+        await prestador.save();
+        console.log(`📊 Status alterado: ${statusAnterior} -> ${prestador.planoStatus}`);
+        return;
       }
 
-      await prestador.save();
-      console.log(`📊 Status alterado: ${statusAnterior} -> ${prestador.planoStatus}`);
+      if (resultado.status === 'pending' || resultado.status === 'in_process') {
+        prestador.planoAtivo = false;
+        prestador.planoStatus = 'pendente';
+        prestador.tipoPlano = 'manual';
+        prestador.formaPagamentoAtual = 'pix';
+        prestador.mercadoPago.lastPix.status = resultado.status;
+
+        if (typeof prestador.adicionarHistoricoPlano === 'function') {
+          prestador.adicionarHistoricoPlano(
+            'pix_pendente',
+            `Pagamento PIX pendente - ID: ${resultado.paymentId}`
+          );
+        }
+
+        await prestador.save();
+        console.log(`📊 Status alterado: ${statusAnterior} -> ${prestador.planoStatus}`);
+        return;
+      }
+
+      if (resultado.status === 'rejected' || resultado.status === 'cancelled') {
+        prestador.planoAtivo = false;
+        prestador.planoStatus = 'pendente';
+        prestador.tipoPlano = 'manual';
+        prestador.formaPagamentoAtual = 'pix';
+        prestador.mercadoPago.lastPix.status = resultado.status;
+
+        if (typeof prestador.adicionarHistoricoPlano === 'function') {
+          prestador.adicionarHistoricoPlano(
+            'pix_rejeitado',
+            `Pagamento PIX não aprovado - ID: ${resultado.paymentId}`
+          );
+        }
+
+        await prestador.save();
+        console.log(`📊 Status alterado: ${statusAnterior} -> ${prestador.planoStatus}`);
+        return;
+      }
+
+      console.log(`ℹ️ Status PIX não tratado explicitamente: ${resultado.status}`);
       return;
     }
 
