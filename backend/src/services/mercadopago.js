@@ -299,7 +299,84 @@ export async function criarPreferenciaPublica({ email, nome, plano = 'mensal', v
     };
   }
 }
+/**
+ * Cria cobrança manual por PIX para plano mensal
+ * @param {Object} params
+ * @param {string} params.email
+ * @param {string} params.nome
+ * @param {string} params.prestadorId
+ * @param {number} params.valor
+ * @returns {Promise<Object>}
+ */
+export async function criarPagamentoPixManual({ email, nome, prestadorId, valor = VALOR_MENSAL }) {
+  try {
+    console.log(`🧾 [${AMBIENTE}] Criando pagamento PIX manual para: ${email}`);
 
+    const body = {
+      items: [
+        {
+          id: `plano-manual-pix-${prestadorId || 'novo'}-${Date.now()}`,
+          title: 'Plano SemLimites - Mensal via PIX',
+          description: 'Renovação manual mensal do plano SemLimites via PIX',
+          quantity: 1,
+          currency_id: 'BRL',
+          unit_price: Number(valor),
+          category_id: 'services'
+        }
+      ],
+      payer: {
+        email,
+        name: nome
+      },
+      payment_methods: {
+        excluded_payment_types: [
+          { id: 'credit_card' },
+          { id: 'debit_card' },
+          { id: 'ticket' },
+          { id: 'atm' }
+        ],
+        excluded_payment_methods: [],
+        installments: 1,
+        default_payment_method_id: 'pix'
+      },
+      external_reference: `prestador_pix_${prestadorId || 'novo'}_${Date.now()}`,
+      metadata: {
+        tipo: 'plano_manual_pix',
+        email,
+        nome,
+        prestadorId: prestadorId || null,
+        ambiente: AMBIENTE
+      },
+      notification_url: `${process.env.BACKEND_URL || 'https://semlimites-api-rodrigo-b5ckghhkbxdqd7a8.canadacentral-01.azurewebsites.net'}/api/assinatura/webhooks/mercadopago`,
+      back_urls: {
+        success: `${process.env.FRONTEND_URL || 'https://www.semlimitesprestadores.com.br'}/SemLimites/dashboard?pix=sucesso`,
+        failure: `${process.env.FRONTEND_URL || 'https://www.semlimitesprestadores.com.br'}/SemLimites/dashboard?pix=erro`,
+        pending: `${process.env.FRONTEND_URL || 'https://www.semlimitesprestadores.com.br'}/SemLimites/dashboard?pix=pendente`
+      },
+      auto_return: 'approved'
+    };
+
+    const response = await preference.create({ body });
+
+    console.log(`✅ Preferência PIX criada com ID: ${response.id}`);
+
+    return {
+      success: true,
+      tipo: 'pix_manual',
+      preferenceId: response.id,
+      initPoint: response.init_point || null,
+      sandboxInitPoint: response.sandbox_init_point || null,
+      ambiente: AMBIENTE
+    };
+  } catch (error) {
+    console.error('❌ Erro ao criar pagamento PIX manual:', error);
+    return {
+      success: false,
+      error: error.message,
+      details: error.cause || error
+    };
+  }
+}
 /**
  * Processa notificação de pagamento/assinatura recebida via webhook
  */
@@ -353,16 +430,38 @@ export async function processarNotificacao(notificacao) {
       };
     }
 
-    // ===============================
-    // IGNORAR EVENTOS DE PAYMENT/AUTHORIZED_PAYMENT
-    // ===============================
-    if (
-      tipoNotificacao === 'subscription_authorized_payment' ||
-      tipoNotificacao === 'payment'
-    ) {
-      console.log(`⏭️ Ignorando evento de pagamento: ${tipoNotificacao}`);
-      return { success: true };
-    }
+   // ===============================
+// TRATAR PAGAMENTO PIX (MANUAL)
+// ===============================
+if (tipoNotificacao === 'payment') {
+  const paymentId = data?.id;
+
+  if (!paymentId) {
+    return { success: false, error: 'paymentId não encontrado' };
+  }
+
+  const pagamento = await payment.get({ id: paymentId });
+
+  const dados = pagamento;
+
+  // 🔥 só processa se for PIX manual
+  if (dados.metadata?.tipo !== 'plano_manual_pix') {
+    console.log('⏭️ Pagamento não é PIX manual, ignorando');
+    return { success: true };
+  }
+
+  console.log(`💰 PIX recebido: ${paymentId} - Status: ${dados.status}`);
+
+  return {
+    success: true,
+    type: 'pix_manual',
+    paymentId,
+    status: dados.status,
+    externalReference: dados.external_reference,
+    payerEmail: dados.payer?.email || null,
+    raw: dados
+  };
+}
 
     console.log(`⏭️ Tipo ignorado: ${tipoNotificacao}`);
     return { success: true };
