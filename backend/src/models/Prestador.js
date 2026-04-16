@@ -41,17 +41,44 @@ const prestadorSchema = new mongoose.Schema({
     default: {}
   },
   
-  // ===== NOVOS CAMPOS PARA ASSINATURA E PLANOS =====
-  planoAtivo: { 
-    type: Boolean, 
-    default: false 
+   // ===== CAMPOS PARA ASSINATURA E PLANOS =====
+  planoAtivo: {
+    type: Boolean,
+    default: false
   },
+
   planoExpiracao: Date,
-  planoId: String, // ID da assinatura no Mercado Pago
+
+  planoId: String, // ID principal do plano/assinatura no MP
+
   planoStatus: {
     type: String,
     enum: ['pendente', 'ativo', 'cancelado', 'expirado'],
     default: 'pendente'
+  },
+
+  // automatico = assinatura no cartão
+  // manual = renovação por PIX
+  tipoPlano: {
+    type: String,
+    enum: ['automatico', 'manual'],
+    default: 'automatico'
+  },
+
+  // forma atual usada pelo prestador
+  formaPagamentoAtual: {
+    type: String,
+    enum: ['cartao', 'pix'],
+    default: 'cartao'
+  },
+
+  // referência do último pagamento manual por PIX
+  ultimoPagamentoManual: {
+    paymentId: String,
+    preferenceId: String,
+    date: Date,
+    amount: Number,
+    status: String
   },
   planoHistorico: [{
     data: { type: Date, default: Date.now },
@@ -61,16 +88,26 @@ const prestadorSchema = new mongoose.Schema({
     valor: Number
   }],
   
-  // ===== CAMPOS DE PAGAMENTO MERCADO PAGO =====
   mercadoPago: {
-    customerId: String, // ID do cliente no Mercado Pago
-    subscriptionId: String, // ID da assinatura
-    paymentMethod: String, // Método de pagamento usado
+    customerId: String,
+    subscriptionId: String, // assinatura automática
+    paymentMethod: String,
     lastPayment: {
       date: Date,
       amount: Number,
       status: String,
       paymentId: String
+    },
+
+    // referência do último PIX/manual gerado
+    lastPix: {
+      paymentId: String,
+      preferenceId: String,
+      qrCode: String,
+      qrCodeBase64: String,
+      ticketUrl: String,
+      status: String,
+      createdAt: Date
     }
   },
   
@@ -152,6 +189,10 @@ prestadorSchema.index({ planoStatus: 1 });
 prestadorSchema.index({ planoExpiracao: 1 });
 prestadorSchema.index({ 'mercadoPago.customerId': 1 });
 prestadorSchema.index({ 'mercadoPago.subscriptionId': 1 });
+prestadorSchema.index({ tipoPlano: 1 });
+prestadorSchema.index({ formaPagamentoAtual: 1 });
+prestadorSchema.index({ 'mercadoPago.lastPix.paymentId': 1 });
+prestadorSchema.index({ 'mercadoPago.lastPix.preferenceId': 1 });
 
 // Índice composto para busca avançada
 prestadorSchema.index({ 
@@ -242,13 +283,22 @@ prestadorSchema.methods.adicionarHistoricoPlano = function(evento, detalhes, opc
  * Ativar plano após pagamento aprovado
  * @param {Object} dados - Dados do pagamento
  */
-prestadorSchema.methods.ativarPlano = function(dados) {
+prestadorSchema.methods.ativarPlano = function(dados = {}) {
   this.planoAtivo = true;
   this.planoStatus = 'ativo';
-  this.planoExpiracao = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // +30 dias
-  
+  this.planoExpiracao = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+  if (dados.tipoPlano) {
+    this.tipoPlano = dados.tipoPlano;
+  }
+
+  if (dados.formaPagamentoAtual) {
+    this.formaPagamentoAtual = dados.formaPagamentoAtual;
+  }
+
+  this.mercadoPago = this.mercadoPago || {};
+
   if (dados.paymentId) {
-    this.mercadoPago = this.mercadoPago || {};
     this.mercadoPago.lastPayment = {
       date: new Date(),
       amount: dados.valor,
@@ -256,7 +306,17 @@ prestadorSchema.methods.ativarPlano = function(dados) {
       paymentId: dados.paymentId
     };
   }
-  
+
+  if (dados.preferenceId || dados.paymentId) {
+    this.ultimoPagamentoManual = {
+      paymentId: dados.paymentId || null,
+      preferenceId: dados.preferenceId || null,
+      date: new Date(),
+      amount: dados.valor || null,
+      status: 'approved'
+    };
+  }
+
   this.adicionarHistoricoPlano(
     'pagamento_aprovado',
     `Pagamento aprovado - ID: ${dados.paymentId || 'N/A'}`,
