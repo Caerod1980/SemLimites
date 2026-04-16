@@ -308,28 +308,22 @@ export async function processarNotificacao(notificacao) {
     console.log(`📩 [${AMBIENTE}] Processando notificação`);
     console.log('📦 Payload:', JSON.stringify(notificacao, null, 2));
 
-    const { action, data, type, topic, resource } = notificacao;
+    const { data, type, topic } = notificacao;
     const tipoNotificacao = type || topic;
 
-    // ===== EVENTOS DE ASSINATURA =====
+    // ===============================
+    // TRATAR SOMENTE EVENTOS DA ASSINATURA (PREAPPROVAL)
+    // ===============================
     if (
-       tipoNotificacao === 'subscription' ||
-       tipoNotificacao === 'preapproval' ||
-       tipoNotificacao === 'subscription_authorized_payment' ||
-       tipoNotificacao === 'subscription_preapproval'
-       ){
-      let subscriptionId = data?.id || null;
-
-      if (!subscriptionId && resource && typeof resource === 'string') {
-        const match = resource.match(/\/([^/]+)$/);
-        if (match) subscriptionId = match[1];
-      }
+      tipoNotificacao === 'subscription_preapproval' ||
+      tipoNotificacao === 'preapproval'
+    ) {
+      const subscriptionId = data?.id;
 
       if (!subscriptionId) {
         return {
           success: false,
-          type: 'subscription',
-          error: 'subscriptionId não encontrado no webhook'
+          error: 'subscriptionId não encontrado'
         };
       }
 
@@ -340,60 +334,39 @@ export async function processarNotificacao(notificacao) {
           success: false,
           type: 'subscription',
           subscriptionId,
-          error: statusAssinatura.error || 'Erro ao buscar assinatura no Mercado Pago'
+          error: statusAssinatura.error
         };
       }
 
-      const status = statusAssinatura.status;
       const dados = statusAssinatura.data || {};
 
-      console.log(`📊 Assinatura ${subscriptionId} com status: ${status}`);
+      console.log(`📊 Assinatura ${subscriptionId} com status: ${dados.status}`);
 
       return {
         success: true,
         type: 'subscription',
         subscriptionId,
-        action: action || tipoNotificacao,
-        status,
-        nextPaymentDate: statusAssinatura.nextPaymentDate,
-        lastPaymentDate: statusAssinatura.lastPaymentDate,
-        paymentMethodId: statusAssinatura.paymentMethodId,
-        externalReference: statusAssinatura.externalReference,
+        status: dados.status,
+        externalReference: dados.external_reference || null,
         payerEmail: dados.payer_email || null,
         raw: dados
       };
     }
 
-    // ===== EVENTOS DE PAGAMENTO ÚNICO =====
-    if (tipoNotificacao !== 'payment') {
-      console.log(`⏭️ Tipo ignorado: ${tipoNotificacao}`);
-      return { success: true, message: 'Tipo ignorado' };
+    // ===============================
+    // IGNORAR EVENTOS DE PAYMENT/AUTHORIZED_PAYMENT
+    // ===============================
+    if (
+      tipoNotificacao === 'subscription_authorized_payment' ||
+      tipoNotificacao === 'payment'
+    ) {
+      console.log(`⏭️ Ignorando evento de pagamento: ${tipoNotificacao}`);
+      return { success: true };
     }
 
-    let paymentId = data?.id || null;
+    console.log(`⏭️ Tipo ignorado: ${tipoNotificacao}`);
+    return { success: true };
 
-    if (!paymentId && resource && typeof resource === 'string') {
-      const paymentMatch = resource.match(/\/(\d+)$/);
-      if (paymentMatch) {
-        paymentId = paymentMatch[1];
-      }
-    }
-
-    if (!paymentId) {
-      return { success: false, error: 'paymentId não encontrado' };
-    }
-
-    const paymentData = await payment.get({ id: paymentId });
-
-    return {
-      success: true,
-      type: 'payment',
-      paymentId,
-      status: paymentData.status,
-      emailPagador: paymentData.payer?.email || null,
-      nomePagador: paymentData.metadata?.nome || paymentData.payer?.name || null,
-      preferenceId: paymentData.metadata?.preference_id || paymentData.order?.id || null
-    };
   } catch (error) {
     console.error('❌ Erro ao processar notificação:', error);
     return {
