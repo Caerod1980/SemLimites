@@ -2244,16 +2244,41 @@ function Avatar(props) {
 
             return React.createElement('div', { className: "space-y-3" }, servicosElements);
         }
-        // ========== COMPONENTE DE STATUS DE ASSINATURA FINAL ==========
+       // ========== COMPONENTE DE STATUS DE ASSINATURA FINAL ==========
 function StatusAssinatura(props) {
     var prestador = props.prestador;
     var [status, setStatus] = useState(null);
     var [loading, setLoading] = useState(true);
     var [erro, setErro] = useState('');
     var [renovando, setRenovando] = useState(false);
+    var [pixGerando, setPixGerando] = useState(false);
+    var [planoExpiracao, setPlanoExpiracao] = useState(null);
+    var [tipoPlano, setTipoPlano] = useState(null);
+    var [formaPagamentoAtual, setFormaPagamentoAtual] = useState(null);
 
-    // Link do plano no Mercado Pago para regularização externa
+    // Link do plano no Mercado Pago para regularização externa por cartão
     var PLANO_LINK = 'https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=baa2b8aa788b47ce977c6e5659201c05';
+
+    function formatarData(data) {
+        if (!data) return null;
+        try {
+            return new Date(data).toLocaleDateString('pt-BR');
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function calcularDiasRestantes(data) {
+        if (!data) return null;
+        try {
+            var hoje = new Date();
+            var venc = new Date(data);
+            var diff = venc.getTime() - hoje.getTime();
+            return Math.ceil(diff / (1000 * 60 * 60 * 24));
+        } catch (e) {
+            return null;
+        }
+    }
 
     function carregarStatus() {
         if (!prestador || !prestador._id) {
@@ -2281,6 +2306,9 @@ function StatusAssinatura(props) {
             .then(function(data) {
                 if (data && data.success) {
                     setStatus(data.planoStatus || 'pendente');
+                    setPlanoExpiracao(data.planoExpiracao || null);
+                    setTipoPlano(data.tipoPlano || null);
+                    setFormaPagamentoAtual(data.formaPagamentoAtual || null);
                 } else {
                     setStatus('pendente');
                 }
@@ -2297,16 +2325,51 @@ function StatusAssinatura(props) {
         carregarStatus();
     }, [prestador && prestador._id]);
 
-    function abrirRegularizacao() {
+    function abrirRegularizacaoCartao() {
         setRenovando(true);
 
         window.open(PLANO_LINK, '_blank');
 
-        alert('🔗 Link de regularização aberto em nova aba.\n\nApós concluir o pagamento no Mercado Pago, clique em "Atualizar status".');
+        alert('🔗 Link de regularização por cartão aberto em nova aba.\n\nApós concluir o pagamento no Mercado Pago, clique em "Atualizar status".');
 
         setTimeout(function() {
             setRenovando(false);
         }, 1000);
+    }
+
+    async function gerarPixRegularizacao() {
+        try {
+            setPixGerando(true);
+            setErro('');
+
+            const response = await fetch(API_URL + '/assinatura/criar-pix', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                },
+                body: JSON.stringify({
+                    prestadorId: prestador._id
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'Erro ao gerar PIX');
+            }
+
+            if (data.initPoint) {
+                window.open(data.initPoint, '_blank');
+            }
+
+            alert('📲 Cobrança PIX aberta em nova aba.\n\nApós o pagamento, clique em "Atualizar status".');
+        } catch (error) {
+            console.error('❌ Erro ao gerar PIX:', error);
+            setErro(error.message || 'Erro ao gerar PIX');
+        } finally {
+            setPixGerando(false);
+        }
     }
 
     function getStatusConfig(statusAtual) {
@@ -2316,9 +2379,9 @@ function StatusAssinatura(props) {
                 iconClass: 'bg-emerald-100',
                 icon: '✅',
                 titulo: 'Plano Ativo',
-                descricao: 'Sua assinatura está ativa. Você tem acesso completo à plataforma.',
-                mostrarBotao: false,
-                botaoTexto: ''
+                descricao: 'Seu plano está ativo e seu perfil está liberado para uso e exibição na plataforma.',
+                mostrarBotaoCartao: false,
+                mostrarBotaoPix: false
             };
         }
 
@@ -2327,22 +2390,22 @@ function StatusAssinatura(props) {
                 badgeClass: 'bg-amber-100 text-amber-700 border-amber-200',
                 iconClass: 'bg-amber-100',
                 icon: '⏳',
-                titulo: 'Aguardando Pagamento',
-                descricao: 'Seu pagamento recorrente ainda não foi confirmado. Regularize sua assinatura no Mercado Pago.',
-                mostrarBotao: true,
-                botaoTexto: '💳 Regularizar assinatura'
+                titulo: 'Pagamento Pendente',
+                descricao: 'Seu pagamento ainda não foi confirmado. Regularize para voltar à vitrine e liberar seu acesso comercial.',
+                mostrarBotaoCartao: true,
+                mostrarBotaoPix: true
             };
         }
 
         if (statusAtual === 'cancelado') {
             return {
-                badgeClass: 'bg-red-100 text-red-700 border-red-200',
-                iconClass: 'bg-red-100',
-                icon: '⚠️',
-                titulo: 'Assinatura Cancelada',
-                descricao: 'Sua assinatura foi cancelada. Reative no Mercado Pago para voltar a aparecer nas buscas.',
-                mostrarBotao: true,
-                botaoTexto: '💳 Reativar assinatura'
+                badgeClass: 'bg-rose-100 text-rose-700 border-rose-200',
+                iconClass: 'bg-rose-100',
+                icon: '❌',
+                titulo: 'Plano Cancelado',
+                descricao: 'Sua assinatura foi cancelada. Para voltar à plataforma, regularize seu plano.',
+                mostrarBotaoCartao: true,
+                mostrarBotaoPix: true
             };
         }
 
@@ -2352,121 +2415,110 @@ function StatusAssinatura(props) {
                 iconClass: 'bg-orange-100',
                 icon: '⚠️',
                 titulo: 'Plano Expirado',
-                descricao: 'Seu período de assinatura expirou. Renove no Mercado Pago para reativar seu perfil.',
-                mostrarBotao: true,
-                botaoTexto: '💳 Renovar assinatura'
+                descricao: 'Seu prazo expirou. Regularize para reativar seu perfil e voltar à vitrine.',
+                mostrarBotaoCartao: true,
+                mostrarBotaoPix: true
             };
         }
 
         return {
             badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
             iconClass: 'bg-slate-100',
-            icon: '❓',
-            titulo: 'Status da Assinatura',
-            descricao: 'Não foi possível identificar o status atual da assinatura.',
-            mostrarBotao: true,
-            botaoTexto: 'Verificar novamente'
+            icon: 'ℹ️',
+            titulo: 'Status Indefinido',
+            descricao: 'Não foi possível identificar o status atual do plano.',
+            mostrarBotaoCartao: true,
+            mostrarBotaoPix: true
         };
     }
 
     if (loading) {
         return React.createElement('div', {
-            className: "bg-white rounded-2xl border border-slate-200 p-4 shadow-sm mb-4"
+            className: "bg-white rounded-2xl border border-slate-200 p-5 shadow-sm"
         },
-            React.createElement('div', {
-                className: "flex items-center gap-3"
-            },
-                React.createElement('div', {
-                    className: "w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center animate-pulse"
-                }),
-                React.createElement('div', {
-                    className: "flex-1"
-                },
-                    React.createElement('div', {
-                        className: "h-4 bg-slate-100 rounded w-3/4 mb-2 animate-pulse"
-                    }),
-                    React.createElement('div', {
-                        className: "h-3 bg-slate-100 rounded w-1/2 animate-pulse"
-                    })
-                )
+            React.createElement('div', { className: "animate-pulse space-y-3" },
+                React.createElement('div', { className: "h-5 bg-slate-200 rounded w-40" }),
+                React.createElement('div', { className: "h-4 bg-slate-200 rounded w-64" }),
+                React.createElement('div', { className: "h-10 bg-slate-200 rounded w-full" })
             )
         );
     }
 
     if (erro) {
         return React.createElement('div', {
-            className: "bg-white rounded-2xl border border-red-200 p-4 shadow-sm mb-4"
+            className: "bg-white rounded-2xl border border-rose-200 p-5 shadow-sm"
         },
-            React.createElement('div', {
-                className: "flex items-center gap-3"
-            },
-                React.createElement('div', {
-                    className: "w-10 h-10 rounded-full bg-red-100 flex items-center justify-center"
-                },
-                    React.createElement('span', { className: "text-xl" }, "⚠️")
-                ),
-                React.createElement('div', {
-                    className: "flex-1"
-                },
-                    React.createElement('h3', {
-                        className: "font-semibold text-red-800"
-                    }, "Erro ao carregar status"),
-                    React.createElement('p', {
-                        className: "text-sm text-red-600"
-                    }, erro)
-                )
-            ),
+            React.createElement('div', { className: "text-rose-700 font-semibold mb-2" }, "⚠️ Erro ao carregar status"),
+            React.createElement('p', { className: "text-sm text-rose-600 mb-4" }, erro),
             React.createElement('button', {
                 onClick: carregarStatus,
-                className: "mt-3 px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-sm font-medium hover:bg-slate-200 transition w-full sm:w-auto"
+                className: "px-4 py-2 rounded-xl bg-slate-800 text-white hover:bg-slate-900 transition"
             }, "Tentar novamente")
         );
     }
 
-    var config = getStatusConfig(status);
+    var cfg = getStatusConfig(status);
+    var dataExp = formatarData(planoExpiracao);
+    var diasRestantes = calcularDiasRestantes(planoExpiracao);
 
     return React.createElement('div', {
-        className: "bg-white rounded-2xl border border-slate-200 p-4 shadow-sm mb-4"
+        className: "bg-white rounded-2xl border border-slate-200 p-5 shadow-sm"
     },
-        React.createElement('div', {
-            className: "flex flex-col sm:flex-row items-center gap-3 mb-3"
-        },
-            React.createElement('div', {
-                className: "w-10 h-10 rounded-full flex items-center justify-center " + config.iconClass
-            },
-                React.createElement('span', { className: "text-xl" }, config.icon)
-            ),
-            React.createElement('div', {
-                className: "flex-1 text-center sm:text-left"
-            },
+        React.createElement('div', { className: "flex items-start justify-between gap-4 flex-wrap" },
+            React.createElement('div', { className: "flex items-start gap-3" },
                 React.createElement('div', {
-                    className: "flex items-center justify-center sm:justify-start gap-2 flex-wrap"
-                },
-                    React.createElement('h3', {
-                        className: "font-semibold text-slate-800"
-                    }, config.titulo),
-                    React.createElement('span', {
-                        className: "inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-semibold " + config.badgeClass
-                    }, status || 'desconhecido')
-                ),
-                React.createElement('p', {
-                    className: "text-sm text-slate-600 mt-1"
-                }, config.descricao)
-            )
-        ),
+                    className: "w-12 h-12 rounded-2xl flex items-center justify-center text-xl " + cfg.iconClass
+                }, cfg.icon),
+                React.createElement('div', null,
+                    React.createElement('div', {
+                        className: "inline-flex items-center px-3 py-1 rounded-full border text-sm font-medium mb-2 " + cfg.badgeClass
+                    }, cfg.titulo),
+                    React.createElement('p', { className: "text-sm text-slate-600 max-w-2xl" }, cfg.descricao),
 
-        config.mostrarBotao && React.createElement('div', {
-            className: "mt-4 flex flex-col sm:flex-row gap-2 justify-center sm:justify-start"
-        },
-            React.createElement('button', {
-                onClick: status === 'desconhecido' ? carregarStatus : abrirRegularizacao,
-                disabled: renovando,
-                className: "px-4 py-2 rounded-xl bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white text-sm font-semibold hover:shadow-md transition disabled:opacity-50"
-            }, renovando ? 'Abrindo...' : config.botaoTexto),
+                    dataExp && React.createElement('div', { className: "mt-3 text-sm text-slate-600" },
+                        React.createElement('p', null, "📅 Válido até: " + dataExp),
+                        diasRestantes !== null && React.createElement('p', {
+                            className: diasRestantes <= 3 ? "text-amber-700 font-medium mt-1" : "mt-1"
+                        },
+                            diasRestantes > 0
+                                ? ("⏳ Expira em " + diasRestantes + " dia(s)")
+                                : (diasRestantes === 0 ? "⚠️ Vence hoje" : "❌ Plano vencido")
+                        )
+                    ),
+
+                    (tipoPlano || formaPagamentoAtual) && React.createElement('div', {
+                        className: "mt-3 flex flex-wrap gap-2"
+                    },
+                        tipoPlano && React.createElement('span', {
+                            className: "px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-medium"
+                        }, "Plano: " + (tipoPlano === 'manual' ? 'Manual' : 'Automático')),
+                        formaPagamentoAtual && React.createElement('span', {
+                            className: "px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-medium"
+                        }, "Pagamento: " + (formaPagamentoAtual === 'pix' ? 'PIX' : 'Cartão'))
+                    )
+                )
+            ),
+
             React.createElement('button', {
                 onClick: carregarStatus,
-                className: "px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-sm font-medium hover:bg-slate-200 transition"
+                className: "px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 transition text-sm font-medium"
             }, "Atualizar status")
+        ),
+
+        (cfg.mostrarBotaoCartao || cfg.mostrarBotaoPix) && React.createElement('div', {
+            className: "mt-5 grid grid-cols-1 md:grid-cols-2 gap-3"
+        },
+            cfg.mostrarBotaoCartao && React.createElement('button', {
+                onClick: abrirRegularizacaoCartao,
+                disabled: renovando,
+                className: "px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium transition disabled:opacity-60"
+            }, renovando ? 'Abrindo...' : '💳 Regularizar com cartão'),
+
+            cfg.mostrarBotaoPix && React.createElement('button', {
+                onClick: gerarPixRegularizacao,
+                disabled: pixGerando,
+                className: "px-4 py-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-medium transition disabled:opacity-60"
+            }, pixGerando ? 'Gerando PIX...' : '📲 Regularizar com PIX')
         )
     );
 }
