@@ -441,14 +441,14 @@ if (tipoNotificacao === 'payment') {
   }
 
   const pagamento = await payment.get({ id: paymentId });
-
   const dados = pagamento;
 
-  // 🔥 só processa se for PIX manual
   if (dados.metadata?.tipo !== 'plano_manual_pix') {
     console.log('⏭️ Pagamento não é PIX manual, ignorando');
     return { success: true };
   }
+
+  const prestadorId = dados.metadata?.prestadorId || null;
 
   console.log(`💰 PIX recebido: ${paymentId} - Status: ${dados.status}`);
 
@@ -459,6 +459,7 @@ if (tipoNotificacao === 'payment') {
     status: dados.status,
     externalReference: dados.external_reference,
     payerEmail: dados.payer?.email || null,
+    prestadorId,
     raw: dados
   };
 }
