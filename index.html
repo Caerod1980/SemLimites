@@ -8670,23 +8670,30 @@ function limparDadosPagamento() {
     }) : null;
 
     var content = null;
-    if (modo === 'busca') {
-        content = React.createElement(TelaBusca, { onVerPerfil: handleVerPerfil });
-    } else if (modo === 'admin') {
-        content = React.createElement(PainelAdmin, { onSair: function() { handleAdminLogout(); } });
-    } else if (modo === 'perfil') {
-        content = React.createElement(TelaPerfil, { 
-            prestador: prestadorSelecionado, 
-            prestadorId: prestadorId,
-            onVoltar: voltarParaBusca 
-        });
-    } else if (modo === 'login') {
-        content = React.createElement(Login, { onLoginSuccess: handleLoginSuccess, onVoltar: voltarParaBusca });
-    } else if (modo === 'cadastro') {
-        content = React.createElement(CadastroPrestador, { onCadastroSucesso: handleCadastroSucesso, onVoltar: voltarParaBusca });
-    } else if (modo === 'dashboard') {
-        content = React.createElement(DashboardPrestador, { usuario: usuario, onSair: handleSair });
-    } else if (modo === 'dashboard-cliente') {
+   if (modo === 'busca') {
+    content = React.createElement(TelaBusca, { onVerPerfil: handleVerPerfil });
+} else if (modo === 'admin') {
+    content = React.createElement(PainelAdmin, { onSair: function() { handleAdminLogout(); } });
+} else if (modo === 'perfil') {
+    content = React.createElement(TelaPerfil, { 
+        prestador: prestadorSelecionado, 
+        prestadorId: prestadorId,
+        onVoltar: voltarParaBusca 
+    });
+} else if (modo === 'login') {
+    content = React.createElement(Login, { 
+        onLoginSuccess: handleLoginSuccess, 
+        onVoltar: voltarParaBusca 
+    });
+} else if (modo === 'cadastro') {
+    content = React.createElement(CadastroPrestador, {
+        onCadastroSucesso: handleCadastroSucesso,
+        onVoltar: voltarParaBusca,
+        onNavigate: navigate
+    });
+} else if (modo === 'dashboard') {
+    content = React.createElement(DashboardPrestador, { usuario: usuario, onSair: handleSair });
+} else if (modo === 'dashboard-cliente') {
         content = React.createElement(DashboardCliente, { 
             usuario: usuario, 
             onSair: handleSair,
