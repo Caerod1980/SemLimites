@@ -57,7 +57,7 @@ router.post('/criar-assinatura', async (req, res) => {
       nome,
       cpf,
       prestadorId,
-      cardTokenId: card_token_id,  // ← NOVO
+      cardTokenId: card_token_id,
       planId: PLANO_MENSAL_ID
     });
     
@@ -74,12 +74,10 @@ router.post('/criar-assinatura', async (req, res) => {
       prestadorExistente.mercadoPago = prestadorExistente.mercadoPago || {};
       prestadorExistente.mercadoPago.subscriptionId = resultado.subscriptionId;
       prestadorExistente.mercadoPago.customerId = resultado.customerId;
-      // ===== CORREÇÃO: Status já está 'ativo' porque a assinatura foi autorizada =====
       prestadorExistente.planoStatus = 'ativo';
       prestadorExistente.planoAtivo = true;
       prestadorExistente.assinaturaAtivadaEm = new Date();
       
-      // Verificar se o método existe
       if (typeof prestadorExistente.adicionarHistoricoPlano === 'function') {
         prestadorExistente.adicionarHistoricoPlano(
           'assinatura_criada',
@@ -90,7 +88,6 @@ router.post('/criar-assinatura', async (req, res) => {
       await prestadorExistente.save();
     }
     
-    // ===== CORREÇÃO: Retornar subscriptionId, NÃO initPoint =====
     res.json({
       success: true,
       subscriptionId: resultado.subscriptionId,
@@ -106,6 +103,7 @@ router.post('/criar-assinatura', async (req, res) => {
     });
   }
 });
+
 /**
  * @route   POST /api/assinatura/criar-pix
  * @desc    Criar cobrança PIX manual para plano mensal
@@ -195,6 +193,7 @@ router.post('/criar-pix', authMiddleware, async (req, res) => {
     });
   }
 });
+
 /**
  * @route   POST /api/assinatura/criar-preferencia
  * @desc    Criar uma preferência de pagamento (pagamento único)
@@ -294,7 +293,6 @@ router.get('/status-assinatura/:subscriptionId', authMiddleware, async (req, res
     
     console.log(`🔍 Buscando status da assinatura: ${subscriptionId}`);
     
-    // Buscar prestador pela assinatura
     const prestador = await Prestador.findOne({ 
       'mercadoPago.subscriptionId': subscriptionId 
     });
@@ -306,7 +304,6 @@ router.get('/status-assinatura/:subscriptionId', authMiddleware, async (req, res
       });
     }
     
-    // Verificar permissão
     const autorizado = 
       req.usuario.prestadorId?.toString() === prestador._id.toString() ||
       req.usuario.id?.toString() === prestador._id.toString() ||
@@ -319,7 +316,6 @@ router.get('/status-assinatura/:subscriptionId', authMiddleware, async (req, res
       });
     }
     
-    // Buscar status atual no Mercado Pago
     const statusMP = await buscarStatusAssinatura(subscriptionId);
     
     res.json({
@@ -359,7 +355,6 @@ router.post('/cancelar-assinatura', authMiddleware, async (req, res) => {
       });
     }
     
-    // Buscar prestador pela assinatura
     const prestador = await Prestador.findOne({ 
       'mercadoPago.subscriptionId': subscriptionId 
     });
@@ -371,7 +366,6 @@ router.post('/cancelar-assinatura', authMiddleware, async (req, res) => {
       });
     }
     
-    // Verificar permissão
     const autorizado = 
       req.usuario.prestadorId?.toString() === prestador._id.toString() ||
       req.usuario.id?.toString() === prestador._id.toString() ||
@@ -384,11 +378,9 @@ router.post('/cancelar-assinatura', authMiddleware, async (req, res) => {
       });
     }
     
-    // Cancelar no Mercado Pago
     const resultado = await cancelarAssinaturaRecorrente(subscriptionId);
     
     if (resultado.success) {
-      // Atualizar localmente
       prestador.planoAtivo = false;
       prestador.planoStatus = 'cancelado';
       if (typeof prestador.adicionarHistoricoPlano === 'function') {
@@ -530,131 +522,131 @@ router.post('/webhooks/mercadopago', async (req, res) => {
       return;
     }
 
-     // ===== EVENTOS DE PIX MANUAL =====
-if (resultado.type === 'pix_manual') {
-  console.log(`💰 Processando PIX manual ${resultado.paymentId} com status ${resultado.status}`);
+    // ===== EVENTOS DE PIX MANUAL =====
+    if (resultado.type === 'pix_manual') {
+      console.log(`💰 Processando PIX manual ${resultado.paymentId} com status ${resultado.status}`);
 
-  let prestador = null;
+      let prestador = null;
 
-  // 1. Tenta pelo prestadorId vindo do metadata
-  if (resultado.prestadorId) {
-    prestador = await Prestador.findById(resultado.prestadorId);
-  }
+      // 1. Tenta pelo prestadorId vindo do metadata
+      if (resultado.prestadorId) {
+        prestador = await Prestador.findById(resultado.prestadorId);
+      }
 
-  // 2. Fallback pelo externalReference: prestador_pix_<prestadorId>_<timestamp>
-  if (!prestador && resultado.externalReference) {
-    const match = String(resultado.externalReference).match(/^prestador_pix_([^_]+)_/);
-    if (match && match[1] && match[1] !== 'novo') {
-      prestador = await Prestador.findById(match[1]);
-    }
-  }
+      // 2. Fallback pelo externalReference: prestador_pix_<prestadorId>_<timestamp>
+      if (!prestador && resultado.externalReference) {
+        const match = String(resultado.externalReference).match(/^prestador_pix_([^_]+)_/);
+        if (match && match[1] && match[1] !== 'novo') {
+          prestador = await Prestador.findById(match[1]);
+        }
+      }
 
-  // 3. Fallback pelo e-mail do pagador
-  if (!prestador && resultado.payerEmail) {
-    prestador = await Prestador.findOne({ email: resultado.payerEmail });
-  }
+      // 3. Fallback pelo e-mail do pagador
+      if (!prestador && resultado.payerEmail) {
+        prestador = await Prestador.findOne({ email: resultado.payerEmail });
+      }
 
-  if (!prestador) {
-    console.warn(`⚠️ Prestador não encontrado para PIX manual`, {
-      paymentId: resultado.paymentId,
-      prestadorId: resultado.prestadorId || null,
-      payerEmail: resultado.payerEmail || null,
-      externalReference: resultado.externalReference || null
-    });
-    return;
-  }
+      if (!prestador) {
+        console.warn(`⚠️ Prestador não encontrado para PIX manual`, {
+          paymentId: resultado.paymentId,
+          prestadorId: resultado.prestadorId || null,
+          payerEmail: resultado.payerEmail || null,
+          externalReference: resultado.externalReference || null
+        });
+        return;
+      }
 
-  const statusAnterior = prestador.planoStatus;
-  prestador.mercadoPago = prestador.mercadoPago || {};
-  prestador.mercadoPago.lastPix = prestador.mercadoPago.lastPix || {};
+      const statusAnterior = prestador.planoStatus;
+      prestador.mercadoPago = prestador.mercadoPago || {};
+      prestador.mercadoPago.lastPix = prestador.mercadoPago.lastPix || {};
 
-  prestador.mercadoPago.lastPix.paymentId = resultado.paymentId;
-  prestador.mercadoPago.lastPix.status = resultado.status;
+      prestador.mercadoPago.lastPix.paymentId = resultado.paymentId;
+      prestador.mercadoPago.lastPix.status = resultado.status;
 
-  if (resultado.status === 'approved') {
-    // Se havia assinatura automática antiga, cancelar para evitar nova cobrança
-    if (prestador.mercadoPago.subscriptionId) {
-      const subscriptionAntiga = prestador.mercadoPago.subscriptionId;
-      const cancelamento = await cancelarAssinaturaRecorrente(subscriptionAntiga);
+      if (resultado.status === 'approved') {
+        // Se havia assinatura automática antiga, cancelar para evitar nova cobrança
+        if (prestador.mercadoPago.subscriptionId) {
+          const subscriptionAntiga = prestador.mercadoPago.subscriptionId;
+          const cancelamento = await cancelarAssinaturaRecorrente(subscriptionAntiga);
 
-      if (cancelamento.success) {
-        prestador.mercadoPago.subscriptionId = null;
+          if (cancelamento.success) {
+            prestador.mercadoPago.subscriptionId = null;
+
+            if (typeof prestador.adicionarHistoricoPlano === 'function') {
+              prestador.adicionarHistoricoPlano(
+                'assinatura_cancelada_por_migracao_pix',
+                `Assinatura automática cancelada após pagamento via PIX - ID: ${subscriptionAntiga}`
+              );
+            }
+          } else {
+            console.warn(`⚠️ Não foi possível cancelar assinatura automática antiga: ${subscriptionAntiga}`);
+          }
+        }
+
+        prestador.ativarPlano({
+          paymentId: resultado.paymentId,
+          preferenceId: prestador.mercadoPago.lastPix.preferenceId || null,
+          valor: VALOR_MENSAL,
+          tipoPlano: 'manual',
+          formaPagamentoAtual: 'pix'
+        });
+
+        prestador.mercadoPago.lastPix.status = 'approved';
 
         if (typeof prestador.adicionarHistoricoPlano === 'function') {
           prestador.adicionarHistoricoPlano(
-            'assinatura_cancelada_por_migracao_pix',
-            `Assinatura automática cancelada após pagamento via PIX - ID: ${subscriptionAntiga}`
+            'pix_aprovado',
+            `Pagamento PIX aprovado - ID: ${resultado.paymentId}`,
+            { paymentId: resultado.paymentId, valor: VALOR_MENSAL }
           );
         }
-      } else {
-        console.warn(`⚠️ Não foi possível cancelar assinatura automática antiga: ${subscriptionAntiga}`);
+
+        await prestador.save();
+        console.log(`📊 Status alterado: ${statusAnterior} -> ${prestador.planoStatus}`);
+        return;
       }
+
+      if (resultado.status === 'pending' || resultado.status === 'in_process') {
+        prestador.planoAtivo = false;
+        prestador.planoStatus = 'pendente';
+        prestador.tipoPlano = 'manual';
+        prestador.formaPagamentoAtual = 'pix';
+        prestador.mercadoPago.lastPix.status = resultado.status;
+
+        if (typeof prestador.adicionarHistoricoPlano === 'function') {
+          prestador.adicionarHistoricoPlano(
+            'pix_pendente',
+            `Pagamento PIX pendente - ID: ${resultado.paymentId}`
+          );
+        }
+
+        await prestador.save();
+        console.log(`📊 Status alterado: ${statusAnterior} -> ${prestador.planoStatus}`);
+        return;
+      }
+
+      if (resultado.status === 'rejected' || resultado.status === 'cancelled') {
+        prestador.planoAtivo = false;
+        prestador.planoStatus = 'pendente';
+        prestador.tipoPlano = 'manual';
+        prestador.formaPagamentoAtual = 'pix';
+        prestador.mercadoPago.lastPix.status = resultado.status;
+
+        if (typeof prestador.adicionarHistoricoPlano === 'function') {
+          prestador.adicionarHistoricoPlano(
+            'pix_rejeitado',
+            `Pagamento PIX não aprovado - ID: ${resultado.paymentId}`
+          );
+        }
+
+        await prestador.save();
+        console.log(`📊 Status alterado: ${statusAnterior} -> ${prestador.planoStatus}`);
+        return;
+      }
+
+      console.log(`ℹ️ Status PIX não tratado explicitamente: ${resultado.status}`);
+      return;
     }
-
-    prestador.ativarPlano({
-      paymentId: resultado.paymentId,
-      preferenceId: prestador.mercadoPago.lastPix.preferenceId || null,
-      valor: VALOR_MENSAL,
-      tipoPlano: 'manual',
-      formaPagamentoAtual: 'pix'
-    });
-
-    prestador.mercadoPago.lastPix.status = 'approved';
-
-    if (typeof prestador.adicionarHistoricoPlano === 'function') {
-      prestador.adicionarHistoricoPlano(
-        'pix_aprovado',
-        `Pagamento PIX aprovado - ID: ${resultado.paymentId}`,
-        { paymentId: resultado.paymentId, valor: VALOR_MENSAL }
-      );
-    }
-
-    await prestador.save();
-    console.log(`📊 Status alterado: ${statusAnterior} -> ${prestador.planoStatus}`);
-    return;
-  }
-
-  if (resultado.status === 'pending' || resultado.status === 'in_process') {
-    prestador.planoAtivo = false;
-    prestador.planoStatus = 'pendente';
-    prestador.tipoPlano = 'manual';
-    prestador.formaPagamentoAtual = 'pix';
-    prestador.mercadoPago.lastPix.status = resultado.status;
-
-    if (typeof prestador.adicionarHistoricoPlano === 'function') {
-      prestador.adicionarHistoricoPlano(
-        'pix_pendente',
-        `Pagamento PIX pendente - ID: ${resultado.paymentId}`
-      );
-    }
-
-    await prestador.save();
-    console.log(`📊 Status alterado: ${statusAnterior} -> ${prestador.planoStatus}`);
-    return;
-  }
-
-  if (resultado.status === 'rejected' || resultado.status === 'cancelled') {
-    prestador.planoAtivo = false;
-    prestador.planoStatus = 'pendente';
-    prestador.tipoPlano = 'manual';
-    prestador.formaPagamentoAtual = 'pix';
-    prestador.mercadoPago.lastPix.status = resultado.status;
-
-    if (typeof prestador.adicionarHistoricoPlano === 'function') {
-      prestador.adicionarHistoricoPlano(
-        'pix_rejeitado',
-        `Pagamento PIX não aprovado - ID: ${resultado.paymentId}`
-      );
-    }
-
-    await prestador.save();
-    console.log(`📊 Status alterado: ${statusAnterior} -> ${prestador.planoStatus}`);
-    return;
-  }
-
-  console.log(`ℹ️ Status PIX não tratado explicitamente: ${resultado.status}`);
-  return;
-}
 
     console.log('ℹ️ Webhook recebido sem tipo tratado.');
 
@@ -662,6 +654,7 @@ if (resultado.type === 'pix_manual') {
     console.error('❌ Erro no webhook:', error);
   }
 });
+
 // ========== ROTAS DE CONSULTA ==========
 
 /**
@@ -682,7 +675,6 @@ router.get('/status-prestador/:prestadorId', authMiddleware, async (req, res) =>
       });
     }
     
-    // Verificar permissão
     const autorizado = 
       req.usuario.prestadorId?.toString() === prestadorId ||
       req.usuario.id?.toString() === prestadorId ||
@@ -695,18 +687,18 @@ router.get('/status-prestador/:prestadorId', authMiddleware, async (req, res) =>
       });
     }
     
-  res.json({
-  success: true,
-  planoStatus: prestador.planoStatus || 'inativo',
-  planoAtivo: prestador.planoAtivo || false,
-  planoExpiracao: prestador.planoExpiracao,
-  subscriptionId: prestador.mercadoPago?.subscriptionId,
-  lastPayment: prestador.mercadoPago?.lastPayment,
-  tipoPlano: prestador.tipoPlano || 'automatico',
-  formaPagamentoAtual: prestador.formaPagamentoAtual || 'cartao',
-  lastPix: prestador.mercadoPago?.lastPix || null,
-  historico: prestador.planoHistorico || []
-});
+    res.json({
+      success: true,
+      planoStatus: prestador.planoStatus || 'inativo',
+      planoAtivo: prestador.planoAtivo || false,
+      planoExpiracao: prestador.planoExpiracao,
+      subscriptionId: prestador.mercadoPago?.subscriptionId,
+      lastPayment: prestador.mercadoPago?.lastPayment,
+      tipoPlano: prestador.tipoPlano || 'automatico',
+      formaPagamentoAtual: prestador.formaPagamentoAtual || 'cartao',
+      lastPix: prestador.mercadoPago?.lastPix || null,
+      historico: prestador.planoHistorico || []
+    });
     
   } catch (error) {
     console.error('❌ Erro ao buscar status do prestador:', error);
