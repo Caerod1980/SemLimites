@@ -434,10 +434,23 @@ export async function processarNotificacao(notificacao) {
 // TRATAR PAGAMENTO PIX (MANUAL)
 // ===============================
 if (tipoNotificacao === 'payment') {
-  const paymentId = data?.id;
+  let paymentId = data?.id || null;
+
+  // 🔥 NOVO: suporte a resource (formato real do MP)
+  if (!paymentId && notificacao.resource) {
+    const resource = String(notificacao.resource);
+
+    if (/^\d+$/.test(resource)) {
+      paymentId = resource;
+    } else {
+      const match = resource.match(/\/([^/]+)$/);
+      if (match) paymentId = match[1];
+    }
+  }
 
   if (!paymentId) {
-    return { success: false, error: 'paymentId não encontrado' };
+    console.error('❌ paymentId não encontrado no webhook');
+    return { success: false };
   }
 
   const pagamento = await payment.get({ id: paymentId });
