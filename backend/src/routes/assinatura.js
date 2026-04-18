@@ -607,23 +607,57 @@ router.post('/webhooks/mercadopago', async (req, res) => {
       }
 
       if (resultado.status === 'pending' || resultado.status === 'in_process') {
-        prestador.planoAtivo = false;
-        prestador.planoStatus = 'pendente';
-        prestador.tipoPlano = 'manual';
-        prestador.formaPagamentoAtual = 'pix';
-        prestador.mercadoPago.lastPix.status = resultado.status;
+  const ultimoManual = prestador.ultimoPagamentoManual;
+  const expiraEm = prestador.planoExpiracao ? new Date(prestador.planoExpiracao) : null;
+  const agora = new Date();
 
-        if (typeof prestador.adicionarHistoricoPlano === 'function') {
-          prestador.adicionarHistoricoPlano(
-            'pix_pendente',
-            `Pagamento PIX pendente - ID: ${resultado.paymentId}`
-          );
-        }
+  // ===== PROTEÇÃO: ignorar PIX pendente antigo se já existe pagamento manual aprovado e vigente =====
+  if (
+    ultimoManual &&
+    ultimoManual.status === 'approved' &&
+    ultimoManual.paymentId &&
+    String(ultimoManual.paymentId) !== String(resultado.paymentId) &&
+    expiraEm &&
+    expiraEm > agora
+  ) {
+    console.log('⏭️ Ignorando PIX pendente/in_process antigo, pois já existe pagamento manual aprovado vigente.', {
+      paymentIdPendente: resultado.paymentId,
+      paymentIdAprovadoVigente: ultimoManual.paymentId,
+      planoExpiracao: prestador.planoExpiracao
+    });
 
-        await prestador.save();
-        console.log(`📊 Status alterado: ${statusAnterior} -> ${prestador.planoStatus}`);
-        return;
-      }
+    // Atualiza apenas o lastPix do evento atual, sem derrubar o plano vigente
+    prestador.mercadoPago.lastPix.status = resultado.status;
+    prestador.mercadoPago.lastPix.paymentId = resultado.paymentId;
+
+    if (typeof prestador.adicionarHistoricoPlano === 'function') {
+      prestador.adicionarHistoricoPlano(
+        'pix_pendente_ignorado',
+        `PIX pendente/in_process ignorado por existir pagamento manual vigente - ID: ${resultado.paymentId}`
+      );
+    }
+
+    await prestador.save();
+    return;
+  }
+
+  prestador.planoAtivo = false;
+  prestador.planoStatus = 'pendente';
+  prestador.tipoPlano = 'manual';
+  prestador.formaPagamentoAtual = 'pix';
+  prestador.mercadoPago.lastPix.status = resultado.status;
+
+  if (typeof prestador.adicionarHistoricoPlano === 'function') {
+    prestador.adicionarHistoricoPlano(
+      'pix_pendente',
+      `Pagamento PIX pendente - ID: ${resultado.paymentId}`
+    );
+  }
+
+  await prestador.save();
+  console.log(`📊 Status alterado: ${statusAnterior} -> ${prestador.planoStatus}`);
+  return;
+}
 
       if (resultado.status === 'rejected' || resultado.status === 'cancelled') {
   const ultimoManual = prestador.ultimoPagamentoManual;
