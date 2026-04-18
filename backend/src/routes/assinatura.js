@@ -626,23 +626,58 @@ router.post('/webhooks/mercadopago', async (req, res) => {
       }
 
       if (resultado.status === 'rejected' || resultado.status === 'cancelled') {
-        prestador.planoAtivo = false;
-        prestador.planoStatus = 'pendente';
-        prestador.tipoPlano = 'manual';
-        prestador.formaPagamentoAtual = 'pix';
-        prestador.mercadoPago.lastPix.status = resultado.status;
+  const ultimoManual = prestador.ultimoPagamentoManual;
+  const expiraEm = prestador.planoExpiracao ? new Date(prestador.planoExpiracao) : null;
+  const agora = new Date();
 
-        if (typeof prestador.adicionarHistoricoPlano === 'function') {
-          prestador.adicionarHistoricoPlano(
-            'pix_rejeitado',
-            `Pagamento PIX não aprovado - ID: ${resultado.paymentId}`
-          );
-        }
+  // ===== PROTEÇÃO: ignorar PIX antigo/rejeitado se já existe pagamento manual aprovado e vigente =====
+  if (
+    ultimoManual &&
+    ultimoManual.status === 'approved' &&
+    ultimoManual.paymentId &&
+    String(ultimoManual.paymentId) !== String(resultado.paymentId) &&
+    expiraEm &&
+    expiraEm > agora
+  ) {
+    console.log('⏭️ Ignorando PIX rejeitado/cancelado antigo, pois já existe pagamento manual aprovado vigente.', {
+      paymentIdRejeitado: resultado.paymentId,
+      paymentIdAprovadoVigente: ultimoManual.paymentId,
+      planoExpiracao: prestador.planoExpiracao
+    });
 
-        await prestador.save();
-        console.log(`📊 Status alterado: ${statusAnterior} -> ${prestador.planoStatus}`);
-        return;
-      }
+    // Atualiza apenas o lastPix do evento atual, sem derrubar o plano vigente
+    prestador.mercadoPago.lastPix.status = resultado.status;
+    prestador.mercadoPago.lastPix.paymentId = resultado.paymentId;
+
+    if (typeof prestador.adicionarHistoricoPlano === 'function') {
+      prestador.adicionarHistoricoPlano(
+        'pix_rejeitado_ignorado',
+        `PIX rejeitado/cancelado ignorado por existir pagamento manual vigente - ID: ${resultado.paymentId}`
+      );
+    }
+
+    await prestador.save();
+    return;
+  }
+
+  // ===== FLUXO NORMAL: rejeição/cancelamento do PIX atual realmente afeta o plano =====
+  prestador.planoAtivo = false;
+  prestador.planoStatus = 'pendente';
+  prestador.tipoPlano = 'manual';
+  prestador.formaPagamentoAtual = 'pix';
+  prestador.mercadoPago.lastPix.status = resultado.status;
+
+  if (typeof prestador.adicionarHistoricoPlano === 'function') {
+    prestador.adicionarHistoricoPlano(
+      'pix_rejeitado',
+      `Pagamento PIX não aprovado - ID: ${resultado.paymentId}`
+    );
+  }
+
+  await prestador.save();
+  console.log(`📊 Status alterado: ${statusAnterior} -> ${prestador.planoStatus}`);
+  return;
+}
 
       console.log(`ℹ️ Status PIX não tratado explicitamente: ${resultado.status}`);
       return;
