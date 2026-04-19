@@ -6183,42 +6183,64 @@ function handleExcluirPerfil() {
                         )
                     ),
 
-                    // ===== SEÇÃO PARA PRESTADORES =====
-                    React.createElement('div', { className: "mb-8" },
-                        React.createElement('h2', { className: "text-xl md:text-2xl font-bold text-[#3d7a3d] mb-6 flex items-center gap-2" },
-                            React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" })
-                            ),
-                            "Para Prestadores de Serviço"
-                        ),
-                        React.createElement('p', { className: "text-sm md:text-base text-slate-600 mb-6" },
-                            "Por que as Curtidas são Importantes para Você?"
-                        ),
+                   // ===== SEÇÃO PARA PRESTADORES =====
+React.createElement('div', { className: "mb-8" },
+    React.createElement('h2', { className: "text-xl md:text-2xl font-bold text-[#3d7a3d] mb-6 flex items-center gap-2" },
+        React.createElement('svg', { className: "w-6 h-6", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+            React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" })
+        ),
+        "Para Prestadores de Serviço"
+    ),
 
-                        // Importância das curtidas
-                        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" },
-                            React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "🌟 Reconhecimento Público"),
-                                React.createElement('p', { className: "text-xs text-slate-600" }, "Cada curtida é um voto de confiança. Clientes que curtem seu perfil estão dizendo: 'Eu confio neste profissional e quero tê-lo por perto'.")
-                            ),
-                            React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "📈 Mais Visibilidade na Plataforma"),
-                                React.createElement('p', { className: "text-xs text-slate-600" }, "Profissionais com muitas curtidas tendem a aparecer melhor nos resultados de busca. É nosso algoritmo reconhecendo que você é uma referência.")
-                            ),
-                            React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "🤝 Construção de Relacionamento"),
-                                React.createElement('p', { className: "text-xs text-slate-600" }, "Clientes que curtem seu perfil são potenciais clientes recorrentes. Eles já demonstraram interesse e confiança no seu trabalho.")
-                            ),
-                            React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "💪 Motivação e Orgulho"),
-                                React.createElement('p', { className: "text-xs text-slate-600" }, "Ver o número de curtidas crescendo é gratificante e mostra que seu esforço e dedicação estão sendo reconhecidos pela comunidade.")
-                            ),
-                            React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0] md:col-span-2" },
-                                React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "📊 Métrica de Sucesso"),
-                                React.createElement('p', { className: "text-xs text-slate-600" }, "No seu dashboard de prestador, você pode acompanhar o total de curtidas e entender melhor como os clientes estão interagindo com seu perfil.")
-                            )
-                        ),
+    // ===== BLOCO NOVO: PAGAMENTO E VISIBILIDADE =====
+    React.createElement('div', {
+        className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0] mb-6"
+    },
+        React.createElement('p', { className: "text-sm text-slate-600" },
+            "Para manter seu perfil visível na vitrine do Sem Limites, é necessário estar com o plano ativo."
+        ),
 
+        React.createElement('p', { className: "text-sm text-slate-600 font-medium" },
+            "Formas de pagamento disponíveis:"
+        ),
+
+        React.createElement('ul', { className: "list-disc pl-5 text-sm text-slate-600 space-y-1" },
+            React.createElement('li', null, "💳 Cartão de crédito: renovação automática mensal"),
+            React.createElement('li', null, "📱 PIX manual: pagamento mensal sob demanda")
+        ),
+
+        React.createElement('p', { className: "text-sm text-slate-600" },
+            "Perfis com pagamento pendente, expirado ou cancelado ficam temporariamente fora da busca até a regularização."
+        )
+    ),
+
+    React.createElement('p', { className: "text-sm md:text-base text-slate-600 mb-6" },
+        "Por que as Curtidas são Importantes para Você?"
+    ),
+
+    // Importância das curtidas
+    React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" },
+        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+            React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "🌟 Reconhecimento Público"),
+            React.createElement('p', { className: "text-xs text-slate-600" }, "Cada curtida é um voto de confiança. Clientes que curtem seu perfil estão dizendo: 'Eu confio neste profissional e quero tê-lo por perto'.")
+        ),
+        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+            React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "📈 Mais Visibilidade na Plataforma"),
+            React.createElement('p', { className: "text-xs text-slate-600" }, "Profissionais com muitas curtidas tendem a aparecer melhor nos resultados de busca. É nosso algoritmo reconhecendo que você é uma referência.")
+        ),
+        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+            React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "🤝 Construção de Relacionamento"),
+            React.createElement('p', { className: "text-xs text-slate-600" }, "Clientes que curtem seu perfil são potenciais clientes recorrentes. Eles já demonstraram interesse e confiança no seu trabalho.")
+        ),
+        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+            React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "💪 Motivação e Orgulho"),
+            React.createElement('p', { className: "text-xs text-slate-600" }, "Ver o número de curtidas crescendo é gratificante e mostra que seu esforço e dedicação estão sendo reconhecidos pela comunidade.")
+        ),
+        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0] md:col-span-2" },
+            React.createElement('h4', { className: "font-semibold text-[#2d5a2d] mb-2" }, "📊 Métrica de Sucesso"),
+            React.createElement('p', { className: "text-xs text-slate-600" }, "No seu dashboard de prestador, você pode acompanhar o total de curtidas e entender melhor como os clientes estão interagindo com seu perfil.")
+        )
+    ),
                         // Jornada do Prestador
                         React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0] mb-6" },
                             React.createElement('h4', { className: "font-semibold text-[#F09030] mb-2" }, "📌 Exemplo Prático - Impacto das Curtidas para o Prestador"),
