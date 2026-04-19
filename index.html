@@ -7557,108 +7557,148 @@ function handleExcluirPerfil() {
             );
         }
 
-        // ========== PÁGINA FAQ PRESTADORES ==========
-        function FaqPrestadores(props) {
-            var onVoltar = props.onVoltar;
+       // ========== PÁGINA FAQ PRESTADORES ==========
+function FaqPrestadores(props) {
+    var onVoltar = props.onVoltar;
+    
+    return React.createElement('div', { className: "max-w-4xl mx-auto px-4 py-8 md:py-12" },
+        React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-6 md:p-8 shadow-sm" },
             
-            return React.createElement('div', { className: "max-w-4xl mx-auto px-4 py-8 md:py-12" },
-                React.createElement('div', { className: "bg-white rounded-2xl md:rounded-3xl border border-[#c0dfc0] p-6 md:p-8 shadow-sm" },
-                    
-                    React.createElement('div', { className: "flex items-center justify-between mb-8" },
-                        React.createElement('h1', { className: "text-2xl md:text-3xl font-bold text-[#3d7a3d]" }, "❓ FAQ para Prestadores"),
-                        React.createElement('button', {
-                            onClick: onVoltar,
-                            className: "text-sm text-[#4a8a4a] hover:text-[#2d5a2d] flex items-center gap-1"
-                        },
-                            React.createElement('svg', { className: "w-4 h-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                                React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M10 19l-7-7m0 0l7-7m-7 7h18" })
+            React.createElement('div', { className: "flex items-center justify-between mb-8" },
+                React.createElement('h1', { className: "text-2xl md:text-3xl font-bold text-[#3d7a3d]" }, "❓ FAQ para Prestadores"),
+                React.createElement('button', {
+                    onClick: onVoltar,
+                    className: "text-sm text-[#4a8a4a] hover:text-[#2d5a2d] flex items-center gap-1"
+                },
+                    React.createElement('svg', { className: "w-4 h-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                        React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M10 19l-7-7m0 0l7-7m-7 7h18" })
+                    ),
+                    "Voltar"
+                )
+            ),
+
+            React.createElement('p', { className: "text-lg md:text-xl text-slate-600 mb-8 text-center" },
+                "Perguntas frequentes para quem oferece serviços"
+            ),
+
+            React.createElement('div', { className: "space-y-6" },
+                React.createElement('div', null,
+                    React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 pb-2 border-b border-[#c0dfc0]" }, "1. Cadastro e Conta"),
+                    React.createElement('div', { className: "space-y-4" },
+                        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                            React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Como faço para me cadastrar como prestador?"),
+                            React.createElement('p', { className: "text-sm text-slate-600" }, "No canto superior direito, clique em \"Sou Prestador\". Preencha seus dados, aceite os Termos de Uso e realize o pagamento da mensalidade. Após confirmação, sua conta será ativada.")
+                        ),
+                        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                            React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Esqueci minha senha. O que faço?"),
+                            React.createElement('p', { className: "text-sm text-slate-600" }, "Na página de login, clique em \"Esqueceu a senha?\". Digite seu e-mail e enviaremos um link para criar uma nova senha.")
+                        ),
+                        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                            React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "É seguro fornecer meu CPF ou CNPJ?"),
+                            React.createElement('p', { className: "text-sm text-slate-600" }, "Sim! Utilizamos criptografia e seguimos a LGPD. Seus dados são usados apenas para validação da conta e transparência.")
+                        )
+                    )
+                ),
+                
+                React.createElement('div', null,
+                    React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 pb-2 border-b border-[#c0dfc0]" }, "2. Perfil e Serviços"),
+                    React.createElement('div', { className: "space-y-4" },
+                        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                            React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Como deixo meu perfil mais atrativo?"),
+                            React.createElement('p', { className: "text-sm text-slate-600" }, "Invista em foto profissional, descrição detalhada, liste suas especialidades e certificações. Quanto mais completo, mais confiança você passa.")
+                        ),
+                        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                            React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Como funciona o cadastro de um serviço?"),
+                            React.createElement('p', { className: "text-sm text-slate-600" }, "No Dashboard, aba \"Serviços\", clique em \"Novo Serviço\". Preencha os dados do cliente e do serviço. Um link de avaliação exclusivo será gerado.")
+                        ),
+                        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                            React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Como envio o link de avaliação?"),
+                            React.createElement('p', { className: "text-sm text-slate-600" }, "Você pode copiar o link e enviar manualmente ou usar o botão WhatsApp, que envia uma mensagem automática com todas as instruções.")
+                        )
+                    )
+                ),
+                
+                React.createElement('div', null,
+                    React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 pb-2 border-b border-[#c0dfc0]" }, "3. Avaliações e Reputação"),
+                    React.createElement('div', { className: "space-y-4" },
+                        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                            React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Como é calculada minha reputação?"),
+                            React.createElement('p', { className: "text-sm text-slate-600" }, "É a média de todas as notas (1 a 5 estrelas) que você recebeu dos clientes em serviços avaliados.")
+                        ),
+                        React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
+                            React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "O que fazer com uma avaliação negativa?"),
+                            React.createElement('p', { className: "text-sm text-slate-600" }, "Analise o feedback, reflita e use como aprendizado. Continue prestando serviços de excelência para equilibrar sua nota.")
+                        )
+                    )
+                ),
+                
+                React.createElement('div', null,
+                    React.createElement('h2', {
+                        className: "text-xl font-bold text-[#3d7a3d] mb-4 pb-2 border-b border-[#c0dfc0]"
+                    }, "4. Pagamentos e Planos"),
+
+                    React.createElement('div', { className: "space-y-4" },
+
+                        React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0]" },
+                            React.createElement('h3', { className: "font-semibold text-[#F09030] mb-2" },
+                                "Quais formas de pagamento são aceitas?"
                             ),
-                            "Voltar"
-                        )
-                    ),
+                            React.createElement('p', { className: "text-sm text-slate-600" },
+                                "Você pode pagar por cartão de crédito (renovação automática) ou PIX manual."
+                            )
+                        ),
 
-                    React.createElement('p', { className: "text-lg md:text-xl text-slate-600 mb-8 text-center" },
-                        "Perguntas frequentes para quem oferece serviços"
-                    ),
+                        React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0]" },
+                            React.createElement('h3', { className: "font-semibold text-[#F09030] mb-2" },
+                                "Se meu cartão falhar, posso continuar na plataforma?"
+                            ),
+                            React.createElement('p', { className: "text-sm text-slate-600" },
+                                "Sim. Você pode regularizar seu plano através do PIX diretamente no dashboard."
+                            )
+                        ),
 
-                    React.createElement('div', { className: "space-y-6" },
-                        React.createElement('div', null,
-                            React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 pb-2 border-b border-[#c0dfc0]" }, "1. Cadastro e Conta"),
-                            React.createElement('div', { className: "space-y-4" },
-                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Como faço para me cadastrar como prestador?"),
-                                    React.createElement('p', { className: "text-sm text-slate-600" }, "No canto superior direito, clique em \"Sou Prestador\". Preencha seus dados, aceite os Termos de Uso e realize o pagamento da mensalidade. Após confirmação, sua conta será ativada.")
-                                ),
-                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Esqueci minha senha. O que faço?"),
-                                    React.createElement('p', { className: "text-sm text-slate-600" }, "Na página de login, clique em \"Esqueceu a senha?\". Digite seu e-mail e enviaremos um link para criar uma nova senha.")
-                                ),
-                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "É seguro fornecer meu CPF ou CNPJ?"),
-                                    React.createElement('p', { className: "text-sm text-slate-600" }, "Sim! Utilizamos criptografia e seguimos a LGPD. Seus dados são usados apenas para validação da conta e transparência.")
-                                )
+                        React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0]" },
+                            React.createElement('h3', { className: "font-semibold text-[#F09030] mb-2" },
+                                "Quando meu perfil aparece na vitrine?"
+                            ),
+                            React.createElement('p', { className: "text-sm text-slate-600" },
+                                "Apenas quando o plano está ativo. Planos pendentes ou expirados não aparecem na busca."
                             )
                         ),
-                        
-                        React.createElement('div', null,
-                            React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 pb-2 border-b border-[#c0dfc0]" }, "2. Perfil e Serviços"),
-                            React.createElement('div', { className: "space-y-4" },
-                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Como deixo meu perfil mais atrativo?"),
-                                    React.createElement('p', { className: "text-sm text-slate-600" }, "Invista em foto profissional, descrição detalhada, liste suas especialidades e certificações. Quanto mais completo, mais confiança você passa.")
-                                ),
-                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Como funciona o cadastro de um serviço?"),
-                                    React.createElement('p', { className: "text-sm text-slate-600" }, "No Dashboard, aba \"Serviços\", clique em \"Novo Serviço\". Preencha os dados do cliente e do serviço. Um link de avaliação exclusivo será gerado.")
-                                ),
-                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Como envio o link de avaliação?"),
-                                    React.createElement('p', { className: "text-sm text-slate-600" }, "Você pode copiar o link e enviar manualmente ou usar o botão WhatsApp, que envia uma mensagem automática com todas as instruções.")
-                                )
+
+                        React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0]" },
+                            React.createElement('h3', { className: "font-semibold text-[#F09030] mb-2" },
+                                "Cartão de débito funciona?"
+                            ),
+                            React.createElement('p', { className: "text-sm text-slate-600" },
+                                "Recomendamos cartão de crédito. Cartões de débito ou virtuais podem não funcionar corretamente em assinaturas."
                             )
                         ),
-                        
-                        React.createElement('div', null,
-                            React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 pb-2 border-b border-[#c0dfc0]" }, "3. Avaliações e Reputação"),
-                            React.createElement('div', { className: "space-y-4" },
-                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "Como é calculada minha reputação?"),
-                                    React.createElement('p', { className: "text-sm text-slate-600" }, "É a média de todas as notas (1 a 5 estrelas) que você recebeu dos clientes em serviços avaliados.")
-                                ),
-                                React.createElement('div', { className: "bg-[#f0f7f0] rounded-xl p-4 border border-[#c0dfc0]" },
-                                    React.createElement('h3', { className: "font-semibold text-[#2d5a2d] mb-2" }, "O que fazer com uma avaliação negativa?"),
-                                    React.createElement('p', { className: "text-sm text-slate-600" }, "Analise o feedback, reflita e use como aprendizado. Continue prestando serviços de excelência para equilibrar sua nota.")
-                                )
-                            )
-                        ),
-                        
-                        React.createElement('div', null,
-                            React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 pb-2 border-b border-[#c0dfc0]" }, "4. Pagamentos e Planos"),
-                            React.createElement('div', { className: "space-y-4" },
-                                React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0]" },
-                                    React.createElement('h3', { className: "font-semibold text-[#F09030] mb-2" }, "Como funciona a mensalidade?"),
-                                    React.createElement('p', { className: "text-sm text-slate-600" }, "O Sem Limites cobra uma mensalidade acessível para manter seu perfil ativo. O pagamento é processado pelo Mercado Pago. Você pode cancelar sua assinatura a qualquer momento.")
-                                ),
-                                React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0]" },
-                                    React.createElement('h3', { className: "font-semibold text-[#F09030] mb-2" }, "Como faço para excluir minha conta?"),
-                                    React.createElement('p', { className: "text-sm text-slate-600" }, "No Dashboard, vá até a \"Zona de Perigo\", clique em \"Excluir minha conta permanentemente\", confirme com seu nome e a frase \"EXCLUIR PERMANENTEMENTE\". Sua assinatura será cancelada automaticamente.")
-                                )
+
+                        React.createElement('div', { className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0]" },
+                            React.createElement('h3', { className: "font-semibold text-[#F09030] mb-2" },
+                                "O que acontece se eu não pagar?"
+                            ),
+                            React.createElement('p', { className: "text-sm text-slate-600" },
+                                "Seu perfil fica temporariamente fora da vitrine até a regularização do pagamento."
                             )
                         )
-                    ),
-                    
-                    React.createElement('div', { className: "mt-8 p-6 bg-gradient-to-r from-[#f0f7f0] to-[#fff8e7] rounded-xl border border-[#c0dfc0] text-center" },
-                        React.createElement('p', { className: "text-sm md:text-base text-slate-600 mb-4" },
-                            "Não encontrou o que procura? Entre em contato conosco!"
-                        ),
-                        React.createElement('button', {
-                            onClick: function() { navigate('/contato'); },
-                            className: "px-6 py-3 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white font-semibold rounded-xl hover:shadow-lg transition"
-                        }, "Falar com Suporte →")
                     )
                 )
-            );
-        }
+            ),
+            
+            React.createElement('div', { className: "mt-8 p-6 bg-gradient-to-r from-[#f0f7f0] to-[#fff8e7] rounded-xl border border-[#c0dfc0] text-center" },
+                React.createElement('p', { className: "text-sm md:text-base text-slate-600 mb-4" },
+                    "Não encontrou o que procura? Entre em contato conosco!"
+                ),
+                React.createElement('button', {
+                    onClick: function() { navigate('/contato'); },
+                    className: "px-6 py-3 bg-gradient-to-r from-[#FFB347] to-[#FFD966] text-white font-semibold rounded-xl hover:shadow-lg transition"
+                }, "Falar com Suporte →")
+            )
+        )
+    );
+} 
 
         // ========== PÁGINA FAQ CLIENTES ==========
         function FaqClientes(props) {
