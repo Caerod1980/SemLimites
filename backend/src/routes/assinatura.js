@@ -460,10 +460,24 @@ router.post('/webhooks/mercadopago', async (req, res) => {
       }
 
       const statusAnterior = prestador.planoStatus;
+      const ultimoManual = prestador.ultimoPagamentoManual;
+const expiraEm = prestador.planoExpiracao ? new Date(prestador.planoExpiracao) : null;
+const agora = new Date();
+
+const existePlanoManualVigente =
+  prestador.tipoPlano === 'manual' &&
+  prestador.formaPagamentoAtual === 'pix' &&
+  ultimoManual &&
+  ultimoManual.status === 'approved' &&
+  expiraEm &&
+  expiraEm > agora;
 
       prestador.mercadoPago = prestador.mercadoPago || {};
-      prestador.mercadoPago.subscriptionId = resultado.subscriptionId;
-      prestador.planoId = resultado.subscriptionId;
+
+if (!existePlanoManualVigente) {
+  prestador.mercadoPago.subscriptionId = resultado.subscriptionId;
+  prestador.planoId = resultado.subscriptionId;
+}
 
       if (resultado.status === 'authorized') {
         prestador.planoAtivo = true;
@@ -488,30 +502,62 @@ router.post('/webhooks/mercadopago', async (req, res) => {
         console.log(`✅ Plano ativado/renovado para: ${prestador._id}`);
 
       } else if (resultado.status === 'paused' || resultado.status === 'pending') {
-        prestador.planoAtivo = false;
-        prestador.planoStatus = 'pendente';
+  if (existePlanoManualVigente) {
+    console.log('⏭️ Ignorando status paused/pending da assinatura antiga, pois já existe plano manual PIX vigente.', {
+      subscriptionId: resultado.subscriptionId,
+      paymentIdAprovadoVigente: ultimoManual?.paymentId,
+      planoExpiracao: prestador.planoExpiracao
+    });
 
-        if (typeof prestador.adicionarHistoricoPlano === 'function') {
-          prestador.adicionarHistoricoPlano(
-            'pagamento_pendente',
-            `Assinatura pendente/pausada - ID: ${resultado.subscriptionId}`
-          );
-        }
+    if (typeof prestador.adicionarHistoricoPlano === 'function') {
+      prestador.adicionarHistoricoPlano(
+        'assinatura_pendente_ignorada',
+        `Status pendente/pausado da assinatura ignorado por existir plano manual vigente - ID: ${resultado.subscriptionId}`
+      );
+    }
 
-        console.log(`⏳ Plano pendente/pausado para: ${prestador._id}`);
+  } else {
+    prestador.planoAtivo = false;
+    prestador.planoStatus = 'pendente';
 
-      } else if (resultado.status === 'cancelled') {
-        prestador.planoAtivo = false;
-        prestador.planoStatus = 'cancelado';
+    if (typeof prestador.adicionarHistoricoPlano === 'function') {
+      prestador.adicionarHistoricoPlano(
+        'pagamento_pendente',
+        `Assinatura pendente/pausada - ID: ${resultado.subscriptionId}`
+      );
+    }
 
-        if (typeof prestador.adicionarHistoricoPlano === 'function') {
-          prestador.adicionarHistoricoPlano(
-            'assinatura_cancelada',
-            `Assinatura cancelada via webhook - ID: ${resultado.subscriptionId}`
-          );
-        }
+    console.log(`⏳ Plano pendente/pausado para: ${prestador._id}`);
+  }
 
-        console.log(`❌ Assinatura cancelada para: ${prestador._id}`);
+} else if (resultado.status === 'cancelled') {
+  if (existePlanoManualVigente) {
+    console.log('⏭️ Ignorando cancelamento da assinatura antiga, pois já existe plano manual PIX vigente.', {
+      subscriptionId: resultado.subscriptionId,
+      paymentIdAprovadoVigente: ultimoManual?.paymentId,
+      planoExpiracao: prestador.planoExpiracao
+    });
+
+    if (typeof prestador.adicionarHistoricoPlano === 'function') {
+      prestador.adicionarHistoricoPlano(
+        'assinatura_cancelada_ignorada',
+        `Cancelamento da assinatura ignorado por existir plano manual vigente - ID: ${resultado.subscriptionId}`
+      );
+    }
+
+  } else {
+    prestador.planoAtivo = false;
+    prestador.planoStatus = 'cancelado';
+
+    if (typeof prestador.adicionarHistoricoPlano === 'function') {
+      prestador.adicionarHistoricoPlano(
+        'assinatura_cancelada',
+        `Assinatura cancelada via webhook - ID: ${resultado.subscriptionId}`
+      );
+    }
+
+    console.log(`❌ Assinatura cancelada para: ${prestador._id}`);
+  }
 
       } else {
         console.log(`ℹ️ Status de assinatura não tratado explicitamente: ${resultado.status}`);
@@ -557,6 +603,17 @@ router.post('/webhooks/mercadopago', async (req, res) => {
       }
 
       const statusAnterior = prestador.planoStatus;
+      const ultimoManual = prestador.ultimoPagamentoManual;
+      const expiraEm = prestador.planoExpiracao ? new Date(prestador.planoExpiracao) : null;
+      const agora = new Date();
+
+  const existePlanoManualVigente =
+  prestador.tipoPlano === 'manual' &&
+  prestador.formaPagamentoAtual === 'pix' &&
+  ultimoManual &&
+  ultimoManual.status === 'approved' &&
+  expiraEm &&
+  expiraEm > agora;
       prestador.mercadoPago = prestador.mercadoPago || {};
       prestador.mercadoPago.lastPix = prestador.mercadoPago.lastPix || {};
 
