@@ -7011,7 +7011,30 @@ function handleExcluirPerfil() {
                             )
                         )
                     ),
+// ===== STATUS DO PLANO =====
+React.createElement('div', { className: "mb-8" },
 
+    React.createElement('h2', {
+        className: "text-xl font-bold text-[#3d7a3d] mb-4"
+    },
+        "💳 Status do Plano e Pagamentos"
+    ),
+
+    React.createElement('div', {
+        className: "bg-[#fff8e7] rounded-xl p-4 border border-[#FFE3A0]"
+    },
+
+        React.createElement('ul', {
+            className: "list-disc pl-5 text-sm text-slate-600 space-y-2"
+        },
+            React.createElement('li', null, "Plano ativo: seu perfil aparece na vitrine"),
+            React.createElement('li', null, "Plano pendente: perfil fica temporariamente oculto"),
+            React.createElement('li', null, "Você pode regularizar diretamente pelo dashboard"),
+            React.createElement('li', null, "Pagamentos podem ser feitos por cartão ou PIX"),
+            React.createElement('li', null, "Ao pagar via PIX, a ativação é automática após confirmação")
+        )
+    )
+),
                     // Perfil Profissional
                     React.createElement('div', { className: "mb-8" },
                         React.createElement('h2', { className: "text-xl font-bold text-[#3d7a3d] mb-4 flex items-center gap-2" },
