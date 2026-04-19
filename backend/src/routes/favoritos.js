@@ -155,10 +155,12 @@ router.get('/meus-favoritos', autenticar, async (req, res) => {
       })
       .sort({ createdAt: -1 });
 
-    const prestadores = favoritos.map(f => ({
-      ...f.prestadorId.toObject(),
-      favoritadoEm: f.createdAt
-    }));
+    const prestadores = favoritos
+  .filter(f => f.prestadorId) // 🔥 REMOVE NULOS
+  .map(f => ({
+    ...f.prestadorId.toObject(),
+    favoritadoEm: f.createdAt
+  }));
 
     res.json({ prestadores });
 
