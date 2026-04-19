@@ -24,19 +24,30 @@ export const getStats = async (req, res) => {
 // ========== PRESTADORES POR CIDADE ==========
 export const getPrestadoresPorCidade = async (req, res) => {
     try {
-        const prestadores = await User.aggregate([
-            { $match: { tipo: 'prestador', cidade: { $exists: true, $ne: '' } } },
-            { $group: {
-                _id: { cidade: '$cidade', estado: '$estado' },
-                total: { $sum: 1 }
-            }},
-            { $sort: { total: -1 } },
-            { $project: {
-                cidade: '$_id.cidade',
-                estado: '$_id.estado',
-                total: 1,
-                _id: 0
-            }}
+        const prestadores = await Prestador.aggregate([
+            {
+                $match: {
+                    cidade: { $exists: true, $ne: '' }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        cidade: '$cidade',
+                        estado: '$estado'
+                    },
+                    total: { $sum: 1 }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    cidade: '$_id.cidade',
+                    estado: { $ifNull: ['$_id.estado', ''] },
+                    total: 1
+                }
+            },
+            { $sort: { total: -1, cidade: 1 } }
         ]);
 
         res.json(prestadores);
@@ -45,16 +56,16 @@ export const getPrestadoresPorCidade = async (req, res) => {
         res.status(500).json({ error: 'Erro ao carregar dados' });
     }
 };
-
 // ========== LISTAR PRESTADORES DE UMA CIDADE ==========
 export const getPrestadoresPorCidadeDetalhado = async (req, res) => {
     try {
         const { cidade } = req.params;
-        
-        const prestadores = await User.find({
-            tipo: 'prestador',
+
+        const prestadores = await Prestador.find({
             cidade: { $regex: new RegExp(`^${cidade}$`, 'i') }
-        }).select('nome email cidade estado whatsapp createdAt cpf cnpj verificado');
+        })
+        .select('nome email cidade estado whatsapp createdAt cpf cnpj verificado planoStatus planoAtivo planoExpiracao formaPagamentoAtual tipoPlano')
+        .sort({ nome: 1 });
 
         res.json(prestadores);
     } catch (error) {
@@ -62,7 +73,21 @@ export const getPrestadoresPorCidadeDetalhado = async (req, res) => {
         res.status(500).json({ error: 'Erro ao carregar dados' });
     }
 };
+// ========== PRESTADORES PENDENTES / CANCELADOS ==========
+export const getPrestadoresPendentes = async (req, res) => {
+    try {
+        const prestadores = await Prestador.find({
+            planoStatus: { $in: ['pendente', 'cancelado'] }
+        })
+        .select('nome email cidade estado whatsapp planoStatus planoAtivo planoExpiracao formaPagamentoAtual tipoPlano createdAt')
+        .sort({ planoExpiracao: 1, nome: 1 });
 
+        res.json(prestadores);
+    } catch (error) {
+        console.error('Erro ao buscar prestadores pendentes:', error);
+        res.status(500).json({ error: 'Erro ao carregar prestadores pendentes' });
+    }
+};
 // ========== BUSCAR PRESTADOR ==========
 export const buscarPrestador = async (req, res) => {
     try {
@@ -72,13 +97,12 @@ export const buscarPrestador = async (req, res) => {
             return res.status(400).json({ error: 'Digite pelo menos 2 caracteres para buscar' });
         }
 
-        const prestador = await User.findOne({
-            tipo: 'prestador',
-            $or: [
-                { nome: { $regex: q, $options: 'i' } },
-                { email: { $regex: q, $options: 'i' } }
-            ]
-        }).select('nome email cidade estado whatsapp createdAt cpf cnpj verificado');
+        const prestador = await Prestador.findOne({
+    $or: [
+        { nome: { $regex: q, $options: 'i' } },
+        { email: { $regex: q, $options: 'i' } }
+    ]
+}).select('nome email cidade estado whatsapp createdAt cpf cnpj verificado mercadoPago planoStatus planoAtivo planoExpiracao formaPagamentoAtual tipoPlano');
 
         if (!prestador) {
             return res.json({ encontrado: false, mensagem: 'Prestador não encontrado' });
