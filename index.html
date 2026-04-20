@@ -7871,11 +7871,12 @@ function FaqPrestadores(props) {
                 )
             );
         } 
-               // ========== PAINEL ADMINISTRATIVO ==========
+              // ========== PAINEL ADMINISTRATIVO ==========
         function PainelAdmin(props) {
             var onSair = props.onSair;
             var [stats, setStats] = useState({ clientes: 0, prestadores: 0, avaliacoes: 0, servicos: 0 });
             var [prestadoresPorCidade, setPrestadoresPorCidade] = useState([]);
+            var [prestadoresPendentes, setPrestadoresPendentes] = useState([]);
             var [cidadeSelecionada, setCidadeSelecionada] = useState('');
             var [detalhesCidade, setDetalhesCidade] = useState([]);
             var [loadingDetalhesCidade, setLoadingDetalhesCidade] = useState(false);
@@ -7892,22 +7893,24 @@ function FaqPrestadores(props) {
                 var token = localStorage.getItem('token');
                 var headers = { 'Authorization': 'Bearer ' + token };
                 
-                Promise.all([
-                    fetch(API_URL + '/admin/stats', { headers }).then(r => r.json()).catch(() => ({ clientes: 0, prestadores: 0, avaliacoes: 0, servicos: 0 })),
-                    fetch(API_URL + '/admin/prestadores-por-cidade', { headers }).then(r => r.json()).catch(() => []),
-                    fetch(API_URL + '/admin/avaliacoes-recentes?limit=10', { headers }).then(r => r.json()).catch(() => [])
-                ]).then(function([statsData, cidadesData, avaliacoesData]) {
-                    setStats(statsData);
-                    setPrestadoresPorCidade(cidadesData);
-                    setUltimasAvaliacoes(avaliacoesData);
-                    setLoading(false);
-                }).catch(function(err) {
-                    console.error('Erro ao carregar dados admin:', err);
-                    setLoading(false);
-                });
-            }
+               Promise.all([
+    fetch(API_URL + '/admin/stats', { headers }).then(r => r.json()).catch(() => ({ clientes: 0, prestadores: 0, avaliacoes: 0, servicos: 0 })),
+    fetch(API_URL + '/admin/prestadores-por-cidade', { headers }).then(r => r.json()).catch(() => []),
+    fetch(API_URL + '/admin/prestadores-pendentes', { headers }).then(r => r.json()).catch(() => []),
+    fetch(API_URL + '/admin/avaliacoes-recentes?limit=10', { headers }).then(r => r.json()).catch(() => [])
+]).then(function([statsData, cidadesData, pendentesData, avaliacoesData]) {
+    setStats(statsData);
+    setPrestadoresPorCidade(cidadesData);
+    setPrestadoresPendentes(Array.isArray(pendentesData) ? pendentesData : []);
+    setUltimasAvaliacoes(avaliacoesData);
+    setLoading(false);
+}).catch(function(err) {
+    console.error('Erro ao carregar dados admin:', err);
+    setLoading(false);
+});
+}
 
-            useEffect(function() { carregarDados(); }, []);
+useEffect(function() { carregarDados(); }, []);
 
             function buscarPrestadorHandler() {
                 if (!buscaPrestador.trim()) return;
@@ -8157,6 +8160,68 @@ function FaqPrestadores(props) {
                                             );
                                         })
                                     )
+                        )
+                    ),
+                                        React.createElement('div', { className: "bg-white rounded-xl border border-slate-200 shadow-sm mb-8" },
+                        React.createElement('div', { className: "border-b border-slate-200 p-4 md:p-5 bg-slate-50 rounded-t-xl" },
+                            React.createElement('h2', { className: "text-base md:text-lg font-semibold text-slate-800 flex items-center gap-2" },
+                                React.createElement('svg', { className: "w-5 h-5 text-amber-500", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
+                                    React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" })
+                                ),
+                                "⚠️ Prestadores Pendentes / Cancelados"
+                            )
+                        ),
+                        React.createElement('div', { className: "p-4 md:p-5" },
+                            prestadoresPendentes.length === 0
+                                ? React.createElement('div', { className: "text-center py-6 text-slate-500 text-sm" },
+                                    "Nenhum prestador pendente ou cancelado no momento."
+                                )
+                                : React.createElement('div', { className: "space-y-3" },
+                                    prestadoresPendentes.map(function(prestador, idx) {
+                                        return React.createElement('div', {
+                                            key: prestador._id || idx,
+                                            className: "bg-amber-50 rounded-lg p-4 border border-amber-200"
+                                        },
+                                            React.createElement('div', { className: "flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-3" },
+                                                React.createElement('div', null,
+                                                    React.createElement('p', { className: "text-sm font-semibold text-slate-800" }, prestador.nome || '-'),
+                                                    React.createElement('p', { className: "text-xs text-slate-500" }, (prestador.cidade || '-') + (prestador.estado ? ' - ' + prestador.estado : ''))
+                                                ),
+                                                React.createElement('div', {
+                                                    className: "inline-flex items-center px-3 py-1 rounded-full text-xs font-medium " +
+                                                        (prestador.planoStatus === 'cancelado'
+                                                            ? 'bg-red-100 text-red-700'
+                                                            : 'bg-amber-100 text-amber-700')
+                                                }, prestador.planoStatus || 'pendente')
+                                            ),
+
+                                            React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3" },
+                                                React.createElement('div', null,
+                                                    React.createElement('p', { className: "text-xs text-slate-500" }, "E-mail"),
+                                                    React.createElement('p', { className: "text-sm font-medium text-slate-800 break-all" }, prestador.email || '-')
+                                                ),
+                                                React.createElement('div', null,
+                                                    React.createElement('p', { className: "text-xs text-slate-500" }, "WhatsApp"),
+                                                    React.createElement('p', { className: "text-sm font-medium text-slate-800" }, prestador.whatsapp || '-')
+                                                ),
+                                                React.createElement('div', null,
+                                                    React.createElement('p', { className: "text-xs text-slate-500" }, "Pagamento"),
+                                                    React.createElement('p', { className: "text-sm font-medium text-slate-800" },
+                                                        (prestador.tipoPlano || '-') + ' / ' + (prestador.formaPagamentoAtual || '-')
+                                                    )
+                                                ),
+                                                React.createElement('div', null,
+                                                    React.createElement('p', { className: "text-xs text-slate-500" }, "Expiração"),
+                                                    React.createElement('p', { className: "text-sm font-medium text-slate-800" },
+                                                        prestador.planoExpiracao
+                                                            ? new Date(prestador.planoExpiracao).toLocaleDateString('pt-BR')
+                                                            : '-'
+                                                    )
+                                                )
+                                            )
+                                        );
+                                    })
+                                )
                         )
                     ),
 
