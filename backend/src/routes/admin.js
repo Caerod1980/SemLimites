@@ -3,7 +3,8 @@ import express from 'express';
 import { 
     getStats, 
     getPrestadoresPorCidade, 
-    getPrestadoresPorCidadeDetalhado, 
+    getPrestadoresPorCidadeDetalhado,
+    getPrestadoresPendentes,
     buscarPrestador, 
     excluirPrestador, 
     buscarCliente, 
@@ -25,6 +26,7 @@ router.get('/prestadores-por-cidade', getPrestadoresPorCidade);
 
 // Prestadores de uma cidade específica
 router.get('/prestadores/cidade/:cidade', getPrestadoresPorCidadeDetalhado);
+router.get('/prestadores-pendentes', getPrestadoresPendentes);
 
 // Buscar prestador por nome/email
 router.get('/buscar-prestador', buscarPrestador);
