@@ -7871,11 +7871,14 @@ function FaqPrestadores(props) {
                 )
             );
         } 
-                // ========== PAINEL ADMINISTRATIVO ==========
+               // ========== PAINEL ADMINISTRATIVO ==========
         function PainelAdmin(props) {
             var onSair = props.onSair;
             var [stats, setStats] = useState({ clientes: 0, prestadores: 0, avaliacoes: 0, servicos: 0 });
             var [prestadoresPorCidade, setPrestadoresPorCidade] = useState([]);
+            var [cidadeSelecionada, setCidadeSelecionada] = useState('');
+            var [detalhesCidade, setDetalhesCidade] = useState([]);
+            var [loadingDetalhesCidade, setLoadingDetalhesCidade] = useState(false);
             var [buscaPrestador, setBuscaPrestador] = useState('');
             var [resultadoPrestador, setResultadoPrestador] = useState(null);
             var [buscaCliente, setBuscaCliente] = useState('');
@@ -7928,6 +7931,30 @@ function FaqPrestadores(props) {
                         else { alert(data.mensagem || 'Cliente não encontrado'); setResultadoCliente(null); } 
                     })
                     .catch(function(err) { console.error(err); alert('Erro ao buscar cliente'); });
+            }
+
+            function verDetalhesCidade(cidade) {
+                if (!cidade) return;
+
+                var token = localStorage.getItem('token');
+                setLoadingDetalhesCidade(true);
+                setCidadeSelecionada(cidade);
+
+                fetch(API_URL + '/admin/prestadores/cidade/' + encodeURIComponent(cidade), {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        setDetalhesCidade(Array.isArray(data) ? data : []);
+                    })
+                    .catch(function(err) {
+                        console.error('Erro ao buscar detalhes da cidade:', err);
+                        alert('Erro ao buscar detalhes da cidade');
+                        setDetalhesCidade([]);
+                    })
+                    .finally(function() {
+                        setLoadingDetalhesCidade(false);
+                    });
             }
 
             function excluirPrestador(id) {
@@ -8057,10 +8084,13 @@ function FaqPrestadores(props) {
                                 React.createElement('tbody', null,
                                     prestadoresPorCidade.map(function(item, idx) {
                                         return React.createElement('tr', { key: idx, className: "border-b border-slate-100 hover:bg-slate-50" },
-                                            React.createElement('td', { className: "py-2 text-sm text-slate-700" }, item.cidade + " - " + item.estado),
+                                            React.createElement('td', { className: "py-2 text-sm text-slate-700" }, item.cidade + (item.estado ? " - " + item.estado : "")),
                                             React.createElement('td', { className: "py-2 text-right text-sm font-medium text-slate-800" }, item.total),
                                             React.createElement('td', { className: "py-2 text-center" }, 
-                                                React.createElement('button', { className: "text-xs text-indigo-600 hover:text-indigo-800" }, "Ver detalhes")
+                                                React.createElement('button', {
+                                                    onClick: function() { verDetalhesCidade(item.cidade); },
+                                                    className: "text-xs text-indigo-600 hover:text-indigo-800"
+                                                }, "Ver detalhes")
                                             )
                                         );
                                     })
@@ -8068,6 +8098,68 @@ function FaqPrestadores(props) {
                             )
                         )
                     ),
+
+                    cidadeSelecionada && React.createElement('div', { className: "bg-white rounded-xl border border-slate-200 shadow-sm mb-8" },
+                        React.createElement('div', { className: "border-b border-slate-200 p-4 md:p-5 bg-slate-50 rounded-t-xl flex items-center justify-between" },
+                            React.createElement('h2', { className: "text-base md:text-lg font-semibold text-slate-800" },
+                                "🏙️ Prestadores de " + cidadeSelecionada
+                            ),
+                            React.createElement('button', {
+                                onClick: function() {
+                                    setCidadeSelecionada('');
+                                    setDetalhesCidade([]);
+                                },
+                                className: "text-sm text-slate-500 hover:text-slate-700"
+                            }, "Fechar")
+                        ),
+
+                        React.createElement('div', { className: "p-4 md:p-5" },
+                            loadingDetalhesCidade
+                                ? React.createElement('div', { className: "text-center py-6 text-slate-500 text-sm" }, "Carregando detalhes...")
+                                : detalhesCidade.length === 0
+                                    ? React.createElement('div', { className: "text-center py-6 text-slate-500 text-sm" }, "Nenhum prestador encontrado nesta cidade.")
+                                    : React.createElement('div', { className: "space-y-3" },
+                                        detalhesCidade.map(function(prestador, idx) {
+                                            return React.createElement('div', {
+                                                key: prestador._id || idx,
+                                                className: "bg-slate-50 rounded-lg p-4 border border-slate-200"
+                                            },
+                                                React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-3" },
+                                                    React.createElement('div', null,
+                                                        React.createElement('p', { className: "text-xs text-slate-500" }, "Nome"),
+                                                        React.createElement('p', { className: "text-sm font-medium text-slate-800" }, prestador.nome || '-')
+                                                    ),
+                                                    React.createElement('div', null,
+                                                        React.createElement('p', { className: "text-xs text-slate-500" }, "E-mail"),
+                                                        React.createElement('p', { className: "text-sm font-medium text-slate-800" }, prestador.email || '-')
+                                                    ),
+                                                    React.createElement('div', null,
+                                                        React.createElement('p', { className: "text-xs text-slate-500" }, "WhatsApp"),
+                                                        React.createElement('p', { className: "text-sm font-medium text-slate-800" }, prestador.whatsapp || '-')
+                                                    ),
+                                                    React.createElement('div', null,
+                                                        React.createElement('p', { className: "text-xs text-slate-500" }, "Status do Plano"),
+                                                        React.createElement('p', { className: "text-sm font-medium text-slate-800" }, prestador.planoStatus || '-')
+                                                    ),
+                                                    React.createElement('div', null,
+                                                        React.createElement('p', { className: "text-xs text-slate-500" }, "Forma de Pagamento"),
+                                                        React.createElement('p', { className: "text-sm font-medium text-slate-800" }, prestador.formaPagamentoAtual || '-')
+                                                    ),
+                                                    React.createElement('div', null,
+                                                        React.createElement('p', { className: "text-xs text-slate-500" }, "Expiração"),
+                                                        React.createElement('p', { className: "text-sm font-medium text-slate-800" },
+                                                            prestador.planoExpiracao
+                                                                ? new Date(prestador.planoExpiracao).toLocaleDateString('pt-BR')
+                                                                : '-'
+                                                        )
+                                                    )
+                                                )
+                                            );
+                                        })
+                                    )
+                        )
+                    ),
+
                     React.createElement('div', { className: "bg-white rounded-xl border border-slate-200 shadow-sm mb-8" },
                         React.createElement('div', { className: "border-b border-slate-200 p-4 md:p-5 bg-slate-50 rounded-t-xl" }, 
                             React.createElement('h2', { className: "text-base md:text-lg font-semibold text-slate-800 flex items-center gap-2" }, 
