@@ -445,9 +445,24 @@ router.post('/login', async (req, res) => {
 
     let prestadorData = null;
     if (user.tipo === 'prestador' && user.prestadorId) {
-      prestadorData = await Prestador.findById(user.prestadorId);
-      console.log('📋 Dados do prestador carregados:', prestadorData?._id);
+  prestadorData = await Prestador.findById(user.prestadorId);
+
+  // ===== CORREÇÃO: EXPIRAÇÃO AUTOMÁTICA =====
+  if (prestadorData && prestadorData.planoStatus === 'ativo' && prestadorData.planoExpiracao) {
+    
+    const agora = new Date();
+    const expiracao = new Date(prestadorData.planoExpiracao);
+
+    if (expiracao < agora) {
+      console.log(`⏰ Plano expirado automaticamente para: ${prestadorData.email}`);
+
+      prestadorData.planoStatus = 'expirado';
+      prestadorData.planoAtivo = false;
+
+      await prestadorData.save();
     }
+  }
+}
 
     res.json({
       success: true,
@@ -482,9 +497,24 @@ router.get('/me', async (req, res) => {
     }
 
     let prestadorData = null;
-    if (user.tipo === 'prestador' && user.prestadorId) {
-      prestadorData = await Prestador.findById(user.prestadorId);
+if (user.tipo === 'prestador' && user.prestadorId) {
+  prestadorData = await Prestador.findById(user.prestadorId);
+
+  // ===== CORREÇÃO: EXPIRAÇÃO AUTOMÁTICA =====
+  if (prestadorData && prestadorData.planoStatus === 'ativo' && prestadorData.planoExpiracao) {
+    const agora = new Date();
+    const expiracao = new Date(prestadorData.planoExpiracao);
+
+    if (expiracao < agora) {
+      console.log(`⏰ Plano expirado automaticamente para: ${prestadorData.email}`);
+
+      prestadorData.planoStatus = 'expirado';
+      prestadorData.planoAtivo = false;
+
+      await prestadorData.save();
     }
+  }
+}
 
     res.json({
       id: user._id,
